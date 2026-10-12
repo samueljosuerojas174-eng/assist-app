@@ -10,11 +10,7 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-
-/* FIX: Altura mínima del 100% de la pantalla para evitar que la barra se suba */
 html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--text-primary); overscroll-behavior-y: none; }
-/* Clase que bloquea el scroll en toda la app cuando se abre el modal */
-.no-scroll { overflow: hidden; height: 100vh; position: fixed; width: 100%; }
 
 .app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; min-height: 100vh; }
 
@@ -32,7 +28,7 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 @keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* Slider Cuentas - Snap estricto */
+/* Slider Cuentas Suave */
 .slider-cuentas-container { margin-bottom: 20px; width: 100%; overflow: hidden; position: relative; }
 .slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 .slider-cuentas::-webkit-scrollbar { display: none; }
@@ -48,21 +44,20 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .btn-ojo { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; padding: 2px; transition: color 0.2s, transform 0.2s var(--ios-spring); }
 .btn-ojo:active { color: var(--text-primary); transform: scale(0.8); }
 
-/* FIX: MODALES ANCLADOS ESTRICTAMENTE */
+/* MODALES NATIVOS APPLE (Estilo clásico estable) */
 .modal-oculto { display: none; }
-#modal-generico { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 9999; display: none; flex-direction: column; justify-content: flex-end; overscroll-behavior: none; }
+#modal-generico { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: none; align-items: flex-end; }
 .modal-backdrop { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); animation: fadeIn 0.3s forwards; }
-.modal-contenido { position: relative; width: 100%; background: rgba(18, 18, 18, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-radius: 30px 30px 0 0; border-top: 1px solid var(--border-light); padding: 25px 20px calc(30px + env(safe-area-inset-bottom)); max-height: 80vh; display: flex; flex-direction: column; animation: slideUp 0.4s var(--ios-spring) forwards; }
-.modal-contenido h3 { text-align: center; font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;}
-.modal-dragger { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 0 auto 20px; flex-shrink: 0; }
+.modal-contenido { position: relative; width: 100%; padding: 25px 20px calc(30px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; border-top: 1px solid var(--border-light); animation: slideUp 0.4s var(--ios-spring) forwards; }
+.modal-contenido h3 { text-align: center; font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;}
+.modal-dragger { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 0 auto 20px; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
 .cerrando { animation: slideDown 0.3s var(--ios-spring) forwards !important; }
 
-/* Lista dentro del modal scrollable */
-#lista-opciones-genericas { list-style: none; text-align: center; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0; padding: 0; padding-bottom: 20px; flex-grow: 1;}
+#lista-opciones-genericas { list-style: none; text-align: center; max-height: 50vh; overflow-y: auto;}
 #lista-opciones-genericas li { padding: 18px 10px; border-bottom: 1px solid var(--border-light); font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
 #lista-opciones-genericas li:active { background: rgba(255,255,255,0.1); border-radius: 12px;}
 
