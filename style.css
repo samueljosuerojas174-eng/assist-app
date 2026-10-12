@@ -12,11 +12,15 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
 body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-behavior-y: none; } 
 
-.app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; }
+/* Espaciado ajustado para que la barra inferior no tape el contenido */
+.app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(90px + env(safe-area-inset-bottom)) 20px; }
 
-.header-title { margin: 25px 0 20px; }
-.header-title h1 { font-size: 34px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary); }
+/* Header Flex para Logo */
+.header-title { margin: 25px 0 20px; display: flex; justify-content: space-between; align-items: center; }
+.header-title h1 { font-size: 34px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary); line-height: 1; margin-bottom: 2px;}
 .header-title p { color: var(--text-secondary); font-size: 15px; font-weight: 500; }
+.app-logo { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; }
+
 .section-subtitle { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
 
 .blur-effect { background: rgba(18, 18, 18, 0.6); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); }
@@ -27,29 +31,41 @@ body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-
 @keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* Tarjeta de Balance */
-.balance-section { border: 1px solid var(--border-light); padding: 30px 20px; border-radius: 28px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: transform 0.2s var(--ios-spring); }
-.balance-section:active { transform: scale(0.96); }
+/* Slider Cuentas */
+.slider-cuentas-container { margin-bottom: 20px; width: 100%; overflow: hidden; position: relative; }
+.slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; }
+.slider-cuentas::-webkit-scrollbar { display: none; }
+.balance-section { scroll-snap-align: start; flex: 0 0 100%; border: 1px solid var(--border-light); padding: 30px 20px; border-radius: 28px; text-align: center; }
 .balance-section h2 { font-size: 15px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: center; align-items: center; }
 .balance-section h1 { font-size: clamp(28px, 9vw, 48px); font-weight: 800; letter-spacing: -1.5px; margin: 8px 0; word-wrap: break-word; }
 .balance-tipo { font-size: 13px; background: rgba(255,255,255,0.08); padding: 5px 14px; border-radius: 20px; font-weight: 500; display: inline-block;}
+.slider-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.dot { width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%; opacity: 0.3; transition: opacity 0.3s; }
+.dot.activo { opacity: 1; background: var(--accent); }
 
-/* MODALES NATIVOS APPLE (Glassmorphism para Menús) */
+/* Botón Ojo Estilo Binance */
+.btn-ojo { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; padding: 2px; transition: color 0.2s, transform 0.2s var(--ios-spring); }
+.btn-ojo:active { color: var(--text-primary); transform: scale(0.8); }
+
+/* MODALES NATIVOS APPLE (Pegados al fondo 100%) */
 .modal-oculto { display: none; }
-#modal-cuentas, #modal-generico { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: none; align-items: flex-end; }
+#modal-generico { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: 9999; display: none; align-items: flex-end; }
 .modal-backdrop { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); animation: fadeIn 0.3s forwards; }
-.modal-contenido { position: relative; width: 100%; padding: 25px 20px calc(30px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; border-top: 1px solid var(--border-light); animation: slideUp 0.4s var(--ios-spring) forwards; }
-.modal-contenido h3 { text-align: center; font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;}
-.modal-dragger { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 0 auto 20px; }
+
+/* Contenedor del Modal: Scroll y Safe Area */
+.modal-contenido { position: relative; width: 100%; padding: 25px 20px calc(30px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; border-top: 1px solid var(--border-light); animation: slideUp 0.4s var(--ios-spring) forwards; max-height: 80vh; display: flex; flex-direction: column; }
+.modal-contenido h3 { text-align: center; font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;}
+.modal-dragger { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 0 auto 20px; flex-shrink: 0; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
 .cerrando { animation: slideDown 0.3s var(--ios-spring) forwards !important; }
 
-#lista-seleccion-cuentas, #lista-opciones-genericas { list-style: none; text-align: center; max-height: 50vh; overflow-y: auto;}
-#lista-seleccion-cuentas li, #lista-opciones-genericas li { padding: 18px 10px; border-bottom: 1px solid var(--border-light); font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-#lista-seleccion-cuentas li:active, #lista-opciones-genericas li:active { background: rgba(255,255,255,0.1); border-radius: 12px;}
+/* Lista dentro del modal scrollable */
+#lista-opciones-genericas { list-style: none; text-align: center; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: 0; padding: 0; padding-bottom: 20px; }
+#lista-opciones-genericas li { padding: 18px 10px; border-bottom: 1px solid var(--border-light); font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+#lista-opciones-genericas li:active { background: rgba(255,255,255,0.1); border-radius: 12px;}
 
 /* Tasas Widget */
 .tasas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
@@ -60,7 +76,7 @@ body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-
 
 .tasas-widget, .add-transaction, .gestion-seccion { background: var(--card-dark); border: 1px solid var(--border-light); padding: 20px; border-radius: 24px; margin-bottom: 25px; }
 
-/* ======== INPUT UNIFICADO (Monto a la izq, Moneda adentro a la der) ======== */
+/* ======== INPUT UNIFICADO ======== */
 .input-wrapper { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); border-radius: 16px; margin-bottom: 15px; transition: border 0.3s; }
 .input-wrapper:focus-within { border-color: var(--accent); }
 .input-wrapper input { border: none !important; background: transparent !important; padding: 18px 16px !important; flex: 1; outline: none; font-size: 24px; font-weight: 700; color: #FFFFFF !important; width: 100%;}
@@ -74,7 +90,6 @@ body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-
 input:not([type="hidden"]):not(#monto), select:not(#moneda) { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
 
-/* Fix visual para selects nativos oscuros en iOS */
 select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
 
 /* Botones de Selección Personalizados */
@@ -82,7 +97,6 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .custom-select-btn:active { transform: scale(0.97); opacity: 0.8;}
 .custom-select-btn::after { content: '▼'; font-size: 10px; color: var(--text-secondary); margin-left: 8px;}
 
-/* Ocultar Categoría con Animación */
 #box-categoria { transition: opacity 0.3s, max-width 0.3s, padding 0.3s, border 0.3s; }
 #box-categoria.oculto { opacity: 0; max-width: 0; padding: 0; border: none; overflow: hidden; }
 
@@ -128,8 +142,8 @@ button:active { transform: scale(0.96); opacity: 0.8; }
 .btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 .btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
 
-/* Barra Inferior Nativa Blur */
-.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; }
+/* FIX BARRA INFERIOR: Posicionada absoluto abajo, absorbiendo safe-area-inset */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(60px + env(safe-area-inset-bottom)); background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #636366; cursor: pointer; transition: color 0.3s; width: 33%; }
 .nav-item.activo { color: var(--text-primary); }
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }

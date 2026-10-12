@@ -15,29 +15,25 @@
         
         <!-- ================= APARTADO: INICIO ================= -->
         <div id="tab-inicio" class="vista-activa">
+            
             <div class="header-title">
-                <h1>A$$IST</h1>
-                <p>Control de Capital</p>
-            </div>
-
-            <!-- Tarjeta de Balance -->
-            <header class="balance-section blur-effect" onclick="abrirSelectorCuentas()">
-                <h2 id="titulo-cuenta">Cargando Cuenta... <span style="font-size: 10px; margin-left: 4px;">▼</span></h2>
-                <h1 id="balance-cuenta">$0.00</h1>
-                <span class="balance-tipo" id="subtitulo-cuenta">--</span>
-            </header>
-
-            <!-- Modal Selector de Cuentas -->
-            <div id="modal-cuentas" class="modal-oculto">
-                <div class="modal-backdrop" onclick="cerrarSelectorCuentas()"></div>
-                <div class="modal-contenido blur-effect" id="modal-cuentas-contenido">
-                    <div class="modal-dragger"></div>
-                    <h3>Tus Cuentas</h3>
-                    <ul id="lista-seleccion-cuentas"></ul>
+                <div>
+                    <h1>A$$IST</h1>
+                    <p>Control de Capital</p>
                 </div>
+                <!-- Logo Personalizado -->
+                <img src="logo.jpg" alt="Logo" class="app-logo">
             </div>
 
-            <!-- Modal Genérico para Monedas, Tipos y Categorías -->
+            <!-- Tarjeta de Balance Deslizable (Slider) -->
+            <div class="slider-cuentas-container">
+                <div class="slider-cuentas" id="slider-cuentas">
+                    <!-- Se inyectan via JS -->
+                </div>
+                <div class="slider-dots" id="slider-dots"></div>
+            </div>
+
+            <!-- Modal Genérico -->
             <div id="modal-generico" class="modal-oculto">
                 <div class="modal-backdrop" onclick="cerrarModalGenerico()"></div>
                 <div class="modal-contenido blur-effect" id="modal-generico-contenido">
@@ -62,7 +58,6 @@
             <section class="add-transaction">
                 <h3 class="section-subtitle">Registrar Movimiento</h3>
                 
-                <!-- Input Unificado (Monto + Moneda adentro) -->
                 <div class="input-wrapper">
                     <input type="number" id="monto" placeholder="0.00" step="0.01">
                     <div class="wrapper-divider"></div>
@@ -78,7 +73,6 @@
                         <input type="hidden" id="val-tipo" value="gasto">
                     </div>
                     
-                    <!-- Contenedor de categoría (se oculta al elegir ingreso) -->
                     <div class="custom-select-btn" id="box-categoria" onclick="abrirModalGenerico('categoria')">
                         <span id="text-categoria">Cargando...</span>
                         <input type="hidden" id="val-categoria" value="">
@@ -97,8 +91,10 @@
         <!-- ================= APARTADO: CALCULADORA AL CAMBIO ================= -->
         <div id="tab-calculadora" class="vista-oculta">
             <div class="header-title">
-                <h1>Conversión</h1>
-                <p>Calculadora en tiempo real</p>
+                <div>
+                    <h1>Conversión</h1>
+                    <p>Calculadora en tiempo real</p>
+                </div>
             </div>
             
             <section class="calc-cambio-container blur-effect">
@@ -139,7 +135,12 @@
 
         <!-- ================= APARTADO: GESTIÓN ================= -->
         <div id="tab-categorias" class="vista-oculta">
-            <div class="header-title"><h1>Ajustes</h1><p>Gestión de datos</p></div>
+            <div class="header-title">
+                <div>
+                    <h1>Ajustes</h1>
+                    <p>Gestión de datos</p>
+                </div>
+            </div>
             
             <section class="gestion-seccion">
                 <h3 class="section-subtitle">Mis Cuentas</h3>
@@ -147,7 +148,6 @@
                 <div class="input-group" style="margin-top: 15px;">
                     <input type="text" id="nueva-cuenta-nombre" placeholder="Nombre (Ej: Mercantil)">
                     
-                    <!-- FIX: Selector nativo independiente para evitar cruce de modales -->
                     <select id="sel-nueva-moneda" class="custom-select-btn" style="min-width: 100px; flex: 0 0 auto;">
                         <option value="VES">Bs</option>
                         <option value="USD">USD</option>
@@ -179,7 +179,7 @@
             <span class="nav-text">Conversión</span>
         </div>
         <div class="nav-item" onclick="cambiarPestana('tab-categorias', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>

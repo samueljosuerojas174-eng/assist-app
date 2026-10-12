@@ -8,10 +8,24 @@ let tasaBCV = 1;
 let tasaParalelo = 1;
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
+let censurado = false;
+
+// ================= CENSURAR MONTOS (OJO BINANCE) =================
+function toggleCensura(event) {
+    if(event) event.stopPropagation(); // Evita scroll o clics fantasma
+    censurado = !censurado;
+    actualizarInterfaz();
+}
+
+function formatearMontoCensurado(texto, mantenerFisico = false) {
+    if (!censurado) return texto;
+    if (mantenerFisico && texto === "Dólares / Físico") return texto; // Nueva regla para cuentas USD
+    return '********';
+}
 
 // ================= MODAL NATIVO APPLE PARA SELECTS =================
 function abrirModalGenerico(tipoSelect) {
-    document.activeElement.blur(); // Forza cierre de teclado
+    document.activeElement.blur(); 
     
     const modal = document.getElementById('modal-generico');
     const lista = document.getElementById('lista-opciones-genericas');
@@ -137,7 +151,7 @@ function cambiarPestana(idPestana, elementoNav) {
 async function inicializarApp() {
     await obtenerTasas();
     cargarSelects();
-    actualizarInterfaz();
+    renderizarSliderCuentas();
     renderizarListasGestion();
     setTasaModo('BCV'); 
     
@@ -179,72 +193,105 @@ async function obtenerTasas() {
     } catch (error) { console.error("Error de conexión", error); }
 }
 
-// ================= DASHBOARD Y CUENTAS =================
-function abrirSelectorCuentas() {
-    document.activeElement.blur(); 
-    
+// ================= DASHBOARD Y SLIDER CUENTAS =================
+function renderizarSliderCuentas() {
+    const slider = document.getElementById('slider-cuentas');
+    const dots = document.getElementById('slider-dots');
+    slider.innerHTML = '';
+    dots.innerHTML = '';
+
+    // Iconos de Ojo SVG
+    const iconOjo = censurado 
+        ? `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>` 
+        : `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+
     if (cuentas.length === 0) {
-        alert("Ve a la pestaña 'Ajustes' para crear tu primera cuenta.");
-        return; 
+        slider.innerHTML = `
+            <div class="balance-section blur-effect">
+                <h2>Sin Cuenta</h2>
+                <h1>$0.00</h1>
+                <span class="balance-tipo">--</span>
+            </div>
+        `;
+        cuentaActivaId = null;
+        actualizarListaTransacciones();
+        return;
     }
 
-    const modal = document.getElementById('modal-cuentas');
-    const lista = document.getElementById('lista-seleccion-cuentas');
-    lista.innerHTML = '';
-    
-    cuentas.forEach(c => { 
-        lista.innerHTML += `<li onclick="seleccionarCuenta(${c.id})">${c.nombre} (${c.moneda})</li>`; 
-    });
-    
-    modal.style.display = 'flex';
-}
-
-function cerrarSelectorCuentas() {
-    const modal = document.getElementById('modal-cuentas');
-    const contenido = document.getElementById('modal-cuentas-contenido');
-    contenido.classList.add('cerrando');
-    setTimeout(() => {
-        modal.style.display = 'none';
-        contenido.classList.remove('cerrando'); 
-    }, 280);
-}
-
-function seleccionarCuenta(id) { cuentaActivaId = id; cerrarSelectorCuentas(); actualizarInterfaz(); }
-
-function actualizarInterfaz() {
-    if(!cuentaActivaId && cuentas.length > 0) cuentaActivaId = cuentas[0].id;
-    const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
-    
-    if (!cuentaActiva) {
-        document.getElementById('titulo-cuenta').innerHTML = `Sin cuenta <span style="font-size: 10px;">▼</span>`;
-        document.getElementById('balance-cuenta').innerText = "$0.00";
-        document.getElementById('subtitulo-cuenta').innerText = "--";
-    } else {
-        document.getElementById('titulo-cuenta').innerHTML = `${cuentaActiva.nombre} <span style="font-size: 10px;">▼</span>`;
-        
+    cuentas.forEach((cuenta, index) => {
         let balanceUSD = 0;
         transacciones.forEach(t => {
-            if (t.cuentaId == cuentaActiva.id) {
+            if (t.cuentaId == cuenta.id) {
                 balanceUSD += t.tipo === 'ingreso' ? t.montoUSD : -t.montoUSD;
             }
         });
 
-        if (cuentaActiva.moneda === 'VES') {
+        let strBalanceGrande = "";
+        let strBalancePequeño = "";
+
+        if (cuenta.moneda === 'VES') {
             let balanceVES = balanceUSD * tasaBCV;
-            document.getElementById('balance-cuenta').innerText = `Bs ${balanceVES.toFixed(2)}`;
-            document.getElementById('subtitulo-cuenta').innerText = `$${balanceUSD.toFixed(2)} USD`;
-        } else if (cuentaActiva.moneda === 'USDT') {
-            document.getElementById('balance-cuenta').innerText = `USDT ${balanceUSD.toFixed(2)}`;
+            strBalanceGrande = `Bs ${balanceVES.toFixed(2)}`;
+            strBalancePequeño = `$${balanceUSD.toFixed(2)} USD`;
+        } else if (cuenta.moneda === 'USDT') {
+            strBalanceGrande = `USDT ${balanceUSD.toFixed(2)}`;
             let balanceVES_USDT = balanceUSD * tasaParalelo;
-            document.getElementById('subtitulo-cuenta').innerText = `≈ Bs ${balanceVES_USDT.toFixed(2)}`;
+            strBalancePequeño = `≈ Bs ${balanceVES_USDT.toFixed(2)}`;
         } else {
-            document.getElementById('balance-cuenta').innerText = `$${balanceUSD.toFixed(2)}`;
-            document.getElementById('subtitulo-cuenta').innerText = "Dólares / Físico";
+            strBalanceGrande = `$${balanceUSD.toFixed(2)}`;
+            strBalancePequeño = "Dólares / Físico";
         }
+
+        slider.innerHTML += `
+            <div class="balance-section blur-effect" id="tarjeta-cuenta-${cuenta.id}">
+                <h2>${cuenta.nombre} <button class="btn-ojo" onclick="toggleCensura(event)">${iconOjo}</button></h2>
+                <h1>${formatearMontoCensurado(strBalanceGrande, false)}</h1>
+                <span class="balance-tipo">${formatearMontoCensurado(strBalancePequeño, true)}</span>
+            </div>
+        `;
+        dots.innerHTML += `<div class="dot ${index === 0 ? 'activo' : ''}"></div>`;
+    });
+
+    if (!cuentaActivaId || !cuentas.find(c => c.id == cuentaActivaId)) {
+        cuentaActivaId = cuentas[0].id;
     }
 
+    // Scroll inteligente
+    slider.addEventListener('scroll', () => {
+        const width = slider.clientWidth;
+        const index = Math.round(slider.scrollLeft / width);
+        
+        document.querySelectorAll('.dot').forEach((d, i) => {
+            d.classList.toggle('activo', i === index);
+        });
+
+        if (cuentas[index] && cuentaActivaId !== cuentas[index].id) {
+            cuentaActivaId = cuentas[index].id;
+            actualizarListaTransacciones();
+        }
+    });
+
+    // Mueve el scroll a la cuenta activa al iniciar
+    const activeIndex = cuentas.findIndex(c => c.id == cuentaActivaId);
+    if (activeIndex > 0) {
+        setTimeout(() => {
+            slider.scrollTo({ left: slider.clientWidth * activeIndex, behavior: 'instant' });
+        }, 10);
+    }
+
+    actualizarListaTransacciones();
+}
+
+function actualizarInterfaz() {
+    renderizarSliderCuentas();
+}
+
+function actualizarListaTransacciones() {
     const lista = document.getElementById('lista-transacciones');
     lista.innerHTML = '';
+    
+    if(!cuentaActivaId) return;
+
     const transCuenta = transacciones.filter(t => t.cuentaId == cuentaActivaId).slice().reverse();
     
     transCuenta.forEach((t, index) => {
@@ -252,6 +299,8 @@ function actualizarInterfaz() {
         const signo = t.tipo === 'ingreso' ? '+' : '-';
         const animDelay = index * 0.08; 
         
+        const montoTexto = formatearMontoCensurado(`${signo}$${t.montoUSD.toFixed(2)}`, false);
+
         lista.innerHTML += `
             <li class="transaccion-item" style="animation: slideInRight 0.4s var(--ios-spring) ${animDelay}s both;">
                 <div class="trans-izq">
@@ -259,7 +308,7 @@ function actualizarInterfaz() {
                     <small>${t.fechaFormateada}</small>
                 </div>
                 <div style="display: flex; align-items: center;">
-                    <span class="monto-val ${claseColor}">${signo}$${t.montoUSD.toFixed(2)}</span>
+                    <span class="monto-val ${claseColor}">${montoTexto}</span>
                     <button class="btn-eliminar-trans" onclick="eliminarTransaccion(${t.id})">×</button>
                 </div>
             </li>
@@ -365,11 +414,6 @@ function agregarCuenta() {
         cuentas.push({ id: Date.now(), nombre: nombre, moneda: moneda });
         document.getElementById('nueva-cuenta-nombre').value = '';
         guardarYActualizarGestion();
-        
-        if (cuentas.length === 1) {
-            cuentaActivaId = cuentas[0].id;
-            actualizarInterfaz();
-        }
     } else {
         alert("Por favor, ingresa un nombre para la cuenta.");
     }
