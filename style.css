@@ -1,6 +1,6 @@
 /* Variables iOS y Reseteo */
 :root {
-    --ios-spring: cubic-bezier(0.28, 0.84, 0.42, 1);
+    --ios-spring: cubic-bezier(0.25, 1, 0.5, 1);
     --bg-dark: #000000;
     --card-dark: #121212;
     --border-light: rgba(255, 255, 255, 0.08);
@@ -11,6 +11,22 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
 html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--text-primary); overscroll-behavior-y: none; }
+
+/* Mantequilla al hacer scroll */
+.app-container, .slider-cuentas, #lista-transacciones, .lista-gestion {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+
+/* Pantalla de Carga */
+#splash-screen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: var(--bg-dark); z-index: 99999;
+    display: flex; justify-content: center; align-items: center;
+    transition: opacity 0.6s var(--ios-spring), visibility 0.6s;
+}
+.splash-logo { width: 85px; height: 85px; border-radius: 20px; animation: pulse 1.5s infinite var(--ios-spring); box-shadow: 0 4px 20px rgba(255,255,255,0.15);}
+@keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
 
 .app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; min-height: 100vh; }
 
@@ -30,7 +46,7 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 
 /* Slider Cuentas Suave */
 .slider-cuentas-container { margin-bottom: 20px; width: 100%; overflow: hidden; position: relative; }
-.slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+.slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
 .slider-cuentas::-webkit-scrollbar { display: none; }
 .balance-section { scroll-snap-align: start; scroll-snap-stop: always; flex: 0 0 100%; border: 1px solid var(--border-light); padding: 30px 20px; border-radius: 28px; text-align: center; }
 .balance-section h2 { font-size: 15px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: center; align-items: center; }
@@ -40,11 +56,11 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .dot { width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%; opacity: 0.3; transition: opacity 0.3s; }
 .dot.activo { opacity: 1; background: var(--accent); }
 
-/* Botón Ojo Estilo Binance */
-.btn-ojo { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; padding: 2px; transition: color 0.2s, transform 0.2s var(--ios-spring); }
+/* Botón Ojo */
+.btn-ojo { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; padding: 2px; transition: color 0.3s, transform 0.3s var(--ios-spring); }
 .btn-ojo:active { color: var(--text-primary); transform: scale(0.8); }
 
-/* Tasas Widget */
+/* Tasas Widget & Variaciones */
 .tasas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
 .btn-refresh { background: transparent; border: none; font-size: 18px; cursor: pointer; transition: transform 0.3s var(--ios-spring); padding: 5px; }
 .btn-refresh:active { transform: scale(0.8) rotate(45deg); opacity: 0.7; }
@@ -52,6 +68,15 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 .tasas-widget, .add-transaction, .gestion-seccion { background: var(--card-dark); border: 1px solid var(--border-light); padding: 20px; border-radius: 24px; margin-bottom: 25px; }
+.tasas-widget { display: flex; justify-content: space-between; padding: 16px 20px; }
+.tasa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tasa-label { font-size: 10px; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;}
+.tasa-valor { font-size: 15px; font-weight: 700; }
+
+.tasa-variacion { font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 8px; margin-top: 2px; letter-spacing: 0.2px;}
+.var-positiva { background: rgba(50, 215, 75, 0.15); color: #32D74B; }
+.var-negativa { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
+.var-neutra { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); }
 
 /* ======== INPUT UNIFICADO ======== */
 .input-wrapper { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); border-radius: 16px; margin-bottom: 15px; transition: border 0.3s; }
@@ -59,7 +84,7 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .input-wrapper input { border: none !important; background: transparent !important; padding: 18px 16px !important; flex: 1; outline: none; font-size: 24px; font-weight: 700; color: #FFFFFF !important; width: 100%;}
 .input-wrapper .wrapper-divider { width: 1px; height: 30px; background: var(--border-light); }
 
-/* Select Nativos de Registro (Ajuste para iOS) */
+/* Select Nativos (Sensación iOS) */
 select.custom-select-btn {
     appearance: none;
     -webkit-appearance: none;
@@ -76,11 +101,11 @@ select.custom-select-btn {
     background: rgba(255,255,255,0.05);
     color: #FFFFFF;
     cursor: pointer;
-    transition: transform 0.2s var(--ios-spring), opacity 0.2s;
+    transition: transform 0.4s var(--ios-spring), background-color 0.3s;
     overflow: hidden;
     white-space: nowrap;
 }
-select.custom-select-btn:active { transform: scale(0.97); opacity: 0.8;}
+select.custom-select-btn:active { transform: scale(0.95); background-color: rgba(255,255,255,0.12); }
 
 select.custom-select-inline {
     appearance: none;
@@ -96,23 +121,35 @@ select.custom-select-inline {
     font-weight: 600;
     cursor: pointer;
     padding: 18px 16px;
+    transition: opacity 0.3s;
 }
 select.custom-select-inline:active { opacity: 0.5; }
+select.custom-select-inline option:disabled { color: var(--text-secondary); }
 
-/* ======== INPUTS NORMALES OSCUROS ======== */
 .input-group { display: flex; gap: 12px; margin-bottom: 15px; transition: all 0.3s; }
 input:not([type="hidden"]):not(#monto), select:not(#moneda) { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
-
 select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
 
-#box-categoria { transition: opacity 0.3s, max-width 0.3s, padding 0.3s, border 0.3s; }
-#box-categoria.oculto { opacity: 0; max-width: 0; padding: 0; border: none; overflow: hidden; }
+/* CORRECCIÓN: Animación limpia y sin conflictos para ocultar categorías */
+#val-categoria { transition: all 0.3s var(--ios-spring); transform-origin: right; }
+#val-categoria.oculto { opacity: 0; max-width: 0; padding: 0; border: none; overflow: hidden; flex: 0; margin: 0; }
 
-/* Botones */
-.btn-primario { width: 100%; padding: 18px; background-color: var(--text-primary); color: var(--bg-dark); border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; transition: transform 0.2s var(--ios-spring), opacity 0.2s; }
-.btn-secundario { width: 100%; padding: 16px; background-color: rgba(255,255,255,0.1); color: var(--text-primary); border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s var(--ios-spring); }
-button:active { transform: scale(0.96); opacity: 0.8; }
+/* Botones Premium Touch */
+.btn-primario { 
+    width: 100%; padding: 18px; background-color: var(--text-primary); color: var(--bg-dark); 
+    border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; 
+    transition: transform 0.4s var(--ios-spring), box-shadow 0.3s; 
+    box-shadow: 0 4px 12px rgba(255,255,255,0.1); 
+}
+.btn-primario:active { transform: scale(0.92); box-shadow: 0 2px 6px rgba(255,255,255,0.05); }
+
+.btn-secundario { 
+    width: 100%; padding: 16px; background-color: rgba(255,255,255,0.1); color: var(--text-primary); 
+    border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; 
+    transition: transform 0.4s var(--ios-spring), background-color 0.3s; 
+}
+.btn-secundario:active { transform: scale(0.94); background-color: rgba(255,255,255,0.15); }
 
 /* Historial y Gestión Listas */
 .lista-gestion, #lista-transacciones { list-style: none; }
@@ -121,7 +158,7 @@ button:active { transform: scale(0.96); opacity: 0.8; }
 .trans-izq small { color: var(--text-secondary); font-size: 13px; }
 .monto-val { font-weight: 700; font-size: 17px; margin-right: 12px;}
 .monto-ingreso { color: #32D74B; } .monto-gasto { color: #FF453A; }
-.btn-eliminar-trans { background: rgba(255, 69, 58, 0.15); color: #FF453A; width: 32px; height: 32px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: transform 0.2s;}
+.btn-eliminar-trans { background: rgba(255, 69, 58, 0.15); color: #FF453A; width: 32px; height: 32px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: transform 0.3s var(--ios-spring);}
 .btn-eliminar-trans:active { transform: scale(0.8);}
 
 /* CALCULADORA */
@@ -146,19 +183,14 @@ button:active { transform: scale(0.96); opacity: 0.8; }
 
 /* Botones Listas */
 .acciones-gestion { display: flex; gap: 8px; }
-.btn-editar, .btn-eliminar { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: none; cursor: pointer; transition: transform 0.2s;}
+.btn-editar, .btn-eliminar { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: none; cursor: pointer; transition: transform 0.3s var(--ios-spring);}
 .btn-editar:active, .btn-eliminar:active { transform: scale(0.8); }
 .btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 .btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
 
-/* FIX BARRA INFERIOR */
+/* BARRA INFERIOR */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #636366; cursor: pointer; transition: color 0.3s; width: 33%; }
 .nav-item.activo { color: var(--text-primary); }
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
 .nav-text { font-size: 11px; font-weight: 600; }
-
-.tasas-widget { display: flex; justify-content: space-between; padding: 16px 22px; }
-.tasa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.tasa-label { font-size: 10px; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;}
-.tasa-valor { font-size: 15px; font-weight: 700; }

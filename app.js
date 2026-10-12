@@ -5,17 +5,28 @@ let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [];
 
 // Variables Globales
 let tasaBCV = 1;
-let tasaParalelo = 1;
+let tasaParalelo = 1; 
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
 
+// ================= PANTALLA DE CARGA (SPLASH SCREEN) =================
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        splash.style.opacity = '0';
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 600); 
+    }, 1200); 
+});
+
 // ================= CENSURAR MONTOS (OJO BINANCE) =================
-let censurado = localStorage.getItem('censurado') === 'true'; // Se carga de memoria
+let censurado = localStorage.getItem('censurado') === 'true';
 
 function toggleCensura(event) {
     if(event) event.stopPropagation(); 
     censurado = !censurado;
-    localStorage.setItem('censurado', censurado); // Se guarda en memoria
+    localStorage.setItem('censurado', censurado);
     actualizarInterfaz();
 }
 
@@ -25,14 +36,32 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
     return '********';
 }
 
-// ================= SELECTS NATIVOS =================
+// ================= SELECTS NATIVOS Y RESTRICCIONES =================
 function toggleCategoriaSelect() {
     const tipo = document.getElementById('val-tipo').value;
     const selectCategoria = document.getElementById('val-categoria');
     if (tipo === 'ingreso') {
         selectCategoria.classList.add('oculto');
+        selectCategoria.value = ""; // Limpia la selección por si acaso
     } else {
         selectCategoria.classList.remove('oculto');
+    }
+}
+
+function actualizarOpcionesMoneda() {
+    const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
+    const selectMoneda = document.getElementById('val-moneda');
+    if(!cuentaActiva) return;
+
+    if(cuentaActiva.moneda === 'USD') {
+        selectMoneda.value = 'USD'; // Obliga a que sea USD
+        Array.from(selectMoneda.options).forEach(opt => {
+            if (opt.value === 'VES') opt.disabled = true; // Bloquea los Bs
+        });
+    } else {
+        Array.from(selectMoneda.options).forEach(opt => {
+            opt.disabled = false; // Desbloquea para las demás
+        });
     }
 }
 
@@ -112,7 +141,7 @@ async function inicializarApp() {
     
     setInterval(() => {
         obtenerTasas().then(() => actualizarInterfaz());
-    }, 300000);
+    }, 300000); 
 }
 
 async function actualizarTasasManual() {
@@ -123,9 +152,9 @@ async function actualizarTasasManual() {
     setTimeout(() => { btn.classList.remove('spin'); }, 1000); 
 }
 
+// CORRECCIÓN: Rutas de la API Restauradas para que funcionen 100%
 async function obtenerTasas() {
     try {
-        // Promise.all hace las 3 llamadas al mismo tiempo (mucho más rápido)
         const [resBCV, resEUR, resParalelo] = await Promise.all([
             fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
             fetch('https://ve.dolarapi.com/v1/euros/oficial'),
@@ -136,20 +165,57 @@ async function obtenerTasas() {
             resBCV.json(), resEUR.json(), resParalelo.json()
         ]);
 
+        const prevBCV = parseFloat(localStorage.getItem('prevBCV')) || dataBCV.promedio;
+        const prevEUR = parseFloat(localStorage.getItem('prevEUR')) || dataEUR.promedio;
+        const prevUSDT = parseFloat(localStorage.getItem('prevUSDT')) || dataParalelo.promedio;
+
         tasaBCV = dataBCV.promedio;
-        tasaParalelo = dataParalelo.promedio;
         tasaEUR = dataEUR.promedio;
+        tasaParalelo = dataParalelo.promedio;
+
+        const setVariacion = (id, actual, previo) => {
+            const el = document.getElementById(id);
+            if (actual > previo) {
+                const pct = (((actual - previo) / previo) * 100).toFixed(2);
+                el.innerText = `+${pct}%`;
+                el.className = 'tasa-variacion var-positiva';
+            } else if (actual < previo) {
+                const pct = (((previo - actual) / previo) * 100).toFixed(2);
+                el.innerText = `-${pct}%`;
+                el.className = 'tasa-variacion var-negativa';
+            } else {
+                el.innerText = `0.00%`;
+                el.className = 'tasa-variacion var-neutra';
+            }
+        };
+
+        setVariacion('var-bcv', tasaBCV, prevBCV);
+        setVariacion('var-eur', tasaEUR, prevEUR);
+        setVariacion('var-usdt', tasaParalelo, prevUSDT);
+
+        localStorage.setItem('prevBCV', tasaBCV);
+        localStorage.setItem('prevEUR', tasaEUR);
+        localStorage.setItem('prevUSDT', tasaParalelo);
 
         document.getElementById('val-bcv').innerText = `Bs ${tasaBCV.toFixed(2)}`;
         document.getElementById('val-eur').innerText = `Bs ${tasaEUR.toFixed(2)}`;
         document.getElementById('val-usdt').innerText = `Bs ${tasaParalelo.toFixed(2)}`;
         
+        if (dataBCV.fechaActualizacion) {
+            const f = new Date(dataBCV.fechaActualizacion);
+            const opciones = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('fecha-tasas').innerText = `🗓️ ${f.toLocaleString('es-VE', opciones)}`;
+        }
+
         if(calcModoTasa === 'BCV') document.getElementById('input-tasa-activa').value = tasaBCV.toFixed(2);
         if(calcModoTasa === 'USDT') document.getElementById('input-tasa-activa').value = tasaParalelo.toFixed(2);
         if(calcModoTasa === 'EUR') document.getElementById('input-tasa-activa').value = tasaEUR.toFixed(2);
         
         recalcularDesdeTasa(); 
-    } catch (error) { console.error("Error de conexión", error); }
+    } catch (error) { 
+        console.error("Error de conexión al obtener tasas", error); 
+        document.getElementById('fecha-tasas').innerText = `⚠️ Error de conexión`;
+    }
 }
 
 // ================= DASHBOARD Y SLIDER CUENTAS =================
@@ -214,11 +280,11 @@ function renderizarSliderCuentas() {
         cuentaActivaId = cuentas[0].id;
     }
 
-    // FIX: IntersectionObserver para fluidez y precisión 100% sin trabar el scroll
+    actualizarOpcionesMoneda();
+
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                // Saca el ID de la cuenta según el target en pantalla
                 const targetId = entry.target.id.replace('tarjeta-cuenta-', '');
                 const index = cuentas.findIndex(c => c.id == targetId);
                 
@@ -228,16 +294,15 @@ function renderizarSliderCuentas() {
 
                 if (cuentaActivaId != targetId) {
                     cuentaActivaId = targetId;
+                    actualizarOpcionesMoneda(); 
                     actualizarListaTransacciones();
                 }
             }
         });
     }, { root: slider, threshold: 0.6 });
 
-    // Aplicar el observador a cada tarjeta
     document.querySelectorAll('.balance-section').forEach(section => observer.observe(section));
 
-    // Mueve el scroll a la cuenta activa al iniciar
     const activeIndex = cuentas.findIndex(c => c.id == cuentaActivaId);
     if (activeIndex > 0) {
         setTimeout(() => {
@@ -285,7 +350,7 @@ function actualizarListaTransacciones() {
 // ================= TRANSACCIONES Y GESTIÓN =================
 function cargarSelects() {
     const valCategoria = document.getElementById('val-categoria');
-    valCategoria.innerHTML = ''; 
+    valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
     
     if (categorias.length > 0) {
         categorias.forEach(cat => {
@@ -294,13 +359,6 @@ function cargarSelects() {
             option.innerText = cat;
             valCategoria.appendChild(option);
         });
-    } else {
-        const option = document.createElement('option');
-        option.value = "";
-        option.innerText = "Sin categorías";
-        option.disabled = true;
-        option.selected = true;
-        valCategoria.appendChild(option);
     }
 }
 
@@ -313,6 +371,7 @@ function agregarTransaccion() {
     if (tipo === 'gasto') {
         if(categorias.length === 0) return alert("Crea una categoría en Ajustes primero");
         categoria = document.getElementById('val-categoria').value;
+        if(!categoria) return alert("Por favor, selecciona una categoría.");
     } else {
         categoria = "Ingreso";
     }
@@ -334,6 +393,7 @@ function agregarTransaccion() {
     transacciones.push(transaccion);
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     document.getElementById('monto').value = '';
+    document.getElementById('val-categoria').value = '';
     actualizarInterfaz();
 }
 

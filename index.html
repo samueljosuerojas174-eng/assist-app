@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Pantalla de Carga (Splash Screen) -->
+    <div id="splash-screen">
+        <img src="logo.jpg" alt="A$$IST Logo" class="splash-logo">
+    </div>
+
     <div class="app-container">
         
         <!-- ================= APARTADO: INICIO ================= -->
@@ -21,11 +26,10 @@
                     <h1>A$$IST</h1>
                     <p>Control de Capital</p>
                 </div>
-                <!-- Logo Personalizado -->
                 <img src="logo.jpg" alt="Logo" class="app-logo">
             </div>
 
-            <!-- Tarjeta de Balance Deslizable (Slider) -->
+            <!-- Tarjeta de Balance -->
             <div class="slider-cuentas-container">
                 <div class="slider-cuentas" id="slider-cuentas">
                     <!-- Se inyectan via JS -->
@@ -33,15 +37,30 @@
                 <div class="slider-dots" id="slider-dots"></div>
             </div>
 
-            <!-- Widget de Tasas en Vivo con Botón Refresh -->
+            <!-- Tasas en Vivo con Fecha y % -->
             <div class="tasas-header">
-                <h3 class="section-subtitle" style="margin-bottom: 0;">Tasas del Día</h3>
+                <div style="display: flex; flex-direction: column;">
+                    <h3 class="section-subtitle" style="margin-bottom: 2px;">Tasas del Día</h3>
+                    <span id="fecha-tasas" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">🗓️ Conectando...</span>
+                </div>
                 <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh">🔄</button>
             </div>
             <section class="tasas-widget">
-                <div class="tasa-item"><span class="tasa-label">🇻🇪 BCV</span><span class="tasa-valor" id="val-bcv">...</span></div>
-                <div class="tasa-item"><span class="tasa-label">🇪🇺 EUR</span><span class="tasa-valor" id="val-eur">...</span></div>
-                <div class="tasa-item"><span class="tasa-label">🪙 USDT</span><span class="tasa-valor" id="val-usdt">...</span></div>
+                <div class="tasa-item">
+                    <span class="tasa-label">🇻🇪 BCV</span>
+                    <span class="tasa-valor" id="val-bcv">...</span>
+                    <span class="tasa-variacion var-neutra" id="var-bcv">0.00%</span>
+                </div>
+                <div class="tasa-item">
+                    <span class="tasa-label">🇪🇺 EUR</span>
+                    <span class="tasa-valor" id="val-eur">...</span>
+                    <span class="tasa-variacion var-neutra" id="var-eur">0.00%</span>
+                </div>
+                <div class="tasa-item">
+                    <span class="tasa-label">🪙 USDT</span>
+                    <span class="tasa-valor" id="val-usdt">...</span>
+                    <span class="tasa-variacion var-neutra" id="var-usdt">0.00%</span>
+                </div>
             </section>
 
             <!-- Panel de Registro -->
@@ -51,7 +70,6 @@
                 <div class="input-wrapper">
                     <input type="number" id="monto" placeholder="0.00" step="0.01">
                     <div class="wrapper-divider"></div>
-                    <!-- Select Nativo Moneda -->
                     <select id="val-moneda" class="custom-select-inline">
                         <option value="USD">USD</option>
                         <option value="VES">VES</option>
@@ -59,15 +77,14 @@
                 </div>
 
                 <div class="input-group">
-                    <!-- Select Nativo Tipo -->
                     <select id="val-tipo" class="custom-select-btn" onchange="toggleCategoriaSelect()">
                         <option value="gasto">Gasto</option>
                         <option value="ingreso">Ingreso</option>
                     </select>
                     
-                    <!-- Select Nativo Categoría -->
-                    <select id="val-categoria" class="custom-select-btn" id="box-categoria">
-                        <option value="" disabled selected>Cargando...</option>
+                    <!-- CORRECCIÓN: Se eliminó el doble ID que rompía el CSS -->
+                    <select id="val-categoria" class="custom-select-btn">
+                        <option value="" disabled selected>Categoría...</option>
                     </select>
                 </div>
                 <button class="btn-primario" onclick="agregarTransaccion()">Registrar</button>
@@ -90,7 +107,6 @@
             </div>
             
             <section class="calc-cambio-container blur-effect">
-                
                 <div class="ios-segmented-control">
                     <div class="segment activo" id="seg-bcv" onclick="setTasaModo('BCV')">BCV</div>
                     <div class="segment" id="seg-usdt" onclick="setTasaModo('USDT')">USDT</div>
@@ -139,7 +155,6 @@
                 <ul id="lista-gestion-cuentas" class="lista-gestion"></ul>
                 <div class="input-group" style="margin-top: 15px;">
                     <input type="text" id="nueva-cuenta-nombre" placeholder="Nombre (Ej: Mercantil)">
-                    
                     <select id="sel-nueva-moneda" class="custom-select-btn" style="min-width: 100px; flex: 0 0 auto;">
                         <option value="VES">Bs</option>
                         <option value="USD">USD</option>
