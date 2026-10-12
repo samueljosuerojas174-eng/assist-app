@@ -2,12 +2,14 @@
 let transacciones = JSON.parse(localStorage.getItem('transacciones')) || [];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
 let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [];
+let appPin = localStorage.getItem('app_pin') || null;
 
 // Variables Globales
 let tasaBCV = 1;
 let tasaParalelo = 1; 
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
+let chartInstancia = null; // Instancia del gráfico Chart.js
 
 // Objeto Maestro para Calculadora Inteligente
 let tasasData = {
@@ -17,14 +19,57 @@ let tasasData = {
     Custom: { valor: 1, previo: 1, fecha: new Date().toISOString() }
 };
 
-// ================= PANTALLA DE CARGA (SPLASH SCREEN) =================
+// ================= SEGURIDAD Y PANTALLA DE CARGA =================
 window.addEventListener('load', () => {
+    const splash = document.getElementById('splash-screen');
+    const pinScreen = document.getElementById('pin-screen');
+    
+    // Si hay PIN configurado, preparamos la pantalla negra INMEDIATAMENTE
+    // Al tener z-index 99998, se posicionará mágicamente "debajo" del splash screen (99999)
+    if (appPin) {
+        pinScreen.classList.remove('oculto');
+    }
+    
     setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
         splash.style.opacity = '0';
-        setTimeout(() => splash.style.display = 'none', 600); 
+        setTimeout(() => {
+            splash.style.display = 'none';
+            // Una vez que el splash se va por completo, si hay PIN lo subimos a 100000 por seguridad máxima
+            if (appPin) {
+                pinScreen.style.zIndex = '100000';
+            }
+        }, 600); 
     }, 1200); 
 });
+
+function configurarPIN() {
+    const nuevo = prompt("Ingresa un nuevo PIN de 4 dígitos (Deja en blanco para desactivar):");
+    
+    if (nuevo === null) return;
+    
+    if (nuevo === "") {
+        localStorage.removeItem('app_pin'); 
+        appPin = null; 
+        alert("PIN desactivado.");
+    } else if (nuevo.length === 4 && !isNaN(nuevo)) {
+        localStorage.setItem('app_pin', nuevo); 
+        appPin = nuevo; 
+        alert("PIN configurado con éxito.");
+    } else { 
+        alert("Debe ser un número de 4 dígitos."); 
+    }
+}
+
+function verificarPIN() {
+    const input = document.getElementById('input-pin').value;
+    
+    if (input === appPin) {
+        document.getElementById('pin-screen').classList.add('oculto');
+    } else {
+        alert("PIN incorrecto");
+        document.getElementById('input-pin').value = '';
+    }
+}
 
 // ================= CENSURAR MONTOS (OJO BINANCE) =================
 let censurado = localStorage.getItem('censurado') === 'true';
@@ -46,6 +91,10 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
 function abrirModal(id) {
     document.getElementById(id).classList.remove('oculto');
     document.body.style.overflow = 'hidden'; // Evita scrollear el fondo
+    
+    if (id === 'modal-historial') {
+        actualizarListaTransacciones(); // Refrescar gráfica y filtros al abrir
+    }
 }
 
 function cerrarModal(id) {
@@ -57,6 +106,7 @@ function cerrarModal(id) {
 function toggleCategoriaSelect() {
     const tipo = document.getElementById('val-tipo').value;
     const selectCategoria = document.getElementById('val-categoria');
+    
     if (tipo === 'ingreso') {
         selectCategoria.classList.add('oculto');
         selectCategoria.value = ""; 
@@ -68,6 +118,7 @@ function toggleCategoriaSelect() {
 function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     const selectMoneda = document.getElementById('val-moneda');
+    
     if(!cuentaActiva) return;
 
     if(cuentaActiva.moneda === 'USD') {
@@ -174,7 +225,9 @@ function setTasaModo(modo) {
     recalcularDesdeTasa();
 }
 
-function getTasaActiva() { return parseFloat(document.getElementById('input-tasa-activa').value) || 1; }
+function getTasaActiva() { 
+    return parseFloat(document.getElementById('input-tasa-activa').value) || 1; 
+}
 
 function calcularDesde(origen) {
     calcUltimaEdicion = origen;
@@ -193,8 +246,14 @@ function calcularDesde(origen) {
     }
 }
 
-function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
-function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
+function recalcularDesdeTasa() { 
+    calcularDesde(calcUltimaEdicion); 
+}
+
+function limpiarCalc() { 
+    document.getElementById('calc-usd').value = ''; 
+    document.getElementById('calc-ves').value = ''; 
+}
 
 // ================= NAVEGACIÓN Y API =================
 function cambiarPestana(idPestana, elementoNav) {
@@ -202,26 +261,6 @@ function cambiarPestana(idPestana, elementoNav) {
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
-}
-
-async function inicializarApp() {
-    await obtenerTasas();
-    cargarSelects();
-    renderizarSliderCuentas();
-    renderizarListasGestion();
-    setTasaModo('BCV'); 
-    
-    setInterval(() => {
-        obtenerTasas().then(() => actualizarInterfaz());
-    }, 300000); 
-}
-
-async function actualizarTasasManual() {
-    const btn = document.getElementById('btn-refresh-tasas');
-    btn.classList.add('spin'); 
-    await obtenerTasas();
-    actualizarInterfaz();
-    setTimeout(() => { btn.classList.remove('spin'); }, 1000); 
 }
 
 // CEREBRO INTELIGENTE DE VARIACIONES DIARIAS
@@ -238,7 +277,10 @@ function procesarHistorial(key, currentValor, currentFecha) {
         history.date = hoy;
     }
 
-    if (currentValor > 0) { history.last = currentValor; }
+    if (currentValor > 0) { 
+        history.last = currentValor; 
+    }
+    
     localStorage.setItem(`history_${key}`, JSON.stringify(history));
 
     return { valor: history.last, previo: history.prev, fecha: currentFecha };
@@ -304,10 +346,19 @@ async function obtenerTasas() {
     }
 }
 
+async function actualizarTasasManual() {
+    const btn = document.getElementById('btn-refresh-tasas');
+    btn.classList.add('spin'); 
+    await obtenerTasas();
+    actualizarInterfaz();
+    setTimeout(() => { btn.classList.remove('spin'); }, 1000); 
+}
+
 // ================= DASHBOARD Y SLIDER CUENTAS =================
 function renderizarSliderCuentas() {
     const slider = document.getElementById('slider-cuentas');
     const dots = document.getElementById('slider-dots');
+    
     slider.innerHTML = '';
     dots.innerHTML = '';
 
@@ -330,6 +381,7 @@ function renderizarSliderCuentas() {
 
     cuentas.forEach((cuenta, index) => {
         let balanceUSD = 0;
+        
         transacciones.forEach(t => {
             if (t.cuentaId == cuenta.id) {
                 balanceUSD += t.tipo === 'ingreso' ? t.montoUSD : -t.montoUSD;
@@ -347,6 +399,10 @@ function renderizarSliderCuentas() {
             strBalanceGrande = `USDT ${balanceUSD.toFixed(2)}`;
             let balanceVES_USDT = balanceUSD * tasaParalelo;
             strBalancePequeño = `≈ Bs ${balanceVES_USDT.toFixed(2)}`;
+        } else if (cuenta.moneda === 'EUR') {
+            strBalanceGrande = `€${(balanceUSD).toFixed(2)}`;
+            let balanceVES_EUR = balanceUSD * tasaEUR;
+            strBalancePequeño = `≈ Bs ${balanceVES_EUR.toFixed(2)}`;
         } else {
             strBalanceGrande = `$${balanceUSD.toFixed(2)}`;
             strBalancePequeño = "Dólares / Físico";
@@ -395,59 +451,18 @@ function renderizarSliderCuentas() {
             slider.scrollTo({ left: slider.clientWidth * activeIndex, behavior: 'instant' });
         }, 10);
     }
-
-    actualizarListaTransacciones();
 }
 
 function actualizarInterfaz() {
     renderizarSliderCuentas();
-}
-
-function actualizarListaTransacciones() {
-    const lista = document.getElementById('lista-transacciones');
-    lista.innerHTML = '';
     
-    if(!cuentaActivaId) return;
-
-    const transCuenta = transacciones.filter(t => t.cuentaId == cuentaActivaId).slice().reverse();
-    
-    transCuenta.forEach((t, index) => {
-        const claseColor = t.tipo === 'ingreso' ? 'monto-ingreso' : 'monto-gasto';
-        const signo = t.tipo === 'ingreso' ? '+' : '-';
-        const animDelay = index * 0.05; 
-        
-        const montoTexto = formatearMontoCensurado(`${signo}$${t.montoUSD.toFixed(2)}`, false);
-
-        lista.innerHTML += `
-            <li class="transaccion-item" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
-                <div class="trans-izq">
-                    <strong>${t.categoria}</strong>
-                    <small>${t.fechaFormateada}</small>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <span class="monto-val ${claseColor}">${montoTexto}</span>
-                    <button class="btn-eliminar-trans" onclick="eliminarTransaccion(${t.id})">×</button>
-                </div>
-            </li>
-        `;
-    });
-}
-
-// ================= TRANSACCIONES Y GESTIÓN =================
-function cargarSelects() {
-    const valCategoria = document.getElementById('val-categoria');
-    valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
-    
-    if (categorias.length > 0) {
-        categorias.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat;
-            option.innerText = cat;
-            valCategoria.appendChild(option);
-        });
+    // Si el modal de historial está abierto, refrescarlo también
+    if (!document.getElementById('modal-historial').classList.contains('oculto')) {
+        actualizarListaTransacciones();
     }
 }
 
+// ================= TRANSACCIONES, NOTAS Y FILTROS =================
 function agregarTransaccion() {
     if(cuentas.length === 0) return alert("Crea una cuenta en Ajustes primero");
     
@@ -464,29 +479,151 @@ function agregarTransaccion() {
 
     const monto = parseFloat(document.getElementById('monto').value);
     const moneda = document.getElementById('val-moneda').value;
+    const nota = document.getElementById('val-nota').value.trim();
     
     if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
 
+    const fechaFormateada = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    const timeStamp = Date.now();
+
     const transaccion = {
-        id: Date.now(),
+        id: timeStamp,
         cuentaId: cuentaActivaId,
         montoUSD: moneda === 'VES' ? monto / tasaBCV : monto,
         tipo: tipo,
         categoria: categoria,
-        fechaFormateada: new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+        nota: nota,
+        fechaFormateada: fechaFormateada,
+        fecha: new Date()
     };
     
     transacciones.push(transaccion);
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
+    
     document.getElementById('monto').value = '';
     document.getElementById('val-categoria').value = '';
+    document.getElementById('val-nota').value = '';
+    
     actualizarInterfaz();
+}
+
+function actualizarListaTransacciones() {
+    const lista = document.getElementById('lista-transacciones');
+    lista.innerHTML = ''; 
+    
+    if(!cuentaActivaId) return;
+
+    const query = document.getElementById('buscar-historial') ? document.getElementById('buscar-historial').value.toLowerCase() : "";
+    const mesFiltro = document.getElementById('filtro-mes') ? document.getElementById('filtro-mes').value : "todos";
+    const mesActual = new Date().getMonth();
+
+    let transCuenta = transacciones.filter(t => t.cuentaId == cuentaActivaId).slice().reverse();
+    
+    // Aplicar Filtros (Búsqueda y Fecha)
+    transCuenta = transCuenta.filter(t => {
+        const matchSearch = t.categoria.toLowerCase().includes(query) || (t.nota && t.nota.toLowerCase().includes(query));
+        
+        let matchDate = true;
+        if(mesFiltro === 'mes' && t.fecha) {
+            matchDate = new Date(t.fecha).getMonth() === mesActual;
+        }
+        
+        return matchSearch && matchDate;
+    });
+
+    // Renderizar lista filtrada
+    transCuenta.forEach((t, index) => {
+        const claseColor = t.tipo === 'ingreso' ? 'monto-ingreso' : 'monto-gasto';
+        const signo = t.tipo === 'ingreso' ? '+' : '-';
+        const animDelay = index * 0.05; 
+        
+        const montoTexto = formatearMontoCensurado(`${signo}$${t.montoUSD.toFixed(2)}`, false);
+        const htmlNota = t.nota ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top:2px;">📝 ${t.nota}</div>` : '';
+        
+        lista.innerHTML += `
+            <li class="transaccion-item" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
+                <div class="trans-izq">
+                    <strong>${t.categoria}</strong>
+                    <small>${t.fechaFormateada}</small>
+                    ${htmlNota}
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <span class="monto-val ${claseColor}">${montoTexto}</span>
+                    <button class="btn-eliminar-trans" onclick="eliminarTransaccion(${t.id})">×</button>
+                </div>
+            </li>
+        `;
+    });
+    
+    // Actualizar gráfico con la data filtrada
+    renderizarGrafico(transCuenta); 
 }
 
 function eliminarTransaccion(id) {
     transacciones = transacciones.filter(t => t.id !== id);
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     actualizarInterfaz();
+}
+
+// ================= GRÁFICOS (CHART.JS) =================
+function renderizarGrafico(transFiltered) {
+    const canvas = document.getElementById('graficoGastos');
+    if (!canvas) return;
+    
+    // Extraer solo gastos para la gráfica
+    const gastos = transFiltered.filter(t => t.tipo === 'gasto');
+    
+    // Agrupar por categoría
+    const dataAgrupada = {};
+    gastos.forEach(t => { 
+        dataAgrupada[t.categoria] = (dataAgrupada[t.categoria] || 0) + t.montoUSD; 
+    });
+    
+    const labels = Object.keys(dataAgrupada);
+    const data = Object.values(dataAgrupada);
+
+    // Destruir gráfico previo si existe para evitar superposiciones
+    if (chartInstancia) {
+        chartInstancia.destroy(); 
+    }
+
+    chartInstancia = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels.length > 0 ? labels : ['Sin Gastos'],
+            datasets: [{
+                data: data.length > 0 ? data : [1],
+                backgroundColor: data.length > 0 ? ['#FF453A', '#FF9F0A', '#32D74B', '#0A84FF', '#BF5AF2'] : ['#333'],
+                borderWidth: 0, 
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'right', 
+                    labels: { color: '#fff', font: {size: 10} } 
+                }
+            }
+        }
+    });
+}
+
+// ================= GESTIÓN Y LISTAS =================
+function cargarSelects() {
+    const valCategoria = document.getElementById('val-categoria');
+    valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
+    
+    if (categorias.length > 0) {
+        categorias.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.innerText = cat;
+            valCategoria.appendChild(option);
+        });
+    }
 }
 
 function renderizarListasGestion() {
@@ -541,6 +678,7 @@ function editarCuenta(i) {
     const n = prompt("Nuevo nombre:", cuentas[i].nombre);
     if(n) { cuentas[i].nombre = n; guardarYActualizarGestion(); }
 }
+
 function eliminarCuenta(i) {
     if(confirm("¿Eliminar cuenta?")) {
         if(cuentas[i].id == cuentaActivaId) cuentaActivaId = null;
@@ -556,10 +694,12 @@ function agregarCategoria() {
         guardarYActualizarGestion(); 
     }
 }
+
 function editarCategoria(i) {
     const n = prompt("Nuevo nombre:", categorias[i]);
     if(n) { categorias[i] = n; guardarYActualizarGestion(); }
 }
+
 function eliminarCategoria(i) {
     if(confirm("¿Eliminar categoría?")) { 
         categorias.splice(i, 1); 
@@ -575,5 +715,54 @@ function guardarYActualizarGestion() {
     actualizarInterfaz();
 }
 
-// ARRANQUE
+// ================= BACKUPS (IMPORTAR / EXPORTAR) =================
+function exportarDatos() {
+    const data = JSON.stringify({ transacciones, categorias, cuentas });
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url; 
+    a.download = `ASSIST_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click(); 
+    
+    URL.revokeObjectURL(url);
+}
+
+function importarDatos(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if(data.transacciones && data.cuentas) {
+                transacciones = data.transacciones; 
+                categorias = data.categorias; 
+                cuentas = data.cuentas;
+                
+                guardarYActualizarGestion(); 
+                alert("Datos restaurados correctamente!");
+            }
+        } catch (err) { 
+            alert("Archivo inválido o corrupto."); 
+        }
+    };
+    reader.readAsText(file);
+}
+
+// ================= ARRANQUE DE LA APP =================
+async function inicializarApp() {
+    await obtenerTasas();
+    cargarSelects();
+    renderizarSliderCuentas();
+    renderizarListasGestion();
+    setTasaModo('BCV'); 
+    
+    setInterval(() => {
+        obtenerTasas().then(() => actualizarInterfaz());
+    }, 300000); 
+}
+
 inicializarApp();
