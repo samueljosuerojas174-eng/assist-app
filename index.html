@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="A$$IST">
+    <meta name="theme-color" content="#000000">
+    <title>A$$IST</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- ================= APARTADO: INICIO ================= -->
+        <div id="tab-inicio" class="vista-activa">
+            <div class="header-title">
+                <h1>A$$IST</h1>
+                <p>Control de Capital</p>
+            </div>
+
+            <!-- Tarjeta de Balance -->
+            <header class="balance-section blur-effect" onclick="abrirSelectorCuentas()">
+                <h2 id="titulo-cuenta">Cargando Cuenta... <span style="font-size: 10px; margin-left: 4px;">▼</span></h2>
+                <h1 id="balance-cuenta">$0.00</h1>
+                <span class="balance-tipo" id="subtitulo-cuenta">--</span>
+            </header>
+
+            <!-- Modal Selector de Cuentas -->
+            <div id="modal-cuentas" class="modal-oculto">
+                <div class="modal-backdrop" onclick="cerrarSelectorCuentas()"></div>
+                <div class="modal-contenido blur-effect" id="modal-cuentas-contenido">
+                    <div class="modal-dragger"></div>
+                    <h3>Tus Cuentas</h3>
+                    <ul id="lista-seleccion-cuentas"></ul>
+                </div>
+            </div>
+
+            <!-- NUEVO: Modal Genérico para Monedas, Tipos y Categorías -->
+            <div id="modal-generico" class="modal-oculto">
+                <div class="modal-backdrop" onclick="cerrarModalGenerico()"></div>
+                <div class="modal-contenido blur-effect" id="modal-generico-contenido">
+                    <div class="modal-dragger"></div>
+                    <h3 id="modal-generico-titulo">Opciones</h3>
+                    <ul id="lista-opciones-genericas"></ul>
+                </div>
+            </div>
+
+            <!-- Widget de Tasas en Vivo con Botón Refresh -->
+            <div class="tasas-header">
+                <h3 class="section-subtitle" style="margin-bottom: 0;">Tasas del Día</h3>
+                <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh">🔄</button>
+            </div>
+            <section class="tasas-widget">
+                <div class="tasa-item"><span class="tasa-label">🇻🇪 BCV</span><span class="tasa-valor" id="val-bcv">...</span></div>
+                <div class="tasa-item"><span class="tasa-label">🇪🇺 EUR</span><span class="tasa-valor" id="val-eur">...</span></div>
+                <div class="tasa-item"><span class="tasa-label">🪙 USDT</span><span class="tasa-valor" id="val-usdt">...</span></div>
+            </section>
+
+            <!-- Panel de Registro -->
+            <section class="add-transaction">
+                <h3 class="section-subtitle">Registrar Movimiento</h3>
+                
+                <!-- Input Unificado (Monto + Moneda adentro) -->
+                <div class="input-wrapper">
+                    <input type="number" id="monto" placeholder="0.00" step="0.01">
+                    <div class="wrapper-divider"></div>
+                    <div class="custom-select-inline" onclick="abrirModalGenerico('moneda')">
+                        <span id="text-moneda">USD</span>
+                        <input type="hidden" id="val-moneda" value="USD">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <div class="custom-select-btn" onclick="abrirModalGenerico('tipo')">
+                        <span id="text-tipo">Gasto</span>
+                        <input type="hidden" id="val-tipo" value="gasto">
+                    </div>
+                    
+                    <!-- Contenedor de categoría (se oculta al elegir ingreso) -->
+                    <div class="custom-select-btn" id="box-categoria" onclick="abrirModalGenerico('categoria')">
+                        <span id="text-categoria">Cargando...</span>
+                        <input type="hidden" id="val-categoria" value="">
+                    </div>
+                </div>
+                <button class="btn-primario" onclick="agregarTransaccion()">Registrar</button>
+            </section>
+
+            <!-- Historial -->
+            <section class="history-section">
+                <h3 class="section-subtitle">Historial de la cuenta</h3>
+                <ul id="lista-transacciones"></ul>
+            </section>
+        </div>
+
+        <!-- ================= APARTADO: CALCULADORA AL CAMBIO ================= -->
+        <div id="tab-calculadora" class="vista-oculta">
+            <div class="header-title">
+                <h1>Conversión</h1>
+                <p>Calculadora en tiempo real</p>
+            </div>
+            
+            <section class="calc-cambio-container blur-effect">
+                
+                <div class="ios-segmented-control">
+                    <div class="segment activo" id="seg-bcv" onclick="setTasaModo('BCV')">BCV</div>
+                    <div class="segment" id="seg-usdt" onclick="setTasaModo('USDT')">USDT</div>
+                    <div class="segment" id="seg-eur" onclick="setTasaModo('EUR')">EUR</div>
+                    <div class="segment" id="seg-custom" onclick="setTasaModo('Custom')">Propia</div>
+                </div>
+
+                <div class="tasa-activa-box">
+                    <label>Tasa a usar (Bs):</label>
+                    <input type="number" id="input-tasa-activa" value="0.00" disabled oninput="recalcularDesdeTasa()">
+                </div>
+
+                <div class="calc-divider"></div>
+
+                <div class="input-calc-group">
+                    <label id="lbl-divisa">🇺🇸 Dólares (USD)</label>
+                    <div class="calc-row">
+                        <span id="sym-divisa">$</span>
+                        <input type="number" id="calc-usd" placeholder="0.00" oninput="calcularDesde('USD')">
+                    </div>
+                </div>
+
+                <div class="input-calc-group">
+                    <label>🇻🇪 Bolívares (VES)</label>
+                    <div class="calc-row">
+                        <span>Bs</span>
+                        <input type="number" id="calc-ves" placeholder="0.00" oninput="calcularDesde('VES')">
+                    </div>
+                </div>
+                
+                <button class="btn-secundario" onclick="limpiarCalc()">Limpiar</button>
+            </section>
+        </div>
+
+        <!-- ================= APARTADO: GESTIÓN ================= -->
+        <div id="tab-categorias" class="vista-oculta">
+            <div class="header-title"><h1>Ajustes</h1><p>Gestión de datos</p></div>
+            
+            <section class="gestion-seccion">
+                <h3 class="section-subtitle">Mis Cuentas</h3>
+                <ul id="lista-gestion-cuentas" class="lista-gestion"></ul>
+                <div class="input-group" style="margin-top: 15px;">
+                    <input type="text" id="nueva-cuenta-nombre" placeholder="Nombre (Ej: Mercantil)">
+                    
+                    <div class="custom-select-btn" onclick="abrirModalGenerico('nueva-moneda')" style="max-width: 100px;">
+                        <span id="text-nueva-moneda">Bs</span>
+                        <input type="hidden" id="val-nueva-moneda" value="VES">
+                    </div>
+                </div>
+                <button class="btn-secundario" onclick="agregarCuenta()">+ Agregar Cuenta</button>
+            </section>
+
+            <section class="gestion-seccion" style="margin-top: 25px;">
+                <h3 class="section-subtitle">Mis Categorías</h3>
+                <ul id="lista-gestion-categorias" class="lista-gestion"></ul>
+                <div class="input-group" style="margin-top: 15px;">
+                    <input type="text" id="nueva-categoria" placeholder="Nombre (Ej: Comida)">
+                </div>
+                <button class="btn-secundario" onclick="agregarCategoria()">+ Agregar Categoría</button>
+            </section>
+        </div>
+    </div>
+
+    <!-- Barra Inferior -->
+    <nav class="bottom-nav">
+        <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
+            <span class="nav-text">A$$IST</span>
+        </div>
+        <div class="nav-item" onclick="cambiarPestana('tab-calculadora', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span class="nav-text">Conversión</span>
+        </div>
+        <div class="nav-item" onclick="cambiarPestana('tab-categorias', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="nav-text">Ajustes</span>
+        </div>
+    </nav>
+    <script src="app.js"></script>
+</body>
+</html>

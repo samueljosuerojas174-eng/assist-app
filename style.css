@@ -1,0 +1,138 @@
+/* Variables iOS y Reseteo */
+:root {
+    --ios-spring: cubic-bezier(0.28, 0.84, 0.42, 1);
+    --bg-dark: #000000;
+    --card-dark: #121212;
+    --border-light: rgba(255, 255, 255, 0.08);
+    --text-primary: #FFFFFF;
+    --text-secondary: #8E8E93;
+    --accent: #FFFFFF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-behavior-y: none; } 
+
+.app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; }
+
+.header-title { margin: 25px 0 20px; }
+.header-title h1 { font-size: 34px; font-weight: 800; letter-spacing: -1px; color: var(--text-primary); }
+.header-title p { color: var(--text-secondary); font-size: 15px; font-weight: 500; }
+.section-subtitle { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+.blur-effect { background: rgba(18, 18, 18, 0.6); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); }
+
+/* ANIMACIONES */
+.vista-activa { display: block; animation: scaleFadeIn 0.5s var(--ios-spring) forwards; }
+.vista-oculta { display: none; }
+@keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
+
+/* Tarjeta de Balance */
+.balance-section { border: 1px solid var(--border-light); padding: 30px 20px; border-radius: 28px; text-align: center; margin-bottom: 20px; cursor: pointer; transition: transform 0.2s var(--ios-spring); }
+.balance-section:active { transform: scale(0.96); }
+.balance-section h2 { font-size: 15px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: center; align-items: center; }
+.balance-section h1 { font-size: clamp(28px, 9vw, 48px); font-weight: 800; letter-spacing: -1.5px; margin: 8px 0; word-wrap: break-word; }
+.balance-tipo { font-size: 13px; background: rgba(255,255,255,0.08); padding: 5px 14px; border-radius: 20px; font-weight: 500; display: inline-block;}
+
+/* MODALES NATIVOS APPLE (Glassmorphism para Menús) */
+.modal-oculto { display: none; }
+#modal-cuentas, #modal-generico { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; display: none; align-items: flex-end; }
+.modal-backdrop { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); animation: fadeIn 0.3s forwards; }
+.modal-contenido { position: relative; width: 100%; padding: 25px 20px calc(30px + env(safe-area-inset-bottom)); border-radius: 30px 30px 0 0; border-top: 1px solid var(--border-light); animation: slideUp 0.4s var(--ios-spring) forwards; }
+.modal-contenido h3 { text-align: center; font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;}
+.modal-dragger { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: 0 auto 20px; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
+.cerrando { animation: slideDown 0.3s var(--ios-spring) forwards !important; }
+
+#lista-seleccion-cuentas, #lista-opciones-genericas { list-style: none; text-align: center; max-height: 50vh; overflow-y: auto;}
+#lista-seleccion-cuentas li, #lista-opciones-genericas li { padding: 18px 10px; border-bottom: 1px solid var(--border-light); font-size: 18px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+#lista-seleccion-cuentas li:active, #lista-opciones-genericas li:active { background: rgba(255,255,255,0.1); border-radius: 12px;}
+
+/* Tasas Widget */
+.tasas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
+.btn-refresh { background: transparent; border: none; font-size: 18px; cursor: pointer; transition: transform 0.3s var(--ios-spring); padding: 5px; }
+.btn-refresh:active { transform: scale(0.8) rotate(45deg); opacity: 0.7; }
+.btn-refresh.spin { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.tasas-widget, .add-transaction, .gestion-seccion { background: var(--card-dark); border: 1px solid var(--border-light); padding: 20px; border-radius: 24px; margin-bottom: 25px; }
+
+/* ======== INPUT UNIFICADO (Monto a la izq, Moneda adentro a la der) ======== */
+.input-wrapper { display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); border-radius: 16px; margin-bottom: 15px; transition: border 0.3s; }
+.input-wrapper:focus-within { border-color: var(--accent); }
+.input-wrapper input { border: none !important; background: transparent !important; padding: 18px 16px !important; flex: 1; outline: none; font-size: 24px; font-weight: 700; color: #FFFFFF !important; width: 100%;}
+.input-wrapper .wrapper-divider { width: 1px; height: 30px; background: var(--border-light); }
+.custom-select-inline { padding: 18px 16px; color: #FFFFFF; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.custom-select-inline:active { opacity: 0.5; }
+.custom-select-inline::after { content: '▼'; font-size: 10px; color: var(--text-secondary); }
+
+/* ======== INPUTS NORMALES OSCUROS ======== */
+.input-group { display: flex; gap: 12px; margin-bottom: 15px; transition: all 0.3s; }
+input:not([type="hidden"]):not(#monto) { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
+input:focus { border-color: var(--accent); }
+
+/* Botones de Selección Personalizados (Adiós a los blancos feos de iOS) */
+.custom-select-btn { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 600; background: rgba(255,255,255,0.05); color: #FFFFFF; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s var(--ios-spring), opacity 0.2s; overflow: hidden; white-space: nowrap;}
+.custom-select-btn:active { transform: scale(0.97); opacity: 0.8;}
+.custom-select-btn::after { content: '▼'; font-size: 10px; color: var(--text-secondary); margin-left: 8px;}
+
+/* Ocultar Categoría con Animación */
+#box-categoria { transition: opacity 0.3s, max-width 0.3s, padding 0.3s, border 0.3s; }
+#box-categoria.oculto { opacity: 0; max-width: 0; padding: 0; border: none; overflow: hidden; }
+
+/* Botones */
+.btn-primario { width: 100%; padding: 18px; background-color: var(--text-primary); color: var(--bg-dark); border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; transition: transform 0.2s var(--ios-spring), opacity 0.2s; }
+.btn-secundario { width: 100%; padding: 16px; background-color: rgba(255,255,255,0.1); color: var(--text-primary); border: none; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s var(--ios-spring); }
+button:active { transform: scale(0.96); opacity: 0.8; }
+
+/* Historial y Gestión Listas */
+.lista-gestion, #lista-transacciones { list-style: none; }
+.transaccion-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid transparent; }
+.trans-izq strong { font-size: 17px; display: block; font-weight: 600; }
+.trans-izq small { color: var(--text-secondary); font-size: 13px; }
+.monto-val { font-weight: 700; font-size: 17px; margin-right: 12px;}
+.monto-ingreso { color: #32D74B; } .monto-gasto { color: #FF453A; }
+.btn-eliminar-trans { background: rgba(255, 69, 58, 0.15); color: #FF453A; width: 32px; height: 32px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; transition: transform 0.2s;}
+.btn-eliminar-trans:active { transform: scale(0.8);}
+
+/* CALCULADORA */
+.calc-cambio-container { padding: 25px; border-radius: 28px; border: 1px solid var(--border-light); }
+.ios-segmented-control { display: flex; background: rgba(255,255,255,0.1); border-radius: 14px; padding: 4px; margin-bottom: 20px; }
+.segment { flex: 1; text-align: center; padding: 10px 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); border-radius: 10px; cursor: pointer; transition: all 0.3s var(--ios-spring); }
+.segment.activo { background: var(--card-dark); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+
+.tasa-activa-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.tasa-activa-box label { font-size: 15px; font-weight: 500; color: var(--text-secondary); }
+.tasa-activa-box input { width: 120px; padding: 10px; text-align: right; font-size: 18px; font-weight: 700; background: transparent !important; border: none; border-bottom: 1px solid var(--border-light); border-radius: 0; color: var(--text-primary) !important; transition: border 0.3s;}
+.tasa-activa-box input:focus { border-color: var(--accent); }
+.tasa-activa-box input:disabled { color: var(--text-secondary) !important; opacity: 1; }
+
+.calc-divider { height: 1px; background: var(--border-light); margin: 20px 0; }
+.input-calc-group { margin-bottom: 20px; }
+.input-calc-group label { display: block; font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; }
+.calc-row { display: flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 18px; padding: 5px 20px; border: 1px solid transparent; transition: border 0.3s; }
+.calc-row:focus-within { border-color: var(--accent); background: rgba(255,255,255,0.06); }
+.calc-row span { font-size: 24px; color: var(--text-secondary); font-weight: 700; width: 35px;}
+.calc-row input { background: transparent !important; border: none; padding: 15px 0; font-size: 32px; font-weight: 800; flex: 1; outline: none;}
+
+/* Botones Listas */
+.acciones-gestion { display: flex; gap: 8px; }
+.btn-editar, .btn-eliminar { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; border: none; cursor: pointer; transition: transform 0.2s;}
+.btn-editar:active, .btn-eliminar:active { transform: scale(0.8); }
+.btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
+.btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
+
+/* Barra Inferior Nativa Blur */
+.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; }
+.nav-item { display: flex; flex-direction: column; align-items: center; color: #636366; cursor: pointer; transition: color 0.3s; width: 33%; }
+.nav-item.activo { color: var(--text-primary); }
+.nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
+.nav-text { font-size: 11px; font-weight: 600; }
+
+.tasas-widget { display: flex; justify-content: space-between; padding: 16px 22px; }
+.tasa-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tasa-label { font-size: 10px; color: var(--text-secondary); font-weight: 700; letter-spacing: 0.5px;}
+.tasa-valor { font-size: 15px; font-weight: 700; }
