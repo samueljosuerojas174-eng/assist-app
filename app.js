@@ -1,7 +1,7 @@
 // Base de Datos Local
 let transacciones = JSON.parse(localStorage.getItem('transacciones')) || [];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
-let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [{ id: 1, nombre: 'Principal USD', moneda: 'USD' }];
+let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [];
 
 // Variables Globales
 let tasaBCV = 1;
@@ -9,8 +9,10 @@ let tasaParalelo = 1;
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
 
-// ================= MODAL NATIVO APPLE PARA SELECTS (NUEVO Y BLINDADO) =================
+// ================= MODAL NATIVO APPLE PARA SELECTS =================
 function abrirModalGenerico(tipoSelect) {
+    document.activeElement.blur(); // Forza cierre de teclado
+    
     const modal = document.getElementById('modal-generico');
     const lista = document.getElementById('lista-opciones-genericas');
     const titulo = document.getElementById('modal-generico-titulo');
@@ -36,12 +38,6 @@ function abrirModalGenerico(tipoSelect) {
             });
         }
     } 
-    else if (tipoSelect === 'nueva-moneda') {
-        titulo.innerText = 'Moneda de la Cuenta';
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('nueva-moneda', 'VES', 'Bs')">Bs</li>`;
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('nueva-moneda', 'USD', 'USD')">USD</li>`;
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('nueva-moneda', 'USDT', 'USDT')">USDT</li>`;
-    }
 
     modal.style.display = 'flex';
 }
@@ -61,7 +57,6 @@ function seleccionarOpcionGenerica(tipo, valor, texto) {
     document.getElementById('text-' + tipo).innerText = texto;
     cerrarModalGenerico();
 
-    // Lógica dinámica: Ocultar categoría si es Ingreso
     if (tipo === 'tipo') {
         const boxCategoria = document.getElementById('box-categoria');
         if (valor === 'ingreso') {
@@ -131,7 +126,6 @@ function calcularDesde(origen) {
 function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
 function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
 
-
 // ================= NAVEGACIÓN Y API =================
 function cambiarPestana(idPestana, elementoNav) {
     document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
@@ -147,13 +141,11 @@ async function inicializarApp() {
     renderizarListasGestion();
     setTasaModo('BCV'); 
     
-    // Auto Refresh 5 minutos
     setInterval(() => {
         obtenerTasas().then(() => actualizarInterfaz());
     }, 300000);
 }
 
-// Botón de Recarga Manual con animación
 async function actualizarTasasManual() {
     const btn = document.getElementById('btn-refresh-tasas');
     btn.classList.add('spin'); 
@@ -189,15 +181,24 @@ async function obtenerTasas() {
 
 // ================= DASHBOARD Y CUENTAS =================
 function abrirSelectorCuentas() {
+    document.activeElement.blur(); 
+    
+    if (cuentas.length === 0) {
+        alert("Ve a la pestaña 'Ajustes' para crear tu primera cuenta.");
+        return; 
+    }
+
     const modal = document.getElementById('modal-cuentas');
     const lista = document.getElementById('lista-seleccion-cuentas');
     lista.innerHTML = '';
     
-    if (cuentas.length === 0) lista.innerHTML = '<li style="color:#8E8E93; cursor:default;">Ve a Ajustes para crear cuentas</li>';
-    else cuentas.forEach(c => { lista.innerHTML += `<li onclick="seleccionarCuenta(${c.id})">${c.nombre} (${c.moneda})</li>`; });
+    cuentas.forEach(c => { 
+        lista.innerHTML += `<li onclick="seleccionarCuenta(${c.id})">${c.nombre} (${c.moneda})</li>`; 
+    });
     
     modal.style.display = 'flex';
 }
+
 function cerrarSelectorCuentas() {
     const modal = document.getElementById('modal-cuentas');
     const contenido = document.getElementById('modal-cuentas-contenido');
@@ -228,7 +229,6 @@ function actualizarInterfaz() {
             }
         });
 
-        // REGLA CUMPLIDA: USDT GRANDE A LA IZQUIERDA
         if (cuentaActiva.moneda === 'VES') {
             let balanceVES = balanceUSD * tasaBCV;
             document.getElementById('balance-cuenta').innerText = `Bs ${balanceVES.toFixed(2)}`;
@@ -250,7 +250,7 @@ function actualizarInterfaz() {
     transCuenta.forEach((t, index) => {
         const claseColor = t.tipo === 'ingreso' ? 'monto-ingreso' : 'monto-gasto';
         const signo = t.tipo === 'ingreso' ? '+' : '-';
-        const animDelay = index * 0.08; // Retraso en cascada
+        const animDelay = index * 0.08; 
         
         lista.innerHTML += `
             <li class="transaccion-item" style="animation: slideInRight 0.4s var(--ios-spring) ${animDelay}s both;">
@@ -266,7 +266,6 @@ function actualizarInterfaz() {
         `;
     });
 }
-
 
 // ================= TRANSACCIONES Y GESTIÓN =================
 function cargarSelects() {
@@ -285,14 +284,13 @@ function cargarSelects() {
 }
 
 function agregarTransaccion() {
-    if(cuentas.length === 0) return alert("Crea una cuenta en Ajustes");
+    if(cuentas.length === 0) return alert("Crea una cuenta en Ajustes primero");
     
     const tipo = document.getElementById('val-tipo').value;
     let categoria = "";
 
-    // Lógica para exigir categoría solo si es Gasto
     if (tipo === 'gasto') {
-        if(categorias.length === 0) return alert("Crea una categoría en Ajustes");
+        if(categorias.length === 0) return alert("Crea una categoría en Ajustes primero");
         categoria = document.getElementById('val-categoria').value;
     } else {
         categoria = "Ingreso";
@@ -361,13 +359,22 @@ function renderizarListasGestion() {
 
 function agregarCuenta() {
     const nombre = document.getElementById('nueva-cuenta-nombre').value;
-    const moneda = document.getElementById('val-nueva-moneda').value;
-    if(nombre.trim()) {
+    const moneda = document.getElementById('sel-nueva-moneda').value; 
+    
+    if(nombre.trim() !== "") {
         cuentas.push({ id: Date.now(), nombre: nombre, moneda: moneda });
         document.getElementById('nueva-cuenta-nombre').value = '';
         guardarYActualizarGestion();
+        
+        if (cuentas.length === 1) {
+            cuentaActivaId = cuentas[0].id;
+            actualizarInterfaz();
+        }
+    } else {
+        alert("Por favor, ingresa un nombre para la cuenta.");
     }
 }
+
 function editarCuenta(i) {
     const n = prompt("Nuevo nombre:", cuentas[i].nombre);
     if(n) { cuentas[i].nombre = n; guardarYActualizarGestion(); }

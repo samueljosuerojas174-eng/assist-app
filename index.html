@@ -37,7 +37,7 @@
                 </div>
             </div>
 
-            <!-- NUEVO: Modal Genérico para Monedas, Tipos y Categorías -->
+            <!-- Modal Genérico para Monedas, Tipos y Categorías -->
             <div id="modal-generico" class="modal-oculto">
                 <div class="modal-backdrop" onclick="cerrarModalGenerico()"></div>
                 <div class="modal-contenido blur-effect" id="modal-generico-contenido">
@@ -147,10 +147,12 @@
                 <div class="input-group" style="margin-top: 15px;">
                     <input type="text" id="nueva-cuenta-nombre" placeholder="Nombre (Ej: Mercantil)">
                     
-                    <div class="custom-select-btn" onclick="abrirModalGenerico('nueva-moneda')" style="max-width: 100px;">
-                        <span id="text-nueva-moneda">Bs</span>
-                        <input type="hidden" id="val-nueva-moneda" value="VES">
-                    </div>
+                    <!-- FIX: Selector nativo independiente para evitar cruce de modales -->
+                    <select id="sel-nueva-moneda" class="custom-select-btn" style="min-width: 100px; flex: 0 0 auto;">
+                        <option value="VES">Bs</option>
+                        <option value="USD">USD</option>
+                        <option value="USDT">USDT</option>
+                    </select>
                 </div>
                 <button class="btn-secundario" onclick="agregarCuenta()">+ Agregar Cuenta</button>
             </section>

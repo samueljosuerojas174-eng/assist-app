@@ -71,10 +71,13 @@ body { background-color: var(--bg-dark); color: var(--text-primary); overscroll-
 
 /* ======== INPUTS NORMALES OSCUROS ======== */
 .input-group { display: flex; gap: 12px; margin-bottom: 15px; transition: all 0.3s; }
-input:not([type="hidden"]):not(#monto) { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
+input:not([type="hidden"]):not(#monto), select:not(#moneda) { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
 
-/* Botones de Selección Personalizados (Adiós a los blancos feos de iOS) */
+/* Fix visual para selects nativos oscuros en iOS */
+select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
+
+/* Botones de Selección Personalizados */
 .custom-select-btn { flex: 1; padding: 18px 16px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 16px; font-weight: 600; background: rgba(255,255,255,0.05); color: #FFFFFF; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s var(--ios-spring), opacity 0.2s; overflow: hidden; white-space: nowrap;}
 .custom-select-btn:active { transform: scale(0.97); opacity: 0.8;}
 .custom-select-btn::after { content: '▼'; font-size: 10px; color: var(--text-secondary); margin-left: 8px;}
