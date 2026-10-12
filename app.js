@@ -8,12 +8,14 @@ let tasaBCV = 1;
 let tasaParalelo = 1;
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
-let censurado = false;
 
 // ================= CENSURAR MONTOS (OJO BINANCE) =================
+let censurado = localStorage.getItem('censurado') === 'true'; // Se carga de memoria
+
 function toggleCensura(event) {
     if(event) event.stopPropagation(); 
     censurado = !censurado;
+    localStorage.setItem('censurado', censurado); // Se guarda en memoria
     actualizarInterfaz();
 }
 
@@ -23,67 +25,14 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
     return '********';
 }
 
-// ================= MODAL NATIVO APPLE PARA SELECTS =================
-function abrirModalGenerico(tipoSelect) {
-    document.activeElement.blur(); 
-    
-    // FIX: Bloquea el scroll del fondo (iOS safe)
-    document.body.classList.add('no-scroll');
-
-    const modal = document.getElementById('modal-generico');
-    const lista = document.getElementById('lista-opciones-genericas');
-    const titulo = document.getElementById('modal-generico-titulo');
-    lista.innerHTML = '';
-
-    if(tipoSelect === 'moneda') {
-        titulo.innerText = 'Moneda del Movimiento';
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('moneda', 'USD', 'USD')">USD</li>`;
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('moneda', 'VES', 'VES')">VES</li>`;
-    } 
-    else if (tipoSelect === 'tipo') {
-        titulo.innerText = 'Tipo de Movimiento';
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('tipo', 'gasto', 'Gasto')">Gasto</li>`;
-        lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('tipo', 'ingreso', 'Ingreso')">Ingreso</li>`;
-    } 
-    else if (tipoSelect === 'categoria') {
-        titulo.innerText = 'Seleccionar Categoría';
-        if (categorias.length === 0) {
-            lista.innerHTML = '<li style="color:#8E8E93; cursor:default;">Sin categorías creadas</li>';
-        } else {
-            categorias.forEach(cat => {
-                lista.innerHTML += `<li onclick="seleccionarOpcionGenerica('categoria', '${cat}', '${cat}')">${cat}</li>`;
-            });
-        }
-    } 
-
-    modal.style.display = 'flex';
-}
-
-function cerrarModalGenerico() {
-    const modal = document.getElementById('modal-generico');
-    const contenido = document.getElementById('modal-generico-contenido');
-    contenido.classList.add('cerrando');
-    
-    setTimeout(() => {
-        modal.style.display = 'none';
-        contenido.classList.remove('cerrando');
-        // FIX: Libera el scroll del fondo
-        document.body.classList.remove('no-scroll');
-    }, 280);
-}
-
-function seleccionarOpcionGenerica(tipo, valor, texto) {
-    document.getElementById('val-' + tipo).value = valor;
-    document.getElementById('text-' + tipo).innerText = texto;
-    cerrarModalGenerico();
-
-    if (tipo === 'tipo') {
-        const boxCategoria = document.getElementById('box-categoria');
-        if (valor === 'ingreso') {
-            boxCategoria.classList.add('oculto');
-        } else {
-            boxCategoria.classList.remove('oculto');
-        }
+// ================= SELECTS NATIVOS =================
+function toggleCategoriaSelect() {
+    const tipo = document.getElementById('val-tipo').value;
+    const selectCategoria = document.getElementById('val-categoria');
+    if (tipo === 'ingreso') {
+        selectCategoria.classList.add('oculto');
+    } else {
+        selectCategoria.classList.remove('oculto');
     }
 }
 
@@ -176,12 +125,16 @@ async function actualizarTasasManual() {
 
 async function obtenerTasas() {
     try {
-        const resBCV = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-        const dataBCV = await resBCV.json();
-        const resEUR = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
-        const dataEUR = await resEUR.json();
-        const resParalelo = await fetch('https://ve.dolarapi.com/v1/dolares/paralelo');
-        const dataParalelo = await resParalelo.json();
+        // Promise.all hace las 3 llamadas al mismo tiempo (mucho más rápido)
+        const [resBCV, resEUR, resParalelo] = await Promise.all([
+            fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
+            fetch('https://ve.dolarapi.com/v1/euros/oficial'),
+            fetch('https://ve.dolarapi.com/v1/dolares/paralelo')
+        ]);
+
+        const [dataBCV, dataEUR, dataParalelo] = await Promise.all([
+            resBCV.json(), resEUR.json(), resParalelo.json()
+        ]);
 
         tasaBCV = dataBCV.promedio;
         tasaParalelo = dataParalelo.promedio;
@@ -261,20 +214,28 @@ function renderizarSliderCuentas() {
         cuentaActivaId = cuentas[0].id;
     }
 
-    // FIX: Scroll con snap mejorado y frenado magnético
-    slider.addEventListener('scroll', () => {
-        const width = slider.clientWidth;
-        const index = Math.round(slider.scrollLeft / width);
-        
-        document.querySelectorAll('.dot').forEach((d, i) => {
-            d.classList.toggle('activo', i === index);
-        });
+    // FIX: IntersectionObserver para fluidez y precisión 100% sin trabar el scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Saca el ID de la cuenta según el target en pantalla
+                const targetId = entry.target.id.replace('tarjeta-cuenta-', '');
+                const index = cuentas.findIndex(c => c.id == targetId);
+                
+                document.querySelectorAll('.dot').forEach((d, i) => {
+                    d.classList.toggle('activo', i === index);
+                });
 
-        if (cuentas[index] && cuentaActivaId !== cuentas[index].id) {
-            cuentaActivaId = cuentas[index].id;
-            actualizarListaTransacciones();
-        }
-    });
+                if (cuentaActivaId != targetId) {
+                    cuentaActivaId = targetId;
+                    actualizarListaTransacciones();
+                }
+            }
+        });
+    }, { root: slider, threshold: 0.6 });
+
+    // Aplicar el observador a cada tarjeta
+    document.querySelectorAll('.balance-section').forEach(section => observer.observe(section));
 
     // Mueve el scroll a la cuenta activa al iniciar
     const activeIndex = cuentas.findIndex(c => c.id == cuentaActivaId);
@@ -324,16 +285,22 @@ function actualizarListaTransacciones() {
 // ================= TRANSACCIONES Y GESTIÓN =================
 function cargarSelects() {
     const valCategoria = document.getElementById('val-categoria');
-    const textCategoria = document.getElementById('text-categoria');
+    valCategoria.innerHTML = ''; 
     
     if (categorias.length > 0) {
-        if (valCategoria.value === "") {
-            valCategoria.value = categorias[0];
-            textCategoria.innerText = categorias[0];
-        }
+        categorias.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.innerText = cat;
+            valCategoria.appendChild(option);
+        });
     } else {
-        valCategoria.value = "";
-        textCategoria.innerText = "Sin categorías";
+        const option = document.createElement('option');
+        option.value = "";
+        option.innerText = "Sin categorías";
+        option.disabled = true;
+        option.selected = true;
+        valCategoria.appendChild(option);
     }
 }
 

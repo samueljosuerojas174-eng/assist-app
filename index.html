@@ -33,16 +33,6 @@
                 <div class="slider-dots" id="slider-dots"></div>
             </div>
 
-            <!-- Modal Genérico -->
-            <div id="modal-generico" class="modal-oculto">
-                <div class="modal-backdrop" onclick="cerrarModalGenerico()"></div>
-                <div class="modal-contenido blur-effect" id="modal-generico-contenido">
-                    <div class="modal-dragger"></div>
-                    <h3 id="modal-generico-titulo">Opciones</h3>
-                    <ul id="lista-opciones-genericas"></ul>
-                </div>
-            </div>
-
             <!-- Widget de Tasas en Vivo con Botón Refresh -->
             <div class="tasas-header">
                 <h3 class="section-subtitle" style="margin-bottom: 0;">Tasas del Día</h3>
@@ -61,22 +51,24 @@
                 <div class="input-wrapper">
                     <input type="number" id="monto" placeholder="0.00" step="0.01">
                     <div class="wrapper-divider"></div>
-                    <div class="custom-select-inline" onclick="abrirModalGenerico('moneda')">
-                        <span id="text-moneda">USD</span>
-                        <input type="hidden" id="val-moneda" value="USD">
-                    </div>
+                    <!-- Select Nativo Moneda -->
+                    <select id="val-moneda" class="custom-select-inline">
+                        <option value="USD">USD</option>
+                        <option value="VES">VES</option>
+                    </select>
                 </div>
 
                 <div class="input-group">
-                    <div class="custom-select-btn" onclick="abrirModalGenerico('tipo')">
-                        <span id="text-tipo">Gasto</span>
-                        <input type="hidden" id="val-tipo" value="gasto">
-                    </div>
+                    <!-- Select Nativo Tipo -->
+                    <select id="val-tipo" class="custom-select-btn" onchange="toggleCategoriaSelect()">
+                        <option value="gasto">Gasto</option>
+                        <option value="ingreso">Ingreso</option>
+                    </select>
                     
-                    <div class="custom-select-btn" id="box-categoria" onclick="abrirModalGenerico('categoria')">
-                        <span id="text-categoria">Cargando...</span>
-                        <input type="hidden" id="val-categoria" value="">
-                    </div>
+                    <!-- Select Nativo Categoría -->
+                    <select id="val-categoria" class="custom-select-btn" id="box-categoria">
+                        <option value="" disabled selected>Cargando...</option>
+                    </select>
                 </div>
                 <button class="btn-primario" onclick="agregarTransaccion()">Registrar</button>
             </section>
