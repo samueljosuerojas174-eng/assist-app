@@ -9,14 +9,20 @@ let tasaParalelo = 1;
 let tasaEUR = 1; 
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
 
+// Objeto Maestro para Calculadora Inteligente
+let tasasData = {
+    BCV: { valor: 1, previo: 1, fecha: null },
+    USDT: { valor: 1, previo: 1, fecha: null },
+    EUR: { valor: 1, previo: 1, fecha: null },
+    Custom: { valor: 1, previo: 1, fecha: new Date().toISOString() }
+};
+
 // ================= PANTALLA DE CARGA (SPLASH SCREEN) =================
 window.addEventListener('load', () => {
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         splash.style.opacity = '0';
-        setTimeout(() => {
-            splash.style.display = 'none';
-        }, 600); 
+        setTimeout(() => splash.style.display = 'none', 600); 
     }, 1200); 
 });
 
@@ -36,13 +42,24 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
     return '********';
 }
 
+// ================= VENTANAS MODALES =================
+function abrirModal(id) {
+    document.getElementById(id).classList.remove('oculto');
+    document.body.style.overflow = 'hidden'; // Evita scrollear el fondo
+}
+
+function cerrarModal(id) {
+    document.getElementById(id).classList.add('oculto');
+    document.body.style.overflow = ''; // Regresa la normalidad
+}
+
 // ================= SELECTS NATIVOS Y RESTRICCIONES =================
 function toggleCategoriaSelect() {
     const tipo = document.getElementById('val-tipo').value;
     const selectCategoria = document.getElementById('val-categoria');
     if (tipo === 'ingreso') {
         selectCategoria.classList.add('oculto');
-        selectCategoria.value = ""; // Limpia la selección por si acaso
+        selectCategoria.value = ""; 
     } else {
         selectCategoria.classList.remove('oculto');
     }
@@ -54,20 +71,73 @@ function actualizarOpcionesMoneda() {
     if(!cuentaActiva) return;
 
     if(cuentaActiva.moneda === 'USD') {
-        selectMoneda.value = 'USD'; // Obliga a que sea USD
+        selectMoneda.value = 'USD'; 
         Array.from(selectMoneda.options).forEach(opt => {
-            if (opt.value === 'VES') opt.disabled = true; // Bloquea los Bs
+            if (opt.value === 'VES') opt.disabled = true; 
         });
     } else {
-        Array.from(selectMoneda.options).forEach(opt => {
-            opt.disabled = false; // Desbloquea para las demás
-        });
+        Array.from(selectMoneda.options).forEach(opt => opt.disabled = false);
     }
 }
 
-// ================= CALCULADORA AL CAMBIO =================
+// ================= CALCULADORA AL CAMBIO (LÓGICA) =================
 let calcModoTasa = 'BCV'; 
 let calcUltimaEdicion = 'USD'; 
+
+function formatFechaCorta(isoString) {
+    if(!isoString) return "Actualizando...";
+    const d = new Date(isoString);
+    const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    return `${dias[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(-2)}`;
+}
+
+function esFechaFutura(isoString) {
+    if(!isoString) return false;
+    const d = new Date(isoString);
+    const today = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() > 
+           new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+}
+
+function actualizarInfoCalculadora(modo) {
+    const varBox = document.getElementById('calc-variacion-box');
+    const badge = document.getElementById('calc-fecha-badge');
+    const banner = document.getElementById('banner-fecha-valor');
+
+    if(modo === 'Custom') {
+        varBox.classList.add('oculto');
+        banner.classList.add('oculto');
+        badge.innerText = "Personalizada";
+        return;
+    }
+
+    varBox.classList.remove('oculto');
+    const data = tasasData[modo];
+    if(!data) return;
+
+    const diffAbs = data.valor - data.previo;
+    const diffPct = data.previo ? (diffAbs / data.previo) * 100 : 0;
+
+    if(diffAbs > 0) {
+        varBox.innerText = `↑ +${diffAbs.toFixed(2)} Bs (${diffPct.toFixed(2)}%)`;
+        varBox.className = 'tasa-variacion var-positiva';
+    } else if(diffAbs < 0) {
+        varBox.innerText = `↓ ${diffAbs.toFixed(2)} Bs (${Math.abs(diffPct).toFixed(2)}%)`;
+        varBox.className = 'tasa-variacion var-negativa';
+    } else {
+        varBox.innerText = `− 0.00 Bs (0.00%)`;
+        varBox.className = 'tasa-variacion var-neutra';
+    }
+
+    if(data.fecha) {
+        badge.innerText = formatFechaCorta(data.fecha);
+        if(esFechaFutura(data.fecha)) {
+            banner.classList.remove('oculto');
+        } else {
+            banner.classList.add('oculto');
+        }
+    }
+}
 
 function setTasaModo(modo) {
     calcModoTasa = modo;
@@ -83,22 +153,24 @@ function setTasaModo(modo) {
     const symDivisa = document.getElementById('sym-divisa');
 
     if(modo === 'BCV') { 
-        inputTasa.value = tasaBCV.toFixed(2); inputTasa.disabled = true; 
+        inputTasa.value = tasasData.BCV.valor.toFixed(2); inputTasa.disabled = true; 
         lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$';
     }
     if(modo === 'USDT') { 
-        inputTasa.value = tasaParalelo.toFixed(2); inputTasa.disabled = true; 
+        inputTasa.value = tasasData.USDT.valor.toFixed(2); inputTasa.disabled = true; 
         lblDivisa.innerText = '🪙 Tether (USDT)'; symDivisa.innerText = '₮';
     }
     if(modo === 'EUR') { 
-        inputTasa.value = tasaEUR.toFixed(2); inputTasa.disabled = true; 
+        inputTasa.value = tasasData.EUR.valor.toFixed(2); inputTasa.disabled = true; 
         lblDivisa.innerText = '🇪🇺 Euros (EUR)'; symDivisa.innerText = '€';
     }
     if(modo === 'Custom') { 
         inputTasa.disabled = false; inputTasa.focus(); 
+        if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00";
         lblDivisa.innerText = '💱 Divisa Base'; symDivisa.innerText = '$';
     }
 
+    actualizarInfoCalculadora(modo);
     recalcularDesdeTasa();
 }
 
@@ -152,7 +224,26 @@ async function actualizarTasasManual() {
     setTimeout(() => { btn.classList.remove('spin'); }, 1000); 
 }
 
-// CORRECCIÓN: Rutas de la API Restauradas para que funcionen 100%
+// CEREBRO INTELIGENTE DE VARIACIONES DIARIAS
+function procesarHistorial(key, currentValor, currentFecha) {
+    let history = JSON.parse(localStorage.getItem(`history_${key}`));
+    const hoy = new Date().toDateString();
+
+    if (!history) {
+        history = { prev: currentValor, last: currentValor, date: hoy };
+    }
+
+    if (history.date !== hoy) {
+        history.prev = history.last; 
+        history.date = hoy;
+    }
+
+    if (currentValor > 0) { history.last = currentValor; }
+    localStorage.setItem(`history_${key}`, JSON.stringify(history));
+
+    return { valor: history.last, previo: history.prev, fecha: currentFecha };
+}
+
 async function obtenerTasas() {
     try {
         const [resBCV, resEUR, resParalelo] = await Promise.all([
@@ -165,37 +256,32 @@ async function obtenerTasas() {
             resBCV.json(), resEUR.json(), resParalelo.json()
         ]);
 
-        const prevBCV = parseFloat(localStorage.getItem('prevBCV')) || dataBCV.promedio;
-        const prevEUR = parseFloat(localStorage.getItem('prevEUR')) || dataEUR.promedio;
-        const prevUSDT = parseFloat(localStorage.getItem('prevUSDT')) || dataParalelo.promedio;
+        tasasData.BCV = procesarHistorial('BCV', dataBCV.promedio, dataBCV.fechaActualizacion);
+        tasasData.EUR = procesarHistorial('EUR', dataEUR.promedio, dataEUR.fechaActualizacion);
+        tasasData.USDT = procesarHistorial('USDT', dataParalelo.promedio, dataParalelo.fechaActualizacion);
+        tasasData.Custom.fecha = new Date().toISOString();
 
-        tasaBCV = dataBCV.promedio;
-        tasaEUR = dataEUR.promedio;
-        tasaParalelo = dataParalelo.promedio;
+        tasaBCV = tasasData.BCV.valor;
+        tasaEUR = tasasData.EUR.valor;
+        tasaParalelo = tasasData.USDT.valor;
 
-        const setVariacion = (id, actual, previo) => {
+        const setVariacionHome = (id, dataObj) => {
             const el = document.getElementById(id);
-            if (actual > previo) {
-                const pct = (((actual - previo) / previo) * 100).toFixed(2);
-                el.innerText = `+${pct}%`;
-                el.className = 'tasa-variacion var-positiva';
-            } else if (actual < previo) {
-                const pct = (((previo - actual) / previo) * 100).toFixed(2);
-                el.innerText = `-${pct}%`;
-                el.className = 'tasa-variacion var-negativa';
+            const diffAbs = dataObj.valor - dataObj.previo;
+            const pct = dataObj.previo ? ((diffAbs / dataObj.previo) * 100).toFixed(2) : "0.00";
+            
+            if (diffAbs > 0) {
+                el.innerText = `+${pct}%`; el.className = 'tasa-variacion var-positiva';
+            } else if (diffAbs < 0) {
+                el.innerText = `${pct}%`; el.className = 'tasa-variacion var-negativa';
             } else {
-                el.innerText = `0.00%`;
-                el.className = 'tasa-variacion var-neutra';
+                el.innerText = `0.00%`; el.className = 'tasa-variacion var-neutra';
             }
         };
 
-        setVariacion('var-bcv', tasaBCV, prevBCV);
-        setVariacion('var-eur', tasaEUR, prevEUR);
-        setVariacion('var-usdt', tasaParalelo, prevUSDT);
-
-        localStorage.setItem('prevBCV', tasaBCV);
-        localStorage.setItem('prevEUR', tasaEUR);
-        localStorage.setItem('prevUSDT', tasaParalelo);
+        setVariacionHome('var-bcv', tasasData.BCV);
+        setVariacionHome('var-eur', tasasData.EUR);
+        setVariacionHome('var-usdt', tasasData.USDT);
 
         document.getElementById('val-bcv').innerText = `Bs ${tasaBCV.toFixed(2)}`;
         document.getElementById('val-eur').innerText = `Bs ${tasaEUR.toFixed(2)}`;
@@ -203,15 +289,15 @@ async function obtenerTasas() {
         
         if (dataBCV.fechaActualizacion) {
             const f = new Date(dataBCV.fechaActualizacion);
-            const opciones = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
-            document.getElementById('fecha-tasas').innerText = `🗓️ ${f.toLocaleString('es-VE', opciones)}`;
+            document.getElementById('fecha-tasas').innerText = `🗓️ ${f.toLocaleString('es-VE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
         }
 
-        if(calcModoTasa === 'BCV') document.getElementById('input-tasa-activa').value = tasaBCV.toFixed(2);
-        if(calcModoTasa === 'USDT') document.getElementById('input-tasa-activa').value = tasaParalelo.toFixed(2);
-        if(calcModoTasa === 'EUR') document.getElementById('input-tasa-activa').value = tasaEUR.toFixed(2);
-        
+        actualizarInfoCalculadora(calcModoTasa);
+        if(calcModoTasa !== 'Custom') {
+            document.getElementById('input-tasa-activa').value = tasasData[calcModoTasa].valor.toFixed(2);
+        }
         recalcularDesdeTasa(); 
+
     } catch (error) { 
         console.error("Error de conexión al obtener tasas", error); 
         document.getElementById('fecha-tasas').innerText = `⚠️ Error de conexión`;
@@ -328,12 +414,12 @@ function actualizarListaTransacciones() {
     transCuenta.forEach((t, index) => {
         const claseColor = t.tipo === 'ingreso' ? 'monto-ingreso' : 'monto-gasto';
         const signo = t.tipo === 'ingreso' ? '+' : '-';
-        const animDelay = index * 0.08; 
+        const animDelay = index * 0.05; 
         
         const montoTexto = formatearMontoCensurado(`${signo}$${t.montoUSD.toFixed(2)}`, false);
 
         lista.innerHTML += `
-            <li class="transaccion-item" style="animation: slideInRight 0.4s var(--ios-spring) ${animDelay}s both;">
+            <li class="transaccion-item" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
                 <div class="trans-izq">
                     <strong>${t.categoria}</strong>
                     <small>${t.fechaFormateada}</small>
@@ -409,9 +495,9 @@ function renderizarListasGestion() {
     
     lCuentas.innerHTML = '';
     cuentas.forEach((c, i) => {
-        const animDelay = i * 0.08;
+        const animDelay = i * 0.05;
         lCuentas.innerHTML += `
-            <li class="transaccion-item" style="animation: slideInRight 0.4s var(--ios-spring) ${animDelay}s both;">
+            <li class="transaccion-item" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
                 <div class="trans-izq">
                     <strong>${c.nombre}</strong><small>${c.moneda}</small>
                 </div>
@@ -424,9 +510,9 @@ function renderizarListasGestion() {
     
     lCat.innerHTML = '';
     categorias.forEach((cat, i) => {
-        const animDelay = i * 0.08;
+        const animDelay = i * 0.05;
         lCat.innerHTML += `
-            <li class="transaccion-item" style="animation: slideInRight 0.4s var(--ios-spring) ${animDelay}s both;">
+            <li class="transaccion-item" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
                 <div class="trans-izq">
                     <strong>${cat}</strong>
                 </div>
