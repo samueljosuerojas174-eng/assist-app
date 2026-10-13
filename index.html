@@ -294,16 +294,25 @@
                 <!-- Este es el degradado que funde las "patas" de la foto con el fondo de la app -->
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
                 
-                <button class="btn-close-modal" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.5); color: #fff;" onclick="cerrarModal('modal-detalle-meta'); actualizarInterfaz();">
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <!-- Botón Eliminar Meta (Izquierda) -->
+                <button class="btn-close-modal" style="position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 69, 58, 0.85); color: #fff; width: 40px; height: 40px;" onclick="eliminarMeta(metaAbonoActualIndex)">
+                    🗑️
                 </button>
+                
+                <!-- Botón Cerrar (Derecha) -->
+                <button class="btn-close-modal" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.5); color: #fff; width: 40px; height: 40px;" onclick="cerrarModal('modal-detalle-meta'); actualizarInterfaz();">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+
                 <div style="position: absolute; bottom: 20px; left: 25px; right: 25px; z-index: 10;">
                     <h1 id="meta-detail-title" style="font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">Meta</h1>
                     <div style="display:flex; justify-content:space-between; align-items:flex-end;">
                         <span id="meta-detail-amounts" style="font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 5px rgba(0,0,0,0.8);">USD 0.00 / 0.00</span>
                         <span id="meta-detail-pct" style="font-size: 18px; font-weight: 800; color: var(--accent); text-shadow: 0 1px 5px rgba(0,0,0,0.8);">0%</span>
                     </div>
-                    <div class="progress-bg" style="height: 10px; margin-top: 10px; background: rgba(255,255,255,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
+                    
+                    <!-- Barra de progreso limpia para que CSS la tome -->
+                    <div class="progress-bg" style="height: 10px; margin-top: 10px;">
                         <div id="meta-detail-bar" class="progress-fill" style="width: 0%;"></div>
                     </div>
                 </div>
