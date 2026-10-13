@@ -1276,7 +1276,7 @@ function cambiarPestana(idPestana, elementoNav) {
     elementoNav.classList.add('activo');
 }
 
-// ================= ASKBOT (ASISTENTE FINANCIERO CON IA) =================
+// ================= ASKBOT (ASISTENTE FINANCIERO CON IA + MOTOR HÍBRIDO) =================
 let askbotEsperandoRespuesta = false;
 
 function inicializarAskBot() {
@@ -1284,7 +1284,7 @@ function inicializarAskBot() {
     if (!box) return;
     if (box.children.length === 0) {
         agregarBurbujaAskBot(
-            "👋 ¡Hola! Soy **AskBot**, tu copiloto financiero en **A$$IST**.\n\nConozco en tiempo real tus saldos en USD, USDT y Bs, tus gastos del mes, tus metas y las tasas del día. ¿Qué analizamos hoy?",
+            "👋 ¡Hola! Soy **AskBot**, tu copiloto financiero en **A$$IST**.\n\n⚡ **Modo Híbrido Activo:** Respondo al instante tus consultas de saldos, tasas, conversiones, metas y gastos, y uso IA avanzada para tus análisis y presupuestos.",
             "bot"
         );
     }
@@ -1341,15 +1341,165 @@ function quitarIndicadorEscribiendoAskBot() {
     if (el) el.remove();
 }
 
+// Motor Local Instantáneo (0.15s) para preguntas directas y cálculos rápidos
+function responderLocalmenteAskBot(mensajeRaw) {
+    const txt = mensajeRaw
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+
+    // Si es una consulta compleja de asesoría/presupuesto y hay internet, dejamos que Gemini analice
+    const palabrasComplejas = /\b(viable|viabilidad|presupuesto|mercado|lista|estrategia|recomienda|consejo|conviene|ajustar|ajustarme|acelerar|plan|puedo gastar hoy|deberia|opinas)\b/;
+    if (palabrasComplejas.test(txt) && navigator.onLine) {
+        return null;
+    }
+
+    // Calcular saldos en vivo de todas las cuentas
+    let totalUSD_Global = 0;
+    let totalVES_Puro = 0;
+    let totalUSD_Fisico = 0;
+    let totalUSDT_Puro = 0;
+
+    const saldosCuentas = cuentas.map(c => {
+        let balUSD = 0;
+        transacciones.forEach(t => {
+            if (t.cuentaId == c.id) {
+                balUSD += (t.tipo === 'ingreso' ? Number(t.montoUSD) : -Number(t.montoUSD));
+            }
+        });
+        totalUSD_Global += balUSD;
+        const balBs = Math.max(0, balUSD * tasaBCV);
+        if (c.moneda === 'VES') totalVES_Puro += balBs;
+        if (c.moneda === 'USD') totalUSD_Fisico += balUSD;
+        if (c.moneda === 'USDT') totalUSDT_Puro += balUSD;
+
+        return { nombre: c.nombre, moneda: c.moneda, balUSD, balBs };
+    });
+
+    const brechaPct = tasaBCV > 0 ? (((tasaParalelo - tasaBCV) / tasaBCV) * 100).toFixed(2) : "0.00";
+
+    // 1. Detector de CONVERSIÓN RÁPIDA (ej: "cuanto son 50 usd en bs", "1500 bs a usdt")
+    const matchMonto = txt.match(/(\d+(?:[.,]\d+)?)\s*(bs|bolivares|ves|usd|dolares|dolar|\$|usdt|eur|euros|euro)/i);
+    if (matchMonto && /\b(cuanto|convertir|convierte|son|es| a | en |equivale|cambio)\b/.test(txt)) {
+        const valor = parseFloat(matchMonto[1].replace(',', '.'));
+        const mon = matchMonto[2].toLowerCase();
+
+        if (['bs', 'bolivares', 'ves'].includes(mon)) {
+            return `💱 **Conversión rápida de Bs ${valor.toFixed(2)}:**\n• A tasa BCV (Bs ${tasaBCV.toFixed(2)}): **$${(valor / tasaBCV).toFixed(2)}**\n• A tasa USDT (Bs ${tasaParalelo.toFixed(2)}): **${(valor / tasaParalelo).toFixed(2)} USDT**\n• A tasa Euro (Bs ${tasaEUR.toFixed(2)}): **€${(valor / tasaEUR).toFixed(2)}**`;
+        } else if (mon === 'usdt') {
+            return `🪙 **Conversión rápida de ${valor.toFixed(2)} USDT:**\n• En Bolívares (Tasa USDT): **Bs ${(valor * tasaParalelo).toFixed(2)}**\n• Poder de compra a tasa BCV: **$${((valor * tasaParalelo) / tasaBCV).toFixed(2)}**`;
+        } else if (['eur', 'euros', 'euro'].includes(mon)) {
+            return `🇪🇺 **Conversión rápida de €${valor.toFixed(2)}:**\n• En Bolívares (Tasa EUR): **Bs ${(valor * tasaEUR).toFixed(2)}**\n• Equivalente USD (BCV): **$${((valor * tasaEUR) / tasaBCV).toFixed(2)}**`;
+        } else {
+            return `🇺🇸 **Conversión rápida de $${valor.toFixed(2)}:**\n• A tasa BCV: **Bs ${(valor * tasaBCV).toFixed(2)}**\n• A tasa Paralelo/USDT: **Bs ${(valor * tasaParalelo).toFixed(2)}**`;
+        }
+    }
+
+    // 2. Detector de TASAS DEL DÍA Y BRECHA
+    if (/\b(tasa|tasas|bcv|paralelo|dolar hoy|precio del dolar|a cuanto esta|brecha|diferencial|euro)\b/.test(txt) && !/\b(tengo|saldo|cuenta|mis)\b/.test(txt)) {
+        return `📈 **Tasas del Día en Vivo:**\n• 🇻🇪 **BCV Oficial:** Bs ${tasaBCV.toFixed(2)}\n• 🪙 **USDT / Paralelo:** Bs ${tasaParalelo.toFixed(2)}\n• 🇪🇺 **Euro Oficial:** Bs ${tasaEUR.toFixed(2)}\n\n📊 **Brecha cambiaria:** **${brechaPct}%** de diferencia entre BCV y USDT.`;
+    }
+
+    // 3. Detector de SALDOS Y CUENTAS ("cuantos bs tengo", "cuanto tengo", "mi saldo", etc.)
+    if (/\b(cuanto|cuantos|saldo|saldos|balance|tengo|mis cuentas|mi cuenta|plata|dinero|disponible|bs|bolivares|ves|usd|dolares|usdt)\b/.test(txt) && !/\b(gaste|gastado|gastos|meta|metas|ahorro)\b/.test(txt)) {
+        if (cuentas.length === 0) {
+            return "💳 Aún no tienes cuentas registradas. Ve a **Ajustes > Gestionar Cuentas** para crear la primera.";
+        }
+
+        const pideSoloVES = /\b(bs|bolivar|bolivares|ves)\b/.test(txt) && !/\b(usd|dolar|usdt|todo|total)\b/.test(txt);
+        const pideSoloUSDT = /\b(usdt|binance|cripto)\b/.test(txt) && !/\b(bs|bolivares|usd|todo|total)\b/.test(txt);
+        const pideSoloUSD = /\b(usd|dolar|dolares|efectivo|fisico)\b/.test(txt) && !/\b(bs|bolivares|usdt|todo|total)\b/.test(txt);
+
+        if (pideSoloVES) {
+            const cVES = saldosCuentas.filter(c => c.moneda === 'VES');
+            if (cVES.length === 0) return "🇻🇪 No tienes cuentas en **Bolívares (VES)** creadas actualmente.";
+            const lista = cVES.map(c => `• **${c.nombre}:** Bs ${c.balBs.toFixed(2)} *(≈ $${c.balUSD.toFixed(2)} BCV)*`).join('\n');
+            return `🇻🇪 **Tus Bolívares disponibles:**\n${lista}\n\n💰 **Total en Bolívares:** **Bs ${totalVES_Puro.toFixed(2)}** *(≈ $${(totalVES_Puro / tasaBCV).toFixed(2)} a BCV)*`;
+        }
+
+        if (pideSoloUSDT) {
+            const cUSDT = saldosCuentas.filter(c => c.moneda === 'USDT');
+            if (cUSDT.length === 0) return "🪙 No tienes cuentas en **USDT** registradas.";
+            const lista = cUSDT.map(c => `• **${c.nombre}:** ${c.balUSD.toFixed(2)} USDT *(≈ Bs ${(c.balUSD * tasaParalelo).toFixed(2)})*`).join('\n');
+            return `🪙 **Tu saldo en USDT:**\n${lista}\n\n💰 **Total USDT:** **${totalUSDT_Puro.toFixed(2)} USDT** *(≈ Bs ${(totalUSDT_Puro * tasaParalelo).toFixed(2)} a tasa USDT)*`;
+        }
+
+        if (pideSoloUSD) {
+            const cUSD = saldosCuentas.filter(c => c.moneda === 'USD');
+            if (cUSD.length === 0) return "💵 No tienes cuentas en **Dólares físicos (USD)** registradas.";
+            const lista = cUSD.map(c => `• **${c.nombre}:** $${c.balUSD.toFixed(2)}`).join('\n');
+            return `💵 **Tu saldo en Dólares (USD):**\n${lista}\n\n💰 **Total USD Físico:** **$${totalUSD_Fisico.toFixed(2)}**`;
+        }
+
+        // Resumen completo de todas las cuentas
+        const desglose = saldosCuentas.map(c => {
+            if (c.moneda === 'VES') return `• **${c.nombre} (VES):** Bs ${c.balBs.toFixed(2)} *($${c.balUSD.toFixed(2)} BCV)*`;
+            if (c.moneda === 'USDT') return `• **${c.nombre} (USDT):** ${c.balUSD.toFixed(2)} USDT *(Bs ${(c.balUSD * tasaParalelo).toFixed(2)})*`;
+            return `• **${c.nombre} (${c.moneda}):** $${c.balUSD.toFixed(2)}`;
+        }).join('\n');
+
+        return `💳 **Estado actual de tus cuentas:**\n${desglose}\n\n💎 **Patrimonio Total Estimado:** **$${totalUSD_Global.toFixed(2)}** *(≈ Bs ${(totalUSD_Global * tasaBCV).toFixed(2)} a BCV)*`;
+    }
+
+    // 4. Detector de GASTOS E INGRESOS DEL MES
+    if (/\b(gaste|gastado|gastos|gasto|categoria|categorias|ingresos|ingreso|movimientos|mes)\b/.test(txt)) {
+        const hoy = new Date();
+        const mesPrefix = getLocalYYYYMMDD(hoy).slice(0, 7);
+        let gastosMes = 0;
+        let ingresosMes = 0;
+        const porCat = {};
+
+        transacciones.forEach(t => {
+            const f = t.fecha ? new Date(t.fecha) : new Date();
+            const iso = t.fechaIsoLocal || getLocalYYYYMMDD(f);
+            if (iso.startsWith(mesPrefix) && t.categoria !== 'Transferencia / P2P') {
+                if (t.tipo === 'gasto') {
+                    gastosMes += Number(t.montoUSD) || 0;
+                    const c = t.categoria || 'Varios';
+                    porCat[c] = (porCat[c] || 0) + (Number(t.montoUSD) || 0);
+                } else if (t.tipo === 'ingreso') {
+                    ingresosMes += Number(t.montoUSD) || 0;
+                }
+            }
+        });
+
+        const topCats = Object.entries(porCat)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, m]) => `• **${cat}:** $${m.toFixed(2)} *(Bs ${(m * tasaBCV).toFixed(2)})*`)
+            .join('\n') || '• Sin gastos registrados este mes.';
+
+        return `📊 **Resumen del mes actual (${mesPrefix}):**\n• **Ingresos:** $${ingresosMes.toFixed(2)}\n• **Gastos totales:** $${gastosMes.toFixed(2)} *(Bs ${(gastosMes * tasaBCV).toFixed(2)})*\n\n🏷️ **Desglose por categoría:**\n${topCats}`;
+    }
+
+    // 5. Detector de METAS DE AHORRO
+    if (/\b(meta|metas|ahorro|ahorros|ahorrado|objetivo|objetivos)\b/.test(txt)) {
+        if (metas.length === 0) {
+            return "🎯 No tienes metas de ahorro activas en este momento. Puedes crear una en la pestaña **Metas**.";
+        }
+        const listaMetas = metas.map(m => {
+            const pct = m.objetivo > 0 ? ((m.acumulado / m.objetivo) * 100).toFixed(1) : "0.0";
+            const falta = Math.max(0, m.objetivo - m.acumulado).toFixed(2);
+            return `• **${m.nombre}:** $${Number(m.acumulado).toFixed(2)} / $${Number(m.objetivo).toFixed(2)} (**${pct}%**) — *Faltan $${falta}*`;
+        }).join('\n');
+        return `🎯 **Progreso de tus Metas de Ahorro:**\n${listaMetas}`;
+    }
+
+    // 6. Detector de SALUDOS
+    if (/^(hola|buenas|hey|saludos|buenos dias|buenas tardes|buenas noches|que tal|como estas)\b/.test(txt)) {
+        return `👋 ¡Hola! Actualmente tienes un balance total estimado de **$${totalUSD_Global.toFixed(2)}** en tus cuentas y la tasa BCV está en **Bs ${tasaBCV.toFixed(2)}** (USDT en **Bs ${tasaParalelo.toFixed(2)}**).\n\n¿Qué quieres consultar o analizar?`;
+    }
+
+    return null;
+}
+
 function generarContextoFinancieroIA() {
     const hoy = new Date();
-    const mesActualPrefix = getLocalYYYYMMDD(hoy).slice(0, 7); // YYYY-MM
+    const mesActualPrefix = getLocalYYYYMMDD(hoy).slice(0, 7);
 
-    // 1. Tasas y diferencial cambiario
     const brechaPct = tasaBCV > 0 ? (((tasaParalelo - tasaBCV) / tasaBCV) * 100).toFixed(2) : "0.00";
     let resumenTasas = `Tasa BCV Oficial: Bs ${tasaBCV.toFixed(2)} | Tasa USDT (Paralelo): Bs ${tasaParalelo.toFixed(2)} | Tasa EUR Oficial: Bs ${tasaEUR.toFixed(2)} | Brecha BCV vs USDT: ${brechaPct}%`;
 
-    // 2. Cuentas y balances actuales
     let totalPatrimonioUSD = 0;
     let detalleCuentas = [];
     if (cuentas.length === 0) {
@@ -1376,7 +1526,6 @@ function generarContextoFinancieroIA() {
         });
     }
 
-    // 3. Ingresos y Gastos del mes actual por categoría
     let totalGastosMesUSD = 0;
     let totalIngresosMesUSD = 0;
     const gastosPorCategoria = {};
@@ -1400,7 +1549,6 @@ function generarContextoFinancieroIA() {
         .map(([cat, monto]) => `${cat}: $${monto.toFixed(2)}`)
         .join(', ') || 'Sin gastos registrados este mes';
 
-    // 4. Metas de ahorro
     const detalleMetas = metas.length > 0
         ? metas.map(m => {
             const pct = m.objetivo > 0 ? ((m.acumulado / m.objetivo) * 100).toFixed(1) : "0.0";
@@ -1439,23 +1587,34 @@ async function enviarMensajeAskBot() {
     input.value = '';
     agregarBurbujaAskBot(mensaje, 'user');
 
+    // 1. Intento de respuesta instantánea local (0.15s) para preguntas sencillas o directas
+    const respuestaLocal = responderLocalmenteAskBot(mensaje);
+    if (respuestaLocal) {
+        mostrarIndicadorEscribiendoAskBot();
+        setTimeout(() => {
+            quitarIndicadorEscribiendoAskBot();
+            agregarBurbujaAskBot(respuestaLocal, 'bot');
+        }, 150);
+        return;
+    }
+
+    // 2. Si es una pregunta compleja de análisis y no hay internet, avisa al instante
     if (!navigator.onLine) {
         agregarBurbujaAskBot(
-            "📡 **Sin conexión a internet.**\nNecesitas señal para consultar a AskBot. Tus cuentas, metas y registros locales siguen funcionando al 100%.",
+            "📡 **Sin conexión a internet.**\nPara análisis complejos necesito conexión, pero puedes preguntarme tus saldos en Bs/USD/USDT, tasas, gastos del mes o metas y te responderé al instante offline.",
             "bot"
         );
         return;
     }
 
+    // 3. Consulta a la IA en la nube para análisis, presupuestos o estrategias
     askbotEsperandoRespuesta = true;
     if (btnSend) btnSend.disabled = true;
     mostrarIndicadorEscribiendoAskBot();
 
     try {
         const contexto = generarContextoFinancieroIA();
-        let respuestaTexto = null;
 
-        // Llamada directa al endpoint de la Edge Function en Supabase (funciona con o sin sesión iniciada)
         const res = await fetch(`${SUPABASE_URL}/functions/v1/asistente-ia`, {
             method: 'POST',
             headers: {
@@ -1470,7 +1629,7 @@ async function enviarMensajeAskBot() {
             throw new Error(data?.error || `Error del servidor (${res.status})`);
         }
 
-        respuestaTexto = data?.respuesta || "No pude generar una respuesta en este momento.";
+        const respuestaTexto = data?.respuesta || "No pude generar una respuesta en este momento.";
         quitarIndicadorEscribiendoAskBot();
         agregarBurbujaAskBot(respuestaTexto, 'bot');
     } catch (err) {
