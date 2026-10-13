@@ -230,11 +230,19 @@ function redimensionarImagen(file, callback) {
             const ctx = canvas.getContext('2d');
             const maxW = 500, maxH = 500;
             let width = img.width, height = img.height;
-            if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } } 
-            else { if (height > maxH) { width *= maxH / height; height = maxH; } }
-            canvas.width = width; canvas.height = height;
+            if (width > height) { 
+                if (width > maxW) { height *= maxW / width; width = maxW; } 
+            } else { 
+                if (height > maxH) { width *= maxH / height; height = maxH; } 
+            }
+            canvas.width = width; 
+            canvas.height = height;
+            
+            // Dibujar la imagen PNG con su transparencia original
             ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.5)); 
+
+            // Exportar estrictamente como PNG para no dañar el fondo transparente
+            callback(canvas.toDataURL('image/png')); 
         }
         img.src = e.target.result;
     }
