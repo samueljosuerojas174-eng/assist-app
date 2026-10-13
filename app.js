@@ -39,7 +39,6 @@ window.addEventListener('load', () => {
     const pinInput = document.getElementById('input-pin');
     const appContainer = document.getElementById('app-main-container');
     
-    // 1. Splash visible por 1.5s, PIN screen preparado pero debajo del splash
     if (appPin) {
         pinScreen.style.zIndex = '99998'; 
         pinScreen.classList.remove('oculto');
@@ -50,7 +49,6 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             splash.style.display = 'none';
             
-            // 2. Al desaparecer el splash, subimos el PIN y enfocamos el teclado
             if (appPin) {
                 pinScreen.style.zIndex = '100000'; 
                 setTimeout(() => pinInput.focus(), 10); 
@@ -125,10 +123,8 @@ function configurarPIN() {
 function verificarPIN() {
     const input = document.getElementById('input-pin');
     if (input.value === appPin) {
-        // Forza Ocultar Teclado Inmediatamente
         input.blur(); 
         
-        // Animacion FaceID
         const screen = document.getElementById('pin-screen');
         const container = document.getElementById('app-main-container');
         screen.style.opacity = '0';
@@ -187,14 +183,113 @@ function cerrarModal(id) {
     document.body.style.overflow = ''; 
 }
 
+// ================= COMPORTAMIENTO INTELIGENTE DEL FORMULARIO =================
 function toggleCategoriaSelect() {
     const tipo = document.getElementById('val-tipo').value;
+    const moneda = document.getElementById('val-moneda').value;
     const selectCategoria = document.getElementById('val-categoria');
-    if (tipo === 'ingreso') { selectCategoria.classList.add('oculto'); selectCategoria.value = ""; } 
-    else { selectCategoria.classList.remove('oculto'); }
+    const boxComision = document.getElementById('box-comision-ves');
+    const boxTransf = document.getElementById('box-transferencia');
+    const valMonedaSelect = document.getElementById('val-moneda');
+    
+    // Ocultar Categoría si no es un gasto
+    if (tipo === 'ingreso' || tipo === 'transferencia') { 
+        selectCategoria.classList.add('oculto'); selectCategoria.value = ""; 
+    } else { selectCategoria.classList.remove('oculto'); }
+
+    // Activar Transferencia
+    if (boxTransf) {
+        if (tipo === 'transferencia') {
+            boxTransf.classList.remove('oculto'); boxTransf.style.display = 'flex';
+            valMonedaSelect.disabled = true;
+            renderizarSelectsTransferencia();
+        } else {
+            boxTransf.classList.add('oculto'); boxTransf.style.display = 'none';
+            valMonedaSelect.disabled = false;
+        }
+    }
+
+    // Activar Comisiones VES (Solo para Gastos normales)
+    if (boxComision) {
+        if (tipo === 'gasto' && moneda === 'VES') {
+            boxComision.classList.remove('oculto'); boxComision.style.display = 'flex';
+        } else {
+            boxComision.classList.add('oculto'); boxComision.style.display = 'none';
+            document.getElementById('sel-tipo-comision').value = 'tarjeta';
+            toggleComisionManual(); 
+        }
+    }
 }
 
-// Categorías Inteligentes
+function toggleComisionManual() {
+    const selTipo = document.getElementById('sel-tipo-comision').value;
+    const inputManual = document.getElementById('input-comision-manual');
+    if (selTipo === 'manual') {
+        inputManual.classList.remove('oculto');
+        inputManual.focus();
+    } else {
+        inputManual.classList.add('oculto');
+        inputManual.value = '';
+    }
+}
+
+function renderizarSelectsTransferencia() {
+    const selOrigen = document.getElementById('sel-transf-origen');
+    const selDestino = document.getElementById('sel-transf-destino');
+    const valO = selOrigen.value; const valD = selDestino.value;
+
+    selOrigen.innerHTML = ''; selDestino.innerHTML = '';
+    cuentas.forEach(c => {
+        selOrigen.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
+        selDestino.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
+    });
+
+    if (valO && cuentas.find(c=>c.id==valO)) selOrigen.value = valO;
+    if (valD && cuentas.find(c=>c.id==valD)) selDestino.value = valD;
+    actualizarUI_Transferencia();
+}
+
+function actualizarUI_Transferencia() {
+    const idO = document.getElementById('sel-transf-origen').value;
+    const idD = document.getElementById('sel-transf-destino').value;
+    if (!idO || !idD) return;
+
+    const cOrigen = cuentas.find(c => c.id == idO);
+    const cDestino = cuentas.find(c => c.id == idD);
+    document.getElementById('val-moneda').value = cOrigen.moneda; 
+    
+    const boxTasa = document.getElementById('box-transf-tasa');
+    const inputTasa = document.getElementById('input-transf-tasa');
+    
+    if (cOrigen.moneda !== cDestino.moneda) {
+        boxTasa.classList.remove('oculto'); boxTasa.style.display = 'flex';
+        if ((cOrigen.moneda === 'USDT' || cDestino.moneda === 'USDT') && inputTasa.value === '') {
+            inputTasa.value = tasaParalelo.toFixed(2);
+        } else if ((cOrigen.moneda === 'USD' || cDestino.moneda === 'USD') && inputTasa.value === '') {
+            inputTasa.value = tasaBCV.toFixed(2);
+        }
+    } else {
+        boxTasa.classList.add('oculto'); boxTasa.style.display = 'none';
+        inputTasa.value = '1';
+    }
+    calcularMontoTransferencia();
+}
+
+function calcularMontoTransferencia() {
+    const monto = parseFloat(document.getElementById('monto').value) || 0;
+    const cOrigen = cuentas.find(c => c.id == document.getElementById('sel-transf-origen').value);
+    const cDestino = cuentas.find(c => c.id == document.getElementById('sel-transf-destino').value);
+    let tasa = parseFloat(document.getElementById('input-transf-tasa').value) || 1;
+    let montoRecibir = monto;
+
+    if (cOrigen && cDestino && cOrigen.moneda !== cDestino.moneda) {
+        if (cOrigen.moneda === 'VES') montoRecibir = monto / tasa;
+        else if (cDestino.moneda === 'VES') montoRecibir = monto * tasa;
+    }
+    document.getElementById('lbl-transf-recibiras').innerText = `${montoRecibir.toFixed(2)}${cDestino ? cDestino.moneda : ''}`;
+}
+
+// Categorías Inteligentes y Auto-Actualización de la UI
 document.getElementById('val-categoria').addEventListener('change', (e) => {
     const catSelec = e.target.value;
     const lastTrans = [...transacciones].reverse().find(t => t.categoria === catSelec && t.tipo === 'gasto');
@@ -202,8 +297,12 @@ document.getElementById('val-categoria').addEventListener('change', (e) => {
         const selectMoneda = document.getElementById('val-moneda');
         const option = Array.from(selectMoneda.options).find(o => o.value === lastTrans.monedaInputOriginal);
         if (option && !option.disabled) selectMoneda.value = lastTrans.monedaInputOriginal;
+        toggleCategoriaSelect();
     }
 });
+
+// Evento para cambiar moneda y actualizar los menús de pago
+document.getElementById('val-moneda').addEventListener('change', toggleCategoriaSelect);
 
 function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
@@ -238,10 +337,7 @@ function redimensionarImagen(file, callback) {
             canvas.width = width; 
             canvas.height = height;
             
-            // Dibujar la imagen PNG con su transparencia original
             ctx.drawImage(img, 0, 0, width, height);
-
-            // Exportar estrictamente como PNG para no dañar el fondo transparente
             callback(canvas.toDataURL('image/png')); 
         }
         img.src = e.target.result;
@@ -296,7 +392,7 @@ function renderizarMetas() {
         </div>`;
     });
 }
-// Vista Detalle Meta
+
 function abrirDetalleMeta(index) {
     metaAbonoActualIndex = index;
     const m = metas[index];
@@ -324,7 +420,6 @@ function renderizarHistorialEspecíficoMeta(nombreMeta) {
     const lista = document.getElementById('lista-historial-meta');
     lista.innerHTML = '';
     
-    // Filtramos movimientos que digan que son de esta meta
     let hMeta = transacciones.filter(t => t.categoria === 'Ahorro' && t.nota.includes(nombreMeta)).reverse();
 
     if (hMeta.length === 0) {
@@ -333,7 +428,6 @@ function renderizarHistorialEspecíficoMeta(nombreMeta) {
     }
 
     hMeta.forEach((t) => {
-        // Abono a meta (gasto de la cuenta) = ingreso a la meta (+)
         const esAbono = t.tipo === 'gasto'; 
         const claseColor = esAbono ? 'monto-ingreso' : 'monto-gasto';
         const signo = esAbono ? '+' : '-';
@@ -386,13 +480,11 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     const cuenta = cuentas.find(c => c.id == cuentaId);
     const meta = metas[metaAbonoActualIndex];
 
-    // Convertir si el usuario elige VES
     let montoUSD = monto;
     if (monedaAccion === 'VES') montoUSD = monto / tasaBCV;
 
     if (metaAccionTipo === 'retirar' && montoUSD > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
 
-    // Lógica estricta de fecha para Abonos y Retiros
     const valFecha = document.getElementById('fecha-accion-meta').value; 
     const dateObj = valFecha ? new Date(valFecha + "T00:00:00") : new Date();
     const isoLocal = getLocalYYYYMMDD(dateObj);
@@ -420,6 +512,17 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     
     if (metaAccionTipo === 'abonar') { metas[metaAbonoActualIndex].acumulado += montoUSD; } 
     else { metas[metaAbonoActualIndex].acumulado -= montoUSD; }
+
+    // MAGIA: Verificar si se completó la meta al 100%
+    if (metas[metaAbonoActualIndex].acumulado >= metas[metaAbonoActualIndex].objetivo) {
+        alert(`¡Felicidades! 🎉 Has completado tu meta: ${metas[metaAbonoActualIndex].nombre} 🥳\n\nEl objetivo ha sido alcanzado y se eliminará de las metas activas. (El dinero sigue descontado de tu cuenta principal, listo para usarse).`);
+        metas.splice(metaAbonoActualIndex, 1); // La elimina del array
+        guardarYActualizarGestion();
+        cerrarModal('modal-accion-meta');
+        cerrarModal('modal-detalle-meta'); // Cierra la pantalla de la meta
+        actualizarInterfaz();
+        return; // Corta la función para que no intente recargar la meta borrada
+    }
 
     guardarYActualizarGestion();
     cerrarModal('modal-accion-meta');
@@ -592,7 +695,11 @@ function renderizarSliderCuentas() {
         transacciones.forEach(t => { if (t.cuentaId == cuenta.id) balanceUSD += t.tipo === 'ingreso' ? t.montoUSD : -t.montoUSD; });
         let strBalanceGrande = "", strBalancePequeño = "";
 
-        if (cuenta.moneda === 'VES') { strBalanceGrande = `Bs ${Math.max(0, balanceUSD * tasaBCV).toFixed(2)}`; strBalancePequeño = `$${balanceUSD.toFixed(2)} USD`; } 
+        if (cuenta.moneda === 'VES') { 
+            strBalanceGrande = `Bs ${Math.max(0, balanceUSD * tasaBCV).toFixed(2)}`; 
+            const eqEUR = (balanceUSD * tasaBCV) / tasaEUR; // Convierte tus Bs a Euros
+            strBalancePequeño = `$${balanceUSD.toFixed(2)} &nbsp;|&nbsp; €${eqEUR.toFixed(2)}`; 
+        }
         else if (cuenta.moneda === 'USDT') { strBalanceGrande = `USDT ${balanceUSD.toFixed(2)}`; strBalancePequeño = `≈ Bs ${(balanceUSD * tasaParalelo).toFixed(2)}`; } 
         else if (cuenta.moneda === 'EUR') { strBalanceGrande = `€${(balanceUSD).toFixed(2)}`; strBalancePequeño = `≈ Bs ${(balanceUSD * tasaEUR).toFixed(2)}`; } 
         else { strBalanceGrande = `$${balanceUSD.toFixed(2)}`; strBalancePequeño = "Dólares / Físico"; }
@@ -640,9 +747,6 @@ function agregarTransaccion() {
     
     if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
 
-    let montoUSD = monto;
-    if (monedaInput === 'VES') montoUSD = monto / tasaBCV;
-
     // Lógica estricta de fecha local
     const valFecha = document.getElementById('val-fecha').value; 
     const dateObj = valFecha ? new Date(valFecha + "T00:00:00") : new Date();
@@ -650,13 +754,93 @@ function agregarTransaccion() {
     const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
+    // ==========================================
+    // LÓGICA DE TRANSFERENCIA ↔️ P2P EN UN CLIC
+    // ==========================================
+    if (tipo === 'transferencia') {
+        const idO = document.getElementById('sel-transf-origen').value;
+        const idD = document.getElementById('sel-transf-destino').value;
+        if (idO === idD) return alert("La cuenta origen y destino no pueden ser la misma.");
+
+        const cOrigen = cuentas.find(c => c.id == idO);
+        const cDestino = cuentas.find(c => c.id == idD);
+        const tasaTransf = parseFloat(document.getElementById('input-transf-tasa').value) || 1;
+        
+        let montoRecibir = monto;
+        if (cOrigen.moneda !== cDestino.moneda) {
+            if (cOrigen.moneda === 'VES') montoRecibir = monto / tasaTransf;
+            else if (cDestino.moneda === 'VES') montoRecibir = monto * tasaTransf;
+        }
+
+        // 1. Movimiento de Salida (Gasto en el Origen)
+        let montoUSD_Origen = monto;
+        if (cOrigen.moneda === 'VES') montoUSD_Origen = monto / tasaBCV;
+        
+        const notaOr = nota ? `Hacia ${cDestino.nombre} - ${nota}` : `Transferencia hacia ${cDestino.nombre}`;
+        transacciones.push({
+            id: dateObj.getTime() + Math.random(), 
+            cuentaId: idO, montoUSD: montoUSD_Origen, tipo: 'gasto', categoria: 'Transferencia / P2P',
+            nota: cOrigen.moneda !== cDestino.moneda ? `${notaOr} @ Tasa: ${tasaTransf}` : notaOr,
+            monedaInputOriginal: cOrigen.moneda, fechaFormateada: fechaFormateada, fecha: dateObj, fechaIsoLocal: isoLocal
+        });
+
+        // 2. Movimiento de Entrada (Ingreso en el Destino)
+        let montoUSD_Destino = montoRecibir;
+        if (cDestino.moneda === 'VES') montoUSD_Destino = montoRecibir / tasaBCV;
+
+        const notaDes = nota ? `Desde ${cOrigen.nombre} - ${nota}` : `Transferencia desde ${cOrigen.nombre}`;
+        transacciones.push({
+            id: dateObj.getTime() + Math.random() + 1, // +1 para no chocar IDs
+            cuentaId: idD, montoUSD: montoUSD_Destino, tipo: 'ingreso', categoria: 'Transferencia / P2P',
+            nota: cOrigen.moneda !== cDestino.moneda ? `${notaDes} @ Tasa: ${tasaTransf}` : notaDes,
+            monedaInputOriginal: cDestino.moneda, fechaFormateada: fechaFormateada, fecha: dateObj, fechaIsoLocal: isoLocal
+        });
+
+        // Guardar todo, limpiar y salir
+        transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        guardarYActualizarGestion();
+        document.getElementById('monto').value = ''; document.getElementById('val-nota').value = '';
+        document.getElementById('val-fecha').value = getLocalYYYYMMDD();
+        document.getElementById('input-transf-tasa').value = '';
+        document.getElementById('lbl-transf-recibiras').innerText = '0.00';
+        return; // ¡Corta la función aquí porque ya hicimos todo el trabajo!
+    }
+    // ==========================================
+
+    let montoTotalOperacion = monto;
+    let montoComisionVES = 0;
+
+    // Calcular Comisiones si es gasto en Bolívares
+    const boxComision = document.getElementById('box-comision-ves');
+    if (tipo === 'gasto' && monedaInput === 'VES' && boxComision && !boxComision.classList.contains('oculto')) {
+        const tipoComision = document.getElementById('sel-tipo-comision').value;
+        
+        if (tipoComision === 'p2p') {
+            montoComisionVES = Math.max(14.00, monto * 0.003);
+        } else if (tipoComision === 'p2c') {
+            montoComisionVES = Math.max(14.00, monto * 0.015);
+        } else if (tipoComision === 'manual') {
+            montoComisionVES = parseFloat(document.getElementById('input-comision-manual').value) || 0;
+        }
+        montoTotalOperacion += montoComisionVES;
+    }
+
+    let montoUSD = montoTotalOperacion;
+    if (monedaInput === 'VES') montoUSD = montoTotalOperacion / tasaBCV;
+
+    let notaFinal = nota;
+    if (montoComisionVES > 0) {
+        const detalle = `Comisión: Bs ${montoComisionVES.toFixed(2)}`;
+        notaFinal = notaFinal ? `${notaFinal} (${detalle})` : detalle;
+    }
+
     const transaccion = {
         id: dateObj.getTime() + Math.random(), 
         cuentaId: cuentaActivaId,
         montoUSD: montoUSD,
         tipo: tipo,
         categoria: categoria,
-        nota: nota,
+        nota: notaFinal,
         monedaInputOriginal: monedaInput, 
         fechaFormateada: fechaFormateada,
         fecha: dateObj,
@@ -669,6 +853,10 @@ function agregarTransaccion() {
     
     document.getElementById('monto').value = ''; document.getElementById('val-categoria').value = ''; document.getElementById('val-nota').value = '';
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
+    
+    // Reiniciar selector de comisiones
+    const selComision = document.getElementById('sel-tipo-comision');
+    if(selComision) { selComision.value = 'tarjeta'; toggleComisionManual(); }
 }
 
 // Lógica de "Deslizar para Borrar" (Swipe to Delete)
@@ -746,7 +934,25 @@ function actualizarListaTransacciones() {
 }
 
 function eliminarTransaccion(id) {
-    transacciones = transacciones.filter(t => t.id !== id);
+    const tIndex = transacciones.findIndex(t => t.id === id);
+    if (tIndex === -1) return;
+    const t = transacciones[tIndex];
+
+    // Revertir el dinero en la Meta si era un movimiento de Ahorro
+    if (t.categoria === 'Ahorro') {
+        metas.forEach(m => {
+            if (t.nota.includes(m.nombre)) {
+                if (t.tipo === 'gasto') { // Fue un abono, se lo restamos a la meta
+                    m.acumulado -= t.montoUSD;
+                    if (m.acumulado < 0) m.acumulado = 0;
+                } else if (t.tipo === 'ingreso') { // Fue un retiro, se lo devolvemos a la meta
+                    m.acumulado += t.montoUSD;
+                }
+            }
+        });
+    }
+    
+    transacciones.splice(tIndex, 1);
     guardarYActualizarGestion();
 }
 
@@ -755,7 +961,7 @@ function renderizarGrafico(transFiltered) {
     const canvas = document.getElementById('graficoGastos');
     if (!canvas) return;
     
-    const gastos = transFiltered.filter(t => t.tipo === 'gasto');
+    const gastos = transFiltered.filter(t => t.tipo === 'gasto' && t.categoria !== 'Transferencia / P2P');
     const dataAgrupada = {};
     gastos.forEach(t => { dataAgrupada[t.categoria] = (dataAgrupada[t.categoria] || 0) + t.montoUSD; });
     
@@ -863,23 +1069,20 @@ function importarDatos(e) {
         try {
             const data = JSON.parse(e.target.result);
             
-            // Verificamos que sea un backup de A$$IST válido
             if(data.transacciones && data.cuentas) {
                 transacciones = data.transacciones; 
-                categorias = data.categorias || []; // Fallback por si en el backup no hay categorías
+                categorias = data.categorias || []; 
                 cuentas = data.cuentas; 
                 metas = data.metas || [];
                 
-                // Compatibilidad hacia atrás super segura (evita que crashee con fechas viejas o inexistentes)
                 transacciones.forEach(t => { 
                     if(!t.fechaIsoLocal) {
                         let d = t.fecha ? new Date(t.fecha) : new Date(t.id);
-                        if (isNaN(d.getTime())) d = new Date(); // Si la fecha antigua es ilegible, usa hoy por seguridad
+                        if (isNaN(d.getTime())) d = new Date(); 
                         t.fechaIsoLocal = getLocalYYYYMMDD(d);
                     }
                 });
                 
-                // Guardado directo a memoria
                 localStorage.setItem('transacciones', JSON.stringify(transacciones));
                 localStorage.setItem('metas', JSON.stringify(metas));
                 localStorage.setItem('cuentas', JSON.stringify(cuentas));
@@ -896,7 +1099,6 @@ function importarDatos(e) {
         }
     };
     reader.readAsText(file);
-    // Permite volver a seleccionar el mismo archivo si hay algún error
     e.target.value = '';
 }
 
@@ -906,6 +1108,7 @@ async function inicializarApp() {
     cargarSelects();
     actualizarInterfaz();
     setTasaModo('BCV'); 
+    toggleCategoriaSelect();
     setInterval(() => { obtenerTasas().then(() => actualizarInterfaz()); }, 300000); 
 }
 inicializarApp();

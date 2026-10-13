@@ -28,7 +28,7 @@
 </head>
 <body data-theme="dark">
 
-    <!-- Pantalla de Bloqueo PIN (Ahora comienza debajo del Splash Screen) -->
+    <!-- Pantalla de Bloqueo PIN -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
             <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
@@ -93,10 +93,9 @@
             <section class="add-transaction">
                 <h3 class="section-subtitle">Registrar Movimiento</h3>
                 
-                <div class="input-wrapper">
-                    <input type="number" id="monto" placeholder="0.00" step="0.01" inputmode="decimal">
-                    <div class="wrapper-divider"></div>
-                    <select id="val-moneda" class="custom-select-inline">
+                <div class="input-wrapper" style="padding: 5px; padding-left: 0;">
+                    <input type="number" id="monto" placeholder="0.00" step="0.01" inputmode="decimal" oninput="if(document.getElementById('val-tipo').value === 'transferencia') calcularMontoTransferencia()" style="flex: 1; margin-left: 10px;">
+                    <select id="val-moneda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
                         <option value="USD">USD</option>
                         <option value="VES">VES</option>
                     </select>
@@ -106,10 +105,47 @@
                     <select id="val-tipo" class="custom-select-btn" onchange="toggleCategoriaSelect()">
                         <option value="gasto">Gasto</option>
                         <option value="ingreso">Ingreso</option>
+                        <option value="transferencia">Transferir</option>
                     </select>
                     <select id="val-categoria" class="custom-select-btn">
                         <option value="" disabled selected>Categoría...</option>
                     </select>
+                </div>
+
+                <!-- Selector de Comisiones Bancarias VES -->
+                <div id="box-comision-ves" class="input-group oculto" style="display: none; flex-direction: column; gap: 8px;">
+                    <label style="font-size: 13px; color: var(--text-secondary); padding-left: 5px;">Método de Pago (Bolívares)</label>
+                    <select id="sel-tipo-comision" class="custom-select-btn" onchange="toggleComisionManual()">
+                        <option value="tarjeta" selected>💳 Tarjeta de Débito / POS (0 Bs)</option>
+                        <option value="p2p">📱 Pago Móvil P2P (0,30% - mín Bs 14)</option>
+                        <option value="p2c">🏪 Pago Móvil Comercio (1,50% - mín Bs 14)</option>
+                        <option value="manual">✍️ Comisión Manual</option>
+                    </select>
+                    <input type="number" id="input-comision-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; background: var(--input-bg); color: var(--text-primary); outline: none;">
+                </div>
+
+                <!-- Caja Especial para Transferencias P2P -->
+                <div id="box-transferencia" class="oculto" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 10px; background: var(--input-bg); padding: 15px; border-radius: 16px; border: 1px solid var(--border-light);">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; color: var(--text-secondary); font-weight: bold;">DESDE (Origen)</label>
+                            <select id="sel-transf-origen" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia()"></select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; color: var(--text-secondary); font-weight: bold;">HACIA (Destino)</label>
+                            <select id="sel-transf-destino" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia()"></select>
+                        </div>
+                    </div>
+                    
+                    <div id="box-transf-tasa" class="oculto" style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">Tasa de Cambio:</label>
+                        <input type="number" id="input-transf-tasa" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" style="flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(0,0,0,0.2); color: var(--text-primary); outline: none;" oninput="calcularMontoTransferencia()">
+                    </div>
+                    
+                    <div style="text-align: right; margin-top: 5px;">
+                        <span style="font-size: 12px; color: var(--text-secondary);">Recibirás:</span>
+                        <strong id="lbl-transf-recibiras" style="font-size: 18px; color: #32D74B; margin-left: 5px;">0.00</strong>
+                    </div>
                 </div>
 
                 <div class="input-group">
@@ -291,7 +327,6 @@
             <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; overflow: hidden;">
                 <!-- Fondo Nítido Local -->
                 <div id="meta-detail-bg-blur" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: 60%; background-repeat: no-repeat; background-position: center top 30px; opacity: 1;"></div>
-                <!-- Este es el degradado que funde las "patas" de la foto con el fondo de la app -->
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
                 
                 <!-- Botón Eliminar Meta (Izquierda) -->
@@ -343,10 +378,9 @@
             </div>
             <p id="desc-accion-meta" style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;"></p>
             
-            <div class="input-wrapper">
-                <input type="number" id="monto-accion-meta" placeholder="Monto" step="0.01" inputmode="decimal">
-                <div class="wrapper-divider"></div>
-                <select id="moneda-accion-meta" class="custom-select-inline">
+            <div class="input-wrapper" style="padding: 5px; padding-left: 0;">
+                <input type="number" id="monto-accion-meta" placeholder="Monto" step="0.01" inputmode="decimal" style="flex: 1; margin-left: 10px;">
+                <select id="moneda-accion-meta" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
                     <option value="USD">USD</option>
                     <option value="VES">VES</option>
                 </select>
@@ -417,9 +451,9 @@
                 <input type="number" id="in-meta-obj" placeholder="Monto objetivo (USD)" step="0.01" inputmode="decimal">
             </div>
             <div class="input-group" style="flex-direction: column; gap: 5px;">
-    <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
-    <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
-</div>
+                <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
+                <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
+            </div>
             <button class="btn-primario" onclick="guardarNuevaMeta()">Guardar Meta</button>
         </div>
     </div>

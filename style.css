@@ -22,13 +22,14 @@
     --input-bg: rgba(0,0,0,0.05);
 }
 
+/* 1. Actualización de variables Liquid Glass (Cristal Extremo) */
 [data-theme="glass"] {
-    --bg-dark: #000000;
-    --card-dark: rgba(255, 255, 255, 0.04);
-    --border-light: rgba(255, 255, 255, 0.08);
+    --bg-dark: #000000; 
+    --card-dark: rgba(255, 255, 255, 0.03); 
+    --border-light: rgba(255, 255, 255, 0.15); 
     --text-primary: #FFFFFF;
-    --text-secondary: #A0A0A5;
-    --input-bg: rgba(255,255,255,0.02);
+    --text-secondary: rgba(255, 255, 255, 0.65);
+    --input-bg: rgba(255, 255, 255, 0.05);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -105,8 +106,29 @@ select.custom-select-btn, input[type="date"] { appearance: none; -webkit-appeara
 select.custom-select-btn:active, input[type="date"]:active { transform: scale(0.95); opacity: 0.8; }
 select.custom-select-btn:focus, input[type="date"]:focus { border-color: var(--accent); outline: none;}
 
-select.custom-select-inline { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 0px center; padding-right: 20px; border: none; background-color: transparent; color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; padding: 12px 14px; transition: opacity 0.3s; }
-select.custom-select-inline:active { opacity: 0.5; }
+/* Botón Minimalista Bouncy para Moneda */
+select.custom-select-inline { 
+    appearance: none; 
+    -webkit-appearance: none; 
+    background-color: var(--card-dark); 
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); 
+    background-repeat: no-repeat; 
+    background-position: right 6px center; 
+    background-size: 16px; 
+    padding: 8px 28px 8px 14px; 
+    border: 1px solid var(--border-light); 
+    border-radius: 12px; 
+    color: var(--text-primary); 
+    font-size: 13px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: transform 0.3s var(--ios-spring), background-color 0.3s; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
+}
+select.custom-select-inline:active { 
+    transform: scale(0.9); 
+    opacity: 0.8; 
+}
 select.custom-select-inline option:disabled { color: var(--text-secondary); }
 
 .input-group { display: flex; gap: 12px; margin-bottom: 10px; transition: all 0.3s; }
@@ -155,7 +177,6 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 }
 .meta-item-card:active { transform: scale(0.97); }
 
-/* Capa de imagen de fondo: se muestra completa y con difuminado suave */
 .meta-bg-overlay { 
     position: absolute; 
     top: 0; 
@@ -164,7 +185,6 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     height: 100%; 
     background-size: 50%; 
     background-repeat: no-repeat;
-    /* 50% es el centro exacto. 65% la pone en el medio pero tirando un poquito a la derecha */
     background-position: 65% center; 
     filter: blur(0px); 
     opacity: 0.85;
@@ -172,7 +192,6 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     pointer-events: none;
 }
 
-/* Capa de texto: degradado oscuro ligero para garantizar lectura */
 .meta-content { 
     position: absolute; 
     top: 0; 
@@ -190,10 +209,9 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%); 
 }
 
-/* Barras de Progreso Restauradas y Mejoradas */
 .progress-bg { 
     width: 100%; 
-    background: rgba(120, 120, 120, 0.3) !important; /* Fondo gris claro para que resalte la barra */
+    background: rgba(120, 120, 120, 0.3) !important; 
     border-radius: 6px; 
     overflow: hidden; 
     margin-bottom: 5px; 
@@ -201,10 +219,10 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 }
 .progress-fill { 
     height: 100%; 
-    background-color: var(--accent) !important; /* Fuerza el color de acento elegido */
+    background-color: var(--accent) !important; 
     border-radius: 6px; 
     transition: width 0.4s var(--ios-spring); 
-    box-shadow: 0 0 12px var(--accent); /* Le da un resplandor del color para que parezca luz neón */
+    box-shadow: 0 0 12px var(--accent); 
 }
 
 /* Paleta Ampliada de 20+ Colores */
@@ -281,3 +299,97 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .nav-item.activo { color: var(--accent); }
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
 .nav-text { font-size: 11px; font-weight: 600; }
+
+/* =========================================================
+   2. EFECTO LIQUID GLASS TIPO APPLE (Dinámico)
+   ========================================================= */
+
+/* Fondo dinámico iluminado con el color de acento */
+body[data-theme="glass"] {
+    background-color: #000000;
+    background-image: 
+        radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 60%),
+        radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 50%);
+    background-attachment: fixed;
+}
+
+/* Tarjetas, Listas y Ventanas: Más gelatina, más blur */
+[data-theme="glass"] .tasas-widget,
+[data-theme="glass"] .add-transaction,
+[data-theme="glass"] .gestion-seccion,
+[data-theme="glass"] .transaccion-item,
+[data-theme="glass"] .meta-item-card,
+[data-theme="glass"] .calc-cambio-container,
+[data-theme="glass"] #box-transferencia,
+[data-theme="glass"] #box-comision-ves,
+[data-theme="glass"] .swipe-content {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.005) 100%);
+    backdrop-filter: blur(35px) saturate(250%);
+    -webkit-backdrop-filter: blur(35px) saturate(250%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Botón Primario: Bloom, Glow y Gelatina del Acento */
+[data-theme="glass"] .btn-primario {
+    background: color-mix(in srgb, var(--accent) 25%, transparent) !important;
+    backdrop-filter: blur(25px) saturate(250%);
+    -webkit-backdrop-filter: blur(25px) saturate(250%);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    color: #FFFFFF !important; 
+    text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 25px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 2px 10px rgba(255,255,255,0.15);
+    transition: transform 0.4s var(--ios-spring), box-shadow 0.3s, background 0.3s;
+}
+
+/* Botones grises (Secundarios): Más translúcidos y gelatinosos */
+[data-theme="glass"] .btn-secundario {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Inputs, Cajas de texto y Segmentos (Gelatina profunda) */
+[data-theme="glass"] .input-wrapper,
+[data-theme="glass"] select.custom-select-btn,
+[data-theme="glass"] select.custom-select-inline,
+[data-theme="glass"] input,
+[data-theme="glass"] .calc-row,
+[data-theme="glass"] .ios-segmented-control {
+    background: rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Modales y Ventanas Emergentes (Extrema saturación y blur) */
+[data-theme="glass"] .glass-modal-content {
+    background: linear-gradient(180deg, rgba(20, 20, 25, 0.5) 0%, rgba(5, 5, 8, 0.75) 100%);
+    backdrop-filter: blur(50px) saturate(300%);
+    -webkit-backdrop-filter: blur(50px) saturate(300%);
+    border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 -15px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* Barra Inferior flotante */
+[data-theme="glass"] .bottom-nav {
+    background: rgba(5, 5, 5, 0.35);
+    backdrop-filter: blur(45px) saturate(300%);
+    -webkit-backdrop-filter: blur(45px) saturate(300%);
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
+}
+
+/* Hover o Active de elementos Swipe */
+[data-theme="glass"] .swipe-container {
+    background: transparent;
+    border: none;
+}
