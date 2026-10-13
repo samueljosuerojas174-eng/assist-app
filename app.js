@@ -21,11 +21,9 @@ let tasasData = {
 
 // ================= SEGURIDAD, TEMAS Y PANTALLA DE CARGA =================
 window.addEventListener('load', () => {
-    // Cargar Tema Personalizado
     const savedTheme = localStorage.getItem('app_theme') || '#FFFFFF';
     cambiarTema(savedTheme);
 
-    // Ajustar input date al día de hoy por defecto
     document.getElementById('val-fecha').valueAsDate = new Date();
 
     const splash = document.getElementById('splash-screen');
@@ -38,8 +36,6 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             splash.style.display = 'none';
             if (appPin) pinScreen.style.zIndex = '100000';
-            
-            // Trofeo "Día Cero Gastos"
             validarDiaCeroGastos();
         }, 600); 
     }, 1200); 
@@ -239,7 +235,6 @@ function agregarMeta() {
     const objetivo = parseFloat(prompt("¿Cuál es el monto objetivo?"));
     if (isNaN(objetivo) || objetivo <= 0) return alert("Monto inválido");
     
-    // Por simplicidad en la conversión forzamos USD internamente (o permitimos VES pero lo manejamos)
     metas.push({ id: Date.now(), nombre, acumulado: 0, objetivo, moneda: 'USD' });
     localStorage.setItem('metas', JSON.stringify(metas));
     renderizarMetas();
@@ -273,7 +268,7 @@ function procesarAbonoMeta() {
     const timeStamp = Date.now();
     const fechaFormateada = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    // Registramos el gasto en la cuenta seleccionada (asumimos el abonoPendienteMonto viene en USD para facilitar)
+    // Registramos el gasto en la cuenta seleccionada
     const transaccionAhorro = {
         id: timeStamp,
         cuentaId: cuentaId,
@@ -295,7 +290,7 @@ function procesarAbonoMeta() {
 
     cerrarModal('modal-seleccionar-cuenta-meta');
     actualizarInterfaz();
-    alert(`¡Abono exitoso! Se ha registrado un gasto en ${cuenta.nombre}.`);
+    alert(`¡Abono exitoso! Se ha descontado de ${cuenta.nombre}.`);
 }
 
 function eliminarMeta(index) {
@@ -518,7 +513,6 @@ function agregarTransaccion() {
     let montoUSD = monto;
     if (monedaInput === 'VES') montoUSD = monto / tasaBCV;
 
-    // Selector de Fecha de Movimiento (Backdating)
     const fechaPersonalizada = document.getElementById('val-fecha').value; 
     let fechaTransaccion = new Date();
     
@@ -528,7 +522,7 @@ function agregarTransaccion() {
     }
 
     const fechaFormateada = fechaTransaccion.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-    const timeStamp = fechaTransaccion.getTime(); // ID para mantener el orden cronológico
+    const timeStamp = fechaTransaccion.getTime(); 
 
     const transaccion = {
         id: timeStamp, 
@@ -543,7 +537,6 @@ function agregarTransaccion() {
     };
     
     transacciones.push(transaccion);
-    // Ordenar historial por fecha si insertan una antigua
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
@@ -551,7 +544,7 @@ function agregarTransaccion() {
     document.getElementById('monto').value = '';
     document.getElementById('val-categoria').value = '';
     document.getElementById('val-nota').value = '';
-    document.getElementById('val-fecha').valueAsDate = new Date(); // Reset a hoy
+    document.getElementById('val-fecha').valueAsDate = new Date(); 
     
     actualizarInterfaz();
 }
@@ -568,8 +561,8 @@ function handleSwipeStart(e, element) {
 function handleSwipeMove(e, element) {
     currentSwipeX = e.touches[0].clientX;
     let diff = currentSwipeX - swipeStartX;
-    if (diff < -80) diff = -80; // Tope izquierdo
-    if (diff > 0) diff = 0; // No desliza a la derecha
+    if (diff < -80) diff = -80; 
+    if (diff > 0) diff = 0; 
     element.style.transform = `translateX(${diff}px)`;
 }
 
@@ -577,9 +570,9 @@ function handleSwipeEnd(e, element) {
     element.style.transition = 'transform 0.3s var(--ios-spring)';
     let diff = currentSwipeX - swipeStartX;
     if (diff < -40) {
-        element.style.transform = `translateX(-80px)`; // Abre el botón rojo
+        element.style.transform = `translateX(-80px)`; 
     } else {
-        element.style.transform = `translateX(0px)`; // Cierra
+        element.style.transform = `translateX(0px)`; 
     }
 }
 
@@ -589,20 +582,16 @@ function actualizarListaTransacciones() {
     if(!cuentaActivaId) return;
 
     const query = document.getElementById('buscar-historial') ? document.getElementById('buscar-historial').value.toLowerCase() : "";
-    
-    // Filtro con Input Date completo
     const fechaFiltro = document.getElementById('filtro-fecha') ? document.getElementById('filtro-fecha').value : "";
 
     let transCuenta = transacciones.filter(t => t.cuentaId == cuentaActivaId).slice().reverse();
     
     transCuenta = transCuenta.filter(t => {
         const matchSearch = t.categoria.toLowerCase().includes(query) || (t.nota && t.nota.toLowerCase().includes(query));
-        
         let matchDate = true;
+        
         if(fechaFiltro && t.fecha) {
-            // Comparamos el string YYYY-MM-DD para exactitud
             const fechaT = new Date(t.fecha);
-            // Formateamos la fecha de la transacción a YYYY-MM-DD local
             const offset = fechaT.getTimezoneOffset() * 60000;
             const localISOTime = (new Date(fechaT - offset)).toISOString().split('T')[0];
             matchDate = (localISOTime === fechaFiltro);
@@ -622,7 +611,6 @@ function actualizarListaTransacciones() {
             const montoTexto = formatearMontoCensurado(`${signo}$${t.montoUSD.toFixed(2)}`, false);
             const htmlNota = t.nota ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top:2px;">📝 ${t.nota}</div>` : '';
             
-            // Estructura con Swipe-To-Delete
             lista.innerHTML += `
                 <li class="transaccion-item swipe-container" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
                     <div class="swipe-content" ontouchstart="handleSwipeStart(event, this)" ontouchmove="handleSwipeMove(event, this)" ontouchend="handleSwipeEnd(event, this)">
@@ -737,8 +725,11 @@ function editarCategoria(i) { const n = prompt("Nuevo nombre:", categorias[i]); 
 function eliminarCategoria(i) { if(confirm("¿Eliminar categoría?")) { categorias.splice(i, 1); guardarYActualizarGestion(); } }
 
 function guardarYActualizarGestion() {
+    // 💥 AQUI ESTÁ EL BLINDAJE DE GUARDADO SEGURO
     localStorage.setItem('cuentas', JSON.stringify(cuentas));
     localStorage.setItem('categorias', JSON.stringify(categorias));
+    localStorage.setItem('transacciones', JSON.stringify(transacciones));
+    localStorage.setItem('metas', JSON.stringify(metas));
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
 }
 
@@ -760,8 +751,17 @@ function importarDatos(e) {
         try {
             const data = JSON.parse(e.target.result);
             if(data.transacciones && data.cuentas) {
-                transacciones = data.transacciones; categorias = data.categorias; cuentas = data.cuentas; metas = data.metas || [];
-                guardarYActualizarGestion(); alert("Datos restaurados correctamente!");
+                transacciones = data.transacciones; 
+                categorias = data.categorias; 
+                cuentas = data.cuentas; 
+                metas = data.metas || [];
+                
+                // Fijar a fuego en memoria al importar
+                localStorage.setItem('transacciones', JSON.stringify(transacciones));
+                localStorage.setItem('metas', JSON.stringify(metas));
+                
+                guardarYActualizarGestion(); 
+                alert("Datos restaurados correctamente!");
             }
         } catch (err) { alert("Archivo inválido o corrupto."); }
     };
