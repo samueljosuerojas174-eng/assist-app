@@ -21,15 +21,24 @@ let tasasData = {
 
 // ================= SEGURIDAD, TEMAS Y PANTALLA DE CARGA =================
 window.addEventListener('load', () => {
-    const savedTheme = localStorage.getItem('app_theme') || '#FFFFFF';
-    cambiarTema(savedTheme);
+    const savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+    const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
+    cambiarColorAcento(savedThemeColor);
+    cambiarModo(savedThemeMode);
 
-    document.getElementById('val-fecha').valueAsDate = new Date();
+    // Ajustar fecha a hoy (Formato YYYY-MM-DD local)
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+    document.getElementById('val-fecha').value = localISOTime;
 
     const splash = document.getElementById('splash-screen');
     const pinScreen = document.getElementById('pin-screen');
+    const pinInput = document.getElementById('input-pin');
     
-    if (appPin) pinScreen.classList.remove('oculto');
+    if (appPin) {
+        pinScreen.classList.remove('oculto');
+        setTimeout(() => pinInput.focus(), 100); // Forzar teclado en iOS
+    }
     
     setTimeout(() => {
         splash.style.opacity = '0';
@@ -39,31 +48,41 @@ window.addEventListener('load', () => {
             validarDiaCeroGastos();
         }, 600); 
     }, 1200); 
+    
+    // Inicializar indicador del swipe nav
+    setTimeout(() => moverIndicadorNav(document.querySelector('.nav-item.activo')), 100);
 });
 
-function cambiarTema(color) {
+// Temas (Colores y Modos)
+function cambiarColorAcento(color) {
     document.documentElement.style.setProperty('--accent', color);
-    localStorage.setItem('app_theme', color);
+    localStorage.setItem('app_theme_color', color);
+}
+function cambiarModo(modo) {
+    document.body.setAttribute('data-theme', modo);
+    localStorage.setItem('app_theme_mode', modo);
 }
 
-// Auto-Bloqueo por Inactividad (3 minutos)
+// Auto-Bloqueo
 let timeoutBloqueo;
 function reiniciarInactividad() {
     clearTimeout(timeoutBloqueo);
     if (appPin) {
         timeoutBloqueo = setTimeout(() => {
-            document.getElementById('pin-screen').classList.remove('oculto');
+            const screen = document.getElementById('pin-screen');
+            screen.classList.remove('oculto');
+            screen.classList.remove('unlock-anim'); // Reset animacion
+            setTimeout(() => document.getElementById('input-pin').focus(), 100);
         }, 3 * 60 * 1000); 
     }
 }
 window.addEventListener('touchstart', reiniciarInactividad);
 window.addEventListener('click', reiniciarInactividad);
-reiniciarInactividad();
 
-// Modo Pánico (Doble Toque para Censurar)
+// Modo Pánico (Solo al doble toque en el contenedor del Slider)
 let lastTap = 0;
-document.body.addEventListener('touchstart', (e) => {
-    if(e.target.tagName.toLowerCase() === 'button' || e.target.tagName.toLowerCase() === 'input') return;
+document.getElementById('slider-cuentas-wrapper').addEventListener('touchstart', (e) => {
+    if(e.target.closest('button')) return; 
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
     if (tapLength < 300 && tapLength > 0) {
@@ -71,6 +90,11 @@ document.body.addEventListener('touchstart', (e) => {
         e.preventDefault();
     }
     lastTap = currentTime;
+});
+
+// Teclado PIN Automático
+document.getElementById('input-pin').addEventListener('input', function(e) {
+    if (this.value.length === 4) verificarPIN();
 });
 
 function configurarPIN() {
@@ -81,15 +105,19 @@ function configurarPIN() {
     } else if (nuevo.length === 4 && !isNaN(nuevo)) {
         localStorage.setItem('app_pin', nuevo); appPin = nuevo; alert("PIN configurado con éxito.");
         reiniciarInactividad();
-    } else { 
-        alert("Debe ser un número de 4 dígitos."); 
-    }
+    } else { alert("Debe ser un número de 4 dígitos."); }
 }
 
 function verificarPIN() {
     const input = document.getElementById('input-pin').value;
     if (input === appPin) {
-        document.getElementById('pin-screen').classList.add('oculto');
+        // Transición FaceID
+        const screen = document.getElementById('pin-screen');
+        screen.classList.add('unlock-anim');
+        setTimeout(() => {
+            screen.classList.add('oculto');
+            screen.classList.remove('unlock-anim');
+        }, 500);
         document.getElementById('input-pin').value = '';
         reiniciarInactividad();
     } else {
@@ -101,23 +129,25 @@ function verificarPIN() {
 function resetearPIN() {
     const respuesta = prompt('Escribe "RESETEAR" para eliminar el PIN guardado y restaurar el acceso:');
     if (respuesta === "RESETEAR") {
-        localStorage.removeItem('app_pin');
-        appPin = null;
+        localStorage.removeItem('app_pin'); appPin = null;
         document.getElementById('pin-screen').classList.add('oculto');
         alert("PIN eliminado correctamente.");
-    } else if (respuesta !== null) {
-        alert("Palabra de seguridad incorrecta.");
-    }
+    } else if (respuesta !== null) { alert("Palabra de seguridad incorrecta."); }
 }
 
-// Lógica Trofeo "Día Cero Gastos"
 function validarDiaCeroGastos() {
     if (transacciones.length === 0) return;
     const ayer = new Date();
     ayer.setDate(ayer.getDate() - 1);
-    const ayerStr = ayer.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    const tzOffset = ayer.getTimezoneOffset() * 60000;
+    const ayerStr = (new Date(ayer - tzOffset)).toISOString().split('T')[0];
     
-    const gastoAyer = transacciones.find(t => t.tipo === 'gasto' && t.fechaFormateada === ayerStr);
+    // Verificamos si en la base de datos hay gasto guardado con fecha de ayer
+    const gastoAyer = transacciones.find(t => {
+        const d = new Date(t.fecha);
+        const localD = (new Date(d - (d.getTimezoneOffset() * 60000))).toISOString().split('T')[0];
+        return t.tipo === 'gasto' && localD === ayerStr;
+    });
     
     if (!gastoAyer) {
         const trophy = document.getElementById('trophy-notification');
@@ -147,6 +177,7 @@ function abrirModal(id) {
     document.getElementById(id).classList.remove('oculto');
     document.body.style.overflow = 'hidden'; 
     if (id === 'modal-historial') actualizarListaTransacciones(); 
+    if (id === 'modal-cuentas' || id === 'modal-categorias') renderizarListasGestion();
 }
 
 function cerrarModal(id) {
@@ -154,29 +185,21 @@ function cerrarModal(id) {
     document.body.style.overflow = ''; 
 }
 
-// ================= SELECTS NATIVOS Y RESTRICCIONES =================
 function toggleCategoriaSelect() {
     const tipo = document.getElementById('val-tipo').value;
     const selectCategoria = document.getElementById('val-categoria');
-    
-    if (tipo === 'ingreso') {
-        selectCategoria.classList.add('oculto');
-        selectCategoria.value = ""; 
-    } else {
-        selectCategoria.classList.remove('oculto');
-    }
+    if (tipo === 'ingreso') { selectCategoria.classList.add('oculto'); selectCategoria.value = ""; } 
+    else { selectCategoria.classList.remove('oculto'); }
 }
 
-// Categorías Inteligentes (Memoria de Moneda)
+// Categorías Inteligentes
 document.getElementById('val-categoria').addEventListener('change', (e) => {
     const catSelec = e.target.value;
     const lastTrans = [...transacciones].reverse().find(t => t.categoria === catSelec && t.tipo === 'gasto');
     if (lastTrans && lastTrans.monedaInputOriginal) {
         const selectMoneda = document.getElementById('val-moneda');
         const option = Array.from(selectMoneda.options).find(o => o.value === lastTrans.monedaInputOriginal);
-        if (option && !option.disabled) {
-            selectMoneda.value = lastTrans.monedaInputOriginal;
-        }
+        if (option && !option.disabled) selectMoneda.value = lastTrans.monedaInputOriginal;
     }
 });
 
@@ -192,112 +215,151 @@ function actualizarOpcionesMoneda() {
     }
 }
 
-// ================= METAS DE AHORRO CON DESCUENTO =================
+// ================= METAS DE AHORRO (Fotos + Abono/Retiro) =================
 let metaAbonoActualIndex = null;
-let abonoPendienteMonto = 0;
+let metaAccionTipo = 'abonar'; // 'abonar' o 'retirar'
+
+function redimensionarImagen(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const maxW = 500, maxH = 300;
+            let width = img.width, height = img.height;
+            if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } } 
+            else { if (height > maxH) { width *= maxH / height; height = maxH; } }
+            canvas.width = width; canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+            callback(canvas.toDataURL('image/jpeg', 0.5)); // Comprime para evitar desbordar LocalStorage
+        }
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+}
+
+function guardarNuevaMeta() {
+    const nombre = document.getElementById('in-meta-nombre').value;
+    const objetivo = parseFloat(document.getElementById('in-meta-obj').value);
+    const file = document.getElementById('in-meta-img').files[0];
+
+    if (!nombre || isNaN(objetivo) || objetivo <= 0) return alert("Datos inválidos.");
+
+    const crear = (imgBase64) => {
+        metas.push({ id: Date.now(), nombre, acumulado: 0, objetivo, moneda: 'USD', imagen: imgBase64 });
+        guardarYActualizarGestion();
+        cerrarModal('modal-nueva-meta');
+        document.getElementById('in-meta-nombre').value = '';
+        document.getElementById('in-meta-obj').value = '';
+        document.getElementById('in-meta-img').value = '';
+    };
+
+    if (file) { redimensionarImagen(file, crear); } else { crear(null); }
+}
 
 function renderizarMetas() {
     const lista = document.getElementById('lista-metas');
     lista.innerHTML = '';
-    
-    if(metas.length === 0) {
-        lista.innerHTML = '<p style="color:var(--text-secondary); font-size:12px; text-align:center;">No tienes metas activas. ¡Crea una!</p>';
-        return;
-    }
+    if(metas.length === 0) { lista.innerHTML = '<p style="color:var(--text-secondary); font-size:13px; text-align:center;">No tienes metas activas. ¡Crea una!</p>'; return; }
     
     metas.forEach((m, i) => {
         let pct = (m.acumulado / m.objetivo) * 100;
         if(pct > 100) pct = 100;
-        
+        const bgStyle = m.imagen ? `background-image: url(${m.imagen});` : `background: var(--card-dark);`;
+
         lista.innerHTML += `
-        <div class="meta-item">
-            <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
-                <strong style="font-size:14px;">${m.nombre}</strong>
-                <span style="font-size:13px; font-weight:bold;">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))} / ${formatearMontoCensurado(m.objetivo.toFixed(2))}</span>
-            </div>
-            <div class="progress-bg">
-                <div class="progress-fill" style="width: ${pct}%;"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <small style="color:var(--text-secondary); font-size:11px;">${pct.toFixed(1)}% Completado</small>
-                <div>
-                    <button onclick="iniciarAbonoMeta(${i})" style="background:var(--accent); color:var(--bg-dark); border:none; border-radius:6px; padding:4px 8px; font-weight:bold; margin-right:5px; cursor:pointer;">Abonar</button>
-                    <button onclick="eliminarMeta(${i})" style="background:rgba(255,69,58,0.2); color:#FF453A; border:none; border-radius:6px; padding:4px 8px; font-weight:bold; cursor:pointer;">🗑</button>
+        <div class="meta-item" style="${bgStyle}">
+            <div class="meta-bg-overlay"></div>
+            <div class="meta-content">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                    <strong style="font-size:16px;">${m.nombre}</strong>
+                    <span style="font-size:14px; font-weight:bold;">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))} / ${formatearMontoCensurado(m.objetivo.toFixed(2))}</span>
+                </div>
+                <div class="progress-bg"><div class="progress-fill" style="width: ${pct}%;"></div></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                    <small style="color:var(--text-primary); font-size:12px; font-weight:600;">${pct.toFixed(1)}% Completado</small>
+                    <div style="display:flex; gap:5px;">
+                        <button onclick="prepararAccionMeta(${i}, 'abonar')" style="background:var(--accent); color:var(--bg-dark); border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;">Abonar</button>
+                        <button onclick="prepararAccionMeta(${i}, 'retirar')" style="background:rgba(255,255,255,0.2); color:#fff; border:none; border-radius:6px; padding:6px 10px; font-weight:bold; cursor:pointer;">Retirar</button>
+                        <button onclick="eliminarMeta(${i})" style="background:rgba(255,69,58,0.3); color:#FF453A; border:none; border-radius:6px; padding:6px; font-weight:bold; cursor:pointer;">🗑</button>
+                    </div>
                 </div>
             </div>
         </div>`;
     });
 }
 
-function agregarMeta() {
-    const nombre = prompt("¿Para qué estás ahorrando? (Ej: Laptop, Viaje)");
-    if (!nombre) return;
-    const objetivo = parseFloat(prompt("¿Cuál es el monto objetivo?"));
-    if (isNaN(objetivo) || objetivo <= 0) return alert("Monto inválido");
-    
-    metas.push({ id: Date.now(), nombre, acumulado: 0, objetivo, moneda: 'USD' });
-    localStorage.setItem('metas', JSON.stringify(metas));
-    renderizarMetas();
-}
-
-function iniciarAbonoMeta(index) {
+function prepararAccionMeta(index, tipo) {
     if (cuentas.length === 0) return alert("Debes crear al menos una cuenta primero.");
-    
-    const abono = parseFloat(prompt(`¿Cuántos USD quieres abonar a "${metas[index].nombre}"?`));
-    if (isNaN(abono) || abono <= 0) return alert("Monto inválido");
-
     metaAbonoActualIndex = index;
-    abonoPendienteMonto = abono;
+    metaAccionTipo = tipo;
+    const meta = metas[index];
 
-    const selectCuenta = document.getElementById('sel-cuenta-abono');
+    document.getElementById('titulo-accion-meta').innerText = tipo === 'abonar' ? `Abonar a "${meta.nombre}"` : `Retirar de "${meta.nombre}"`;
+    document.getElementById('desc-accion-meta').innerText = tipo === 'abonar' 
+        ? "El monto se registrará como un GASTO en la cuenta que selecciones para mantener el balance al día."
+        : "El monto volverá como un INGRESO a la cuenta que elijas para que puedas usarlo.";
+    
+    document.getElementById('monto-accion-meta').value = '';
+    document.getElementById('nota-accion-meta').value = '';
+
+    const selectCuenta = document.getElementById('sel-cuenta-accion-meta');
     selectCuenta.innerHTML = '';
-    cuentas.forEach(c => {
-        selectCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
-    });
+    cuentas.forEach(c => selectCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`);
 
-    abrirModal('modal-seleccionar-cuenta-meta');
+    abrirModal('modal-accion-meta');
 }
 
-function procesarAbonoMeta() {
-    const cuentaId = document.getElementById('sel-cuenta-abono').value;
+document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
+    const monto = parseFloat(document.getElementById('monto-accion-meta').value);
+    if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
+
+    const cuentaId = document.getElementById('sel-cuenta-accion-meta').value;
+    const notaUser = document.getElementById('nota-accion-meta').value.trim();
     if (!cuentaId) return alert("Selecciona una cuenta válida.");
 
     const cuenta = cuentas.find(c => c.id == cuentaId);
     const meta = metas[metaAbonoActualIndex];
-    
-    const timeStamp = Date.now();
-    const fechaFormateada = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    // Registramos el gasto en la cuenta seleccionada
-    const transaccionAhorro = {
+    if (metaAccionTipo === 'retirar' && monto > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
+
+    const timeStamp = Date.now();
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const localD = new Date(timeStamp - tzOffset);
+    
+    const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const fechaFormateada = `${localD.getUTCDate()} ${mesesArr[localD.getUTCMonth()]} ${localD.getUTCFullYear()}`;
+
+    // Si abona -> Gasto. Si retira -> Ingreso.
+    const tTipo = metaAccionTipo === 'abonar' ? 'gasto' : 'ingreso';
+    const baseNota = metaAccionTipo === 'abonar' ? `Abono a meta: ${meta.nombre}` : `Retiro de meta: ${meta.nombre}`;
+
+    const transaccion = {
         id: timeStamp,
         cuentaId: cuentaId,
-        montoUSD: abonoPendienteMonto,
-        tipo: 'gasto',
+        montoUSD: monto, // Guardamos USD universalmente
+        tipo: tTipo,
         categoria: 'Ahorro',
-        nota: `Abono a meta: ${meta.nombre}`,
+        nota: notaUser ? `${baseNota} - ${notaUser}` : baseNota,
         monedaInputOriginal: cuenta.moneda, 
         fechaFormateada: fechaFormateada,
         fecha: new Date()
     };
     
-    transacciones.push(transaccionAhorro);
-    localStorage.setItem('transacciones', JSON.stringify(transacciones));
+    transacciones.push(transaccion);
+    
+    if (metaAccionTipo === 'abonar') { metas[metaAbonoActualIndex].acumulado += monto; } 
+    else { metas[metaAbonoActualIndex].acumulado -= monto; }
 
-    // Sumamos a la meta
-    metas[metaAbonoActualIndex].acumulado += abonoPendienteMonto;
-    localStorage.setItem('metas', JSON.stringify(metas));
-
-    cerrarModal('modal-seleccionar-cuenta-meta');
-    actualizarInterfaz();
-    alert(`¡Abono exitoso! Se ha descontado de ${cuenta.nombre}.`);
-}
+    guardarYActualizarGestion();
+    cerrarModal('modal-accion-meta');
+    alert(metaAccionTipo === 'abonar' ? `Abono exitoso. Descontado de ${cuenta.nombre}.` : `Retiro exitoso. Dinero en ${cuenta.nombre}.`);
+});
 
 function eliminarMeta(index) {
-    if(confirm("¿Seguro que deseas eliminar esta meta? (El dinero abonado no se devolverá a tus cuentas automáticamente)")) {
-        metas.splice(index, 1);
-        localStorage.setItem('metas', JSON.stringify(metas));
-        renderizarMetas();
+    if(confirm("¿Seguro que deseas eliminar esta meta? (El dinero ahorrado NO regresará a tus cuentas automáticamente)")) {
+        metas.splice(index, 1); guardarYActualizarGestion();
     }
 }
 
@@ -314,10 +376,8 @@ function formatFechaCorta(isoString) {
 
 function esFechaFutura(isoString) {
     if(!isoString) return false;
-    const d = new Date(isoString);
-    const today = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() > 
-           new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+    const d = new Date(isoString); const today = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() > new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
 }
 
 function actualizarInfoCalculadora(modo) {
@@ -325,9 +385,7 @@ function actualizarInfoCalculadora(modo) {
     const badge = document.getElementById('calc-fecha-badge');
     const banner = document.getElementById('banner-fecha-valor');
 
-    if(modo === 'Custom') {
-        varBox.classList.add('oculto'); banner.classList.add('oculto'); badge.innerText = "Personalizada"; return;
-    }
+    if(modo === 'Custom') { varBox.classList.add('oculto'); banner.classList.add('oculto'); badge.innerText = "Personalizada"; return; }
 
     varBox.classList.remove('oculto');
     const data = tasasData[modo];
@@ -342,7 +400,7 @@ function actualizarInfoCalculadora(modo) {
 
     if(data.fecha) {
         badge.innerText = formatFechaCorta(data.fecha);
-        if(esFechaFutura(data.fecha)) { banner.classList.remove('oculto'); } else { banner.classList.add('oculto'); }
+        if(esFechaFutura(data.fecha)) banner.classList.remove('oculto'); else banner.classList.add('oculto');
     }
 }
 
@@ -377,11 +435,37 @@ function calcularDesde(origen) {
 function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
 function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
 
+// ================= NAVEGACIÓN Y SWIPE =================
+function moverIndicadorNav(item) {
+    const indicador = document.getElementById('nav-indicator');
+    if(item && indicador) {
+        indicador.style.width = `${item.offsetWidth}px`;
+        indicador.style.transform = `translateX(${item.offsetLeft}px)`;
+    }
+}
+
 function cambiarPestana(idPestana, elementoNav) {
     document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
+    moverIndicadorNav(elementoNav);
+}
+
+// Swipe Bottom Nav
+const navBar = document.getElementById('main-bottom-nav');
+if (navBar) {
+    navBar.addEventListener('touchmove', (e) => {
+        e.preventDefault(); // Previene scroll de la pagina
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if(elem) {
+            const navItem = elem.closest('.nav-item');
+            if(navItem && !navItem.classList.contains('activo')) {
+                navItem.click(); 
+            }
+        }
+    });
 }
 
 // ================= CEREBRO INTELIGENTE DE TASAS =================
@@ -496,7 +580,7 @@ function actualizarInterfaz() {
     if (!document.getElementById('modal-historial').classList.contains('oculto')) actualizarListaTransacciones();
 }
 
-// ================= TRANSACCIONES, NOTAS, FILTROS Y SWIPE =================
+// ================= TRANSACCIONES =================
 function agregarTransaccion() {
     if(cuentas.length === 0) return alert("Crea una cuenta en Ajustes primero");
     
@@ -513,6 +597,7 @@ function agregarTransaccion() {
     let montoUSD = monto;
     if (monedaInput === 'VES') montoUSD = monto / tasaBCV;
 
+    // FECHA CORRECTA SIN DESFASE
     const fechaPersonalizada = document.getElementById('val-fecha').value; 
     let fechaTransaccion = new Date();
     
@@ -521,7 +606,9 @@ function agregarTransaccion() {
         fechaTransaccion = new Date(partes[0], partes[1] - 1, partes[2], new Date().getHours(), new Date().getMinutes());
     }
 
-    const fechaFormateada = fechaTransaccion.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    // Mes en Letras puro estilo iOS (ej: 12 Octubre 2026)
+    const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const fechaFormateada = `${fechaTransaccion.getDate()} ${mesesArr[fechaTransaccion.getMonth()]} ${fechaTransaccion.getFullYear()}`;
     const timeStamp = fechaTransaccion.getTime(); 
 
     const transaccion = {
@@ -538,42 +625,31 @@ function agregarTransaccion() {
     
     transacciones.push(transaccion);
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    guardarYActualizarGestion();
     
-    localStorage.setItem('transacciones', JSON.stringify(transacciones));
+    document.getElementById('monto').value = ''; document.getElementById('val-categoria').value = ''; document.getElementById('val-nota').value = '';
     
-    document.getElementById('monto').value = '';
-    document.getElementById('val-categoria').value = '';
-    document.getElementById('val-nota').value = '';
-    document.getElementById('val-fecha').valueAsDate = new Date(); 
-    
-    actualizarInterfaz();
+    // Reset Date a Local Hoy
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    document.getElementById('val-fecha').value = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
 }
 
 // Lógica de "Deslizar para Borrar" (Swipe to Delete)
 let swipeStartX = 0;
 let currentSwipeX = 0;
 
-function handleSwipeStart(e, element) {
-    swipeStartX = e.touches[0].clientX;
-    element.style.transition = 'none';
-}
-
+function handleSwipeStart(e, element) { swipeStartX = e.touches[0].clientX; element.style.transition = 'none'; }
 function handleSwipeMove(e, element) {
     currentSwipeX = e.touches[0].clientX;
     let diff = currentSwipeX - swipeStartX;
-    if (diff < -80) diff = -80; 
-    if (diff > 0) diff = 0; 
+    if (diff < -80) diff = -80; if (diff > 0) diff = 0; 
     element.style.transform = `translateX(${diff}px)`;
 }
-
 function handleSwipeEnd(e, element) {
     element.style.transition = 'transform 0.3s var(--ios-spring)';
     let diff = currentSwipeX - swipeStartX;
-    if (diff < -40) {
-        element.style.transform = `translateX(-80px)`; 
-    } else {
-        element.style.transform = `translateX(0px)`; 
-    }
+    if (diff < -40) { element.style.transform = `translateX(-80px)`; } 
+    else { element.style.transform = `translateX(0px)`; }
 }
 
 function actualizarListaTransacciones() {
@@ -601,7 +677,7 @@ function actualizarListaTransacciones() {
     });
 
     if (transCuenta.length === 0) {
-        lista.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--text-secondary); font-size: 14px;">No se encontraron movimientos.</p>`;
+        lista.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--text-secondary); font-size: 14px;">No se encontraron movimientos en la fecha seleccionada.</p>`;
     } else {
         transCuenta.forEach((t, index) => {
             const claseColor = t.tipo === 'ingreso' ? 'monto-ingreso' : 'monto-gasto';
@@ -636,8 +712,7 @@ function actualizarListaTransacciones() {
 
 function eliminarTransaccion(id) {
     transacciones = transacciones.filter(t => t.id !== id);
-    localStorage.setItem('transacciones', JSON.stringify(transacciones));
-    actualizarInterfaz();
+    guardarYActualizarGestion();
 }
 
 // ================= GRÁFICOS (CHART.JS) =================
@@ -660,14 +735,14 @@ function renderizarGrafico(transFiltered) {
             labels: labels.length > 0 ? labels : ['Sin Gastos'],
             datasets: [{
                 data: data.length > 0 ? data : [1],
-                backgroundColor: data.length > 0 ? ['#FF453A', '#FF9F0A', '#32D74B', '#0A84FF', '#BF5AF2'] : ['#333'],
+                backgroundColor: data.length > 0 ? ['#FF453A', '#FF9F0A', '#32D74B', '#0A84FF', '#BF5AF2'] : ['var(--card-dark)'],
                 borderWidth: 0, 
                 hoverOffset: 4
             }]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: '#fff', font: {size: 10} } } }
+            plugins: { legend: { position: 'right', labels: { color: 'var(--text-primary)', font: {size: 10} } } }
         }
     });
 }
@@ -675,6 +750,7 @@ function renderizarGrafico(transFiltered) {
 // ================= GESTIÓN Y LISTAS =================
 function cargarSelects() {
     const valCategoria = document.getElementById('val-categoria');
+    if(!valCategoria) return;
     valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
     if (categorias.length > 0) {
         categorias.forEach(cat => {
@@ -687,12 +763,13 @@ function cargarSelects() {
 function renderizarListasGestion() {
     const lCuentas = document.getElementById('lista-gestion-cuentas');
     const lCat = document.getElementById('lista-gestion-categorias');
-    
+    if(!lCuentas || !lCat) return;
+
     lCuentas.innerHTML = '';
     cuentas.forEach((c, i) => {
         lCuentas.innerHTML += `
             <li class="transaccion-item" style="padding: 12px 16px;">
-                <div class="trans-izq"><strong>${c.nombre}</strong><small>${c.moneda}</small></div>
+                <div class="trans-izq"><strong style="color:var(--text-primary);">${c.nombre}</strong><small>${c.moneda}</small></div>
                 <div class="acciones-gestion">
                     <button class="btn-editar" onclick="editarCuenta(${i})">✏️</button>
                     <button class="btn-eliminar" onclick="eliminarCuenta(${i})">🗑️</button>
@@ -704,7 +781,7 @@ function renderizarListasGestion() {
     categorias.forEach((cat, i) => {
         lCat.innerHTML += `
             <li class="transaccion-item" style="padding: 12px 16px;">
-                <div class="trans-izq"><strong>${cat}</strong></div>
+                <div class="trans-izq"><strong style="color:var(--text-primary);">${cat}</strong></div>
                 <div class="acciones-gestion">
                     <button class="btn-editar" onclick="editarCategoria(${i})">✏️</button>
                     <button class="btn-eliminar" onclick="eliminarCategoria(${i})">🗑️</button>
@@ -725,7 +802,7 @@ function editarCategoria(i) { const n = prompt("Nuevo nombre:", categorias[i]); 
 function eliminarCategoria(i) { if(confirm("¿Eliminar categoría?")) { categorias.splice(i, 1); guardarYActualizarGestion(); } }
 
 function guardarYActualizarGestion() {
-    // 💥 AQUI ESTÁ EL BLINDAJE DE GUARDADO SEGURO
+    // 💥 BLINDAJE DE MEMORIA FIJA 
     localStorage.setItem('cuentas', JSON.stringify(cuentas));
     localStorage.setItem('categorias', JSON.stringify(categorias));
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
@@ -733,7 +810,7 @@ function guardarYActualizarGestion() {
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
 }
 
-// ================= BACKUPS (IMPORTAR / EXPORTAR) =================
+// ================= BACKUPS =================
 function exportarDatos() {
     const data = JSON.stringify({ transacciones, categorias, cuentas, metas });
     const blob = new Blob([data], { type: 'application/json' });
@@ -751,17 +828,8 @@ function importarDatos(e) {
         try {
             const data = JSON.parse(e.target.result);
             if(data.transacciones && data.cuentas) {
-                transacciones = data.transacciones; 
-                categorias = data.categorias; 
-                cuentas = data.cuentas; 
-                metas = data.metas || [];
-                
-                // Fijar a fuego en memoria al importar
-                localStorage.setItem('transacciones', JSON.stringify(transacciones));
-                localStorage.setItem('metas', JSON.stringify(metas));
-                
-                guardarYActualizarGestion(); 
-                alert("Datos restaurados correctamente!");
+                transacciones = data.transacciones; categorias = data.categorias; cuentas = data.cuentas; metas = data.metas || [];
+                guardarYActualizarGestion(); alert("Datos restaurados correctamente!");
             }
         } catch (err) { alert("Archivo inválido o corrupto."); }
     };
@@ -774,7 +842,6 @@ async function inicializarApp() {
     cargarSelects();
     actualizarInterfaz();
     setTasaModo('BCV'); 
-    
     setInterval(() => { obtenerTasas().then(() => actualizarInterfaz()); }, 300000); 
 }
 inicializarApp();
