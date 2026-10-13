@@ -33,7 +33,6 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
 
-/* Sin background-color aqui, lo maneja el script del HTML para evitar flashes */
 body { color: var(--text-primary); overscroll-behavior-y: none; }
 
 .app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch;}
@@ -59,6 +58,10 @@ body { color: var(--text-primary); overscroll-behavior-y: none; }
 .vista-oculta { display: none; }
 @keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
+
+/* Animacion Desbloqueo FaceID */
+.unlock-anim { animation: faceIdUnlock 0.5s var(--ios-spring) forwards !important; }
+@keyframes faceIdUnlock { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; pointer-events: none;} }
 
 /* Slider Cuentas */
 .slider-cuentas-container { margin-bottom: 10px; width: 100%; overflow: hidden; position: relative; }
@@ -215,12 +218,10 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .modal-list::-webkit-scrollbar { width: 5px; }
 .modal-list::-webkit-scrollbar-thumb { background: rgba(150,150,150,0.15); border-radius: 5px; }
 
-/* BARRA INFERIOR LIQUID GLASS SWIPE PERFECTO */
+/* BARRA INFERIOR (CLÁSICA) */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 [data-theme="light"] .bottom-nav { background: rgba(255, 255, 255, 0.85); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #8E8E93; cursor: pointer; transition: color 0.3s; width: 25%; z-index: 2; position: relative; }
 .nav-item.activo { color: var(--accent); }
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
 .nav-text { font-size: 11px; font-weight: 600; }
-
-.nav-indicator { position: absolute; top: 8px; height: 50px; background: rgba(150,150,150,0.2); border-radius: 18px; z-index: 1; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1); backdrop-filter: blur(10px); }

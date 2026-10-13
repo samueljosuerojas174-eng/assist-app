@@ -27,7 +27,11 @@ function getLocalYYYYMMDD(d = new Date()) {
 
 // ================= SEGURIDAD, TEMAS Y PANTALLA DE CARGA =================
 window.addEventListener('load', () => {
-    // La inyección de color inicial la hace el script del <head>
+    const savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+    const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
+    cambiarColorAcento(savedThemeColor);
+    cambiarModo(savedThemeMode);
+
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
 
     const splash = document.getElementById('splash-screen');
@@ -35,23 +39,28 @@ window.addEventListener('load', () => {
     const pinInput = document.getElementById('input-pin');
     const appContainer = document.getElementById('app-main-container');
     
+    // 1. Splash visible por 1.5s, PIN screen preparado pero debajo del splash
     if (appPin) {
+        pinScreen.style.zIndex = '99998'; 
         pinScreen.classList.remove('oculto');
-        // Hack para enfocar en iOS PWA si es posible
-        setTimeout(() => pinInput.focus(), 50); 
-    } else {
-        appContainer.classList.add('app-unlocked');
     }
     
     setTimeout(() => {
         splash.style.opacity = '0';
         setTimeout(() => {
             splash.style.display = 'none';
+            
+            // 2. Al desaparecer el splash, subimos el PIN y enfocamos el teclado
+            if (appPin) {
+                pinScreen.style.zIndex = '100000'; 
+                setTimeout(() => pinInput.focus(), 50); 
+            } else {
+                appContainer.classList.add('app-unlocked');
+            }
+            
             validarDiaCeroGastos();
         }, 600); 
-    }, 1200); 
-    
-    setTimeout(() => moverIndicadorNav(document.querySelector('.nav-item.activo')), 100);
+    }, 1500); // 1.5s mostrando el logo fijamente
 });
 
 // Forzar autofocus al tocar la pantalla de bloqueo (por si el usuario lo pierde)
@@ -76,7 +85,8 @@ function reiniciarInactividad() {
     clearTimeout(timeoutBloqueo);
     if (appPin) {
         timeoutBloqueo = setTimeout(() => {
-            document.getElementById('pin-screen').classList.remove('oculto');
+            const screen = document.getElementById('pin-screen');
+            screen.classList.remove('oculto');
             document.getElementById('app-main-container').classList.remove('app-unlocked');
             setTimeout(() => document.getElementById('input-pin').focus(), 100);
         }, 3 * 60 * 1000); 
@@ -488,37 +498,12 @@ function calcularDesde(origen) {
 function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
 function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
 
-// ================= NAVEGACIÓN LIQUID GLASS PERFECTA =================
-function moverIndicadorNav(item) {
-    const indicador = document.getElementById('nav-indicator');
-    if(item && indicador) {
-        indicador.style.width = `${item.offsetWidth}px`;
-        indicador.style.transform = `translateX(${item.offsetLeft}px)`;
-    }
-}
-
+// ================= NAVEGACIÓN (CLÁSICA SIN DESLIZAMIENTO) =================
 function cambiarPestana(idPestana, elementoNav) {
     document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
-    moverIndicadorNav(elementoNav);
-}
-
-// Swipe Nav Bar (El cristal sigue al dedo sin cambiar pestana hasta soltar)
-const navBar = document.getElementById('main-bottom-nav');
-if (navBar) {
-    navBar.addEventListener('touchmove', (e) => {
-        e.preventDefault(); 
-        const touch = e.touches[0];
-        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-        if(elem) {
-            const navItem = elem.closest('.nav-item');
-            if(navItem && !navItem.classList.contains('activo')) {
-                navItem.click(); 
-            }
-        }
-    });
 }
 
 // ================= CEREBRO INTELIGENTE DE TASAS =================

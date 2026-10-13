@@ -19,6 +19,8 @@
     </script>
     <style>
         html, body { background-color: var(--bg-dark); margin: 0; padding: 0; width: 100%; height: 100%; transition: background-color 0.4s ease; }
+        #app-main-container { transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease; transform: scale(0.95); opacity: 0; }
+        .app-unlocked { transform: scale(1) !important; opacity: 1 !important; }
     </style>
     
     <link rel="stylesheet" href="style.css">
@@ -26,12 +28,11 @@
 </head>
 <body data-theme="dark">
 
-    <!-- Pantalla de Bloqueo PIN -->
-    <div id="pin-screen" class="glass-modal oculto" style="z-index: 999999; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
+    <!-- Pantalla de Bloqueo PIN (Ahora comienza debajo del Splash Screen) -->
+    <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
             <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
             <h2 style="margin-bottom: 20px; font-size: 24px; color: var(--text-primary);">Ingresa tu PIN</h2>
-            <!-- Input optimizado para iOS -->
             <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" placeholder="••••" maxlength="4" autocomplete="off">
             <button onclick="resetearPIN()" style="background: transparent; border: none; color: var(--text-secondary); margin-top: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; transition: color 0.3s;">¿Olvidaste tu PIN?</button>
         </div>
@@ -49,7 +50,7 @@
         <span style="font-size:24px;">🎉</span>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL (Aquí ocurre la animación FaceID) -->
+    <!-- CONTENEDOR PRINCIPAL -->
     <div class="app-container faceid-hidden" id="app-main-container">
         
         <!-- ================= APARTADO: INICIO ================= -->
@@ -266,11 +267,9 @@
             <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2>Historial</h2>
-                    <!-- BOTONES TOTAL Y CALENDARIO -->
                     <div style="display: flex; gap: 8px;">
                         <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto;" onclick="document.getElementById('filtro-fecha').value=''; actualizarListaTransacciones()">Total</button>
                         <div style="position: relative; display: flex; align-items: center;">
-                            <!-- Input date nativo estricto -->
                             <input type="date" id="filtro-fecha" style="position: absolute; opacity: 0; width: 100%; height: 100%; z-index: 2; cursor: pointer;" onchange="actualizarListaTransacciones()">
                             <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto; z-index: 1;">📅 Día</button>
                         </div>
@@ -296,7 +295,6 @@
         <div class="glass-modal-content" style="padding: 0; height: 92vh; border-radius: 32px 32px 0 0; overflow: hidden; background: var(--bg-dark); border:none;" onclick="event.stopPropagation()">
             <!-- Cabecera Fotográfica Difuminada -->
             <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; background-size: cover; background-position: center; background-repeat: no-repeat;">
-                <!-- Degradado para integrar la foto con el fondo de la app -->
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, var(--bg-dark) 100%);"></div>
                 <button class="btn-close-modal" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.5); color: #fff;" onclick="cerrarModal('modal-detalle-meta'); actualizarInterfaz();">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -407,18 +405,14 @@
             </div>
             <div class="input-group" style="flex-direction: column; gap: 5px;">
                 <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
-                <!-- Se codifica en Base64 para guardarse en localStorage -->
                 <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
             </div>
             <button class="btn-primario" onclick="guardarNuevaMeta()">Guardar Meta</button>
         </div>
     </div>
 
-    <!-- Barra Inferior Liquid Glass -->
-    <nav class="bottom-nav" id="main-bottom-nav">
-        <!-- El indicador descansa por DEBÁS de los iconos -->
-        <div class="nav-indicator" id="nav-indicator"></div>
-        
+    <!-- Barra Inferior Clásica -->
+    <nav class="bottom-nav">
         <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
             <span class="nav-text">A$$IST</span>
@@ -432,7 +426,7 @@
             <span class="nav-text">Metas</span>
         </div>
         <div class="nav-item" onclick="cambiarPestana('tab-categorias', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>
