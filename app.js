@@ -1,3 +1,12 @@
+// ================= CONFIGURACIÓN DE SUPABASE (NUBE LOCAL-FIRST) =================
+const SUPABASE_URL = 'https://gzbjsbhgpqtycsndwkpc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_TrvXyss9fBLXQ4BKRAzMYg_S7yOlAP-';
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+let usuarioActual = null;
+let authModoActual = 'login'; // 'login' o 'registro'
+let sincronizandoNube = false;
+
 // Base de Datos Local
 let transacciones = JSON.parse(localStorage.getItem('transacciones')) || [];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
@@ -25,12 +34,383 @@ function getLocalYYYYMMDD(d = new Date()) {
     return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
 }
 
+// ================= AUTENTICACIÓN Y SINCRONIZACIÓN SUPABASE =================
+function cambiarModoAuth(modo) {
+    authModoActual = modo;
+    document.getElementById('seg-auth-login').classList.toggle('activo', modo === 'login');
+    document.getElementById('seg-auth-registro').classList.toggle('activo', modo === 'registro');
+    document.getElementById('btn-auth-submit').innerText = modo === 'login' ? 'Entrar a mi cuenta' : 'Crear cuenta y respaldar';
+    const errEl = document.getElementById('auth-error-msg');
+    if (errEl) { errEl.classList.add('oculto'); errEl.style.display = 'none'; }
+}
+
+function mostrarErrorAuth(msg) {
+    const errEl = document.getElementById('auth-error-msg');
+    if (!errEl) return alert(msg);
+    errEl.innerText = msg;
+    errEl.classList.remove('oculto');
+    errEl.style.display = 'block';
+}
+
+function abrirPantallaAuth() {
+    const authScreen = document.getElementById('auth-screen');
+    if (!authScreen) return;
+    cambiarModoAuth('login');
+    authScreen.classList.remove('oculto');
+}
+
+function continuarSinCuenta() {
+    localStorage.setItem('assist_skip_auth', 'true');
+    const authScreen = document.getElementById('auth-screen');
+    const appContainer = document.getElementById('app-main-container');
+    if (authScreen) authScreen.classList.add('oculto');
+    if (!appPin && appContainer) {
+        appContainer.classList.add('app-unlocked');
+    }
+    actualizarUIEstadoNube();
+}
+
+function tieneDatosLocales() {
+    return (cuentas.length > 0 || transacciones.length > 0 || metas.length > 0 || categorias.length > 0);
+}
+
+function actualizarUIEstadoNube() {
+    const badge = document.getElementById('cloud-status-badge');
+    const boxOut = document.getElementById('cloud-logged-out-box');
+    const boxIn = document.getElementById('cloud-logged-in-box');
+    const emailEl = document.getElementById('cloud-user-email');
+
+    if (!badge || !boxOut || !boxIn) return;
+
+    if (usuarioActual) {
+        boxOut.classList.add('oculto');
+        boxOut.style.display = 'none';
+        boxIn.classList.remove('oculto');
+        boxIn.style.display = 'flex';
+        if (emailEl) emailEl.innerText = usuarioActual.email;
+
+        const pendiente = localStorage.getItem('assist_pending_sync') === 'true';
+        if (!navigator.onLine || pendiente) {
+            badge.innerText = 'Pendiente (Sin señal)';
+            badge.className = 'cloud-badge pendiente';
+        } else {
+            badge.innerText = 'Sincronizado ☁️';
+            badge.className = 'cloud-badge conectado';
+        }
+    } else {
+        boxOut.classList.remove('oculto');
+        boxOut.style.display = 'block';
+        boxIn.classList.add('oculto');
+        boxIn.style.display = 'none';
+        badge.innerText = 'Solo Local';
+        badge.className = 'cloud-badge desconectado';
+    }
+}
+
+async function procesarAuth() {
+    if (!supabaseClient) return mostrarErrorAuth("Librería de nube no disponible.");
+    if (!navigator.onLine) return mostrarErrorAuth("Necesitas conexión a internet para iniciar sesión o registrarte.");
+
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const btn = document.getElementById('btn-auth-submit');
+
+    if (!email || !password) return mostrarErrorAuth("Ingresa tu correo y contraseña.");
+    if (password.length < 6) return mostrarErrorAuth("La contraseña debe tener al menos 6 caracteres.");
+
+    btn.disabled = true;
+    const textoOriginal = btn.innerText;
+    btn.innerText = "Conectando...";
+
+    try {
+        if (authModoActual === 'registro') {
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) throw error;
+            usuarioActual = data.user;
+
+            // Si el usuario ya tenía cuentas o transacciones en su navegador, las respalda de inmediato en su cuenta nueva
+            if (usuarioActual && tieneDatosLocales()) {
+                await sincronizarHaciaNube();
+            } else if (usuarioActual) {
+                await descargarDesdeNube();
+            }
+        } else {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            usuarioActual = data.user;
+
+            if (usuarioActual) {
+                const descargado = await descargarDesdeNube();
+                // Si la cuenta en la nube estaba totalmente vacía pero el teléfono tenía datos locales, los sube
+                if (!descargado && tieneDatosLocales()) {
+                    await sincronizarHaciaNube();
+                }
+            }
+        }
+
+        localStorage.removeItem('assist_skip_auth');
+        document.getElementById('auth-email').value = '';
+        document.getElementById('auth-password').value = '';
+        document.getElementById('auth-screen').classList.add('oculto');
+        document.getElementById('app-main-container').classList.add('app-unlocked');
+        actualizarUIEstadoNube();
+        cargarSelects();
+        renderizarListasGestion();
+        actualizarInterfaz();
+    } catch (err) {
+        mostrarErrorAuth(err.message || "Error al autenticar. Verifica tus datos.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = textoOriginal;
+    }
+}
+
+async function sincronizarHaciaNube() {
+    if (!supabaseClient || !usuarioActual) return;
+    if (!navigator.onLine) {
+        localStorage.setItem('assist_pending_sync', 'true');
+        actualizarUIEstadoNube();
+        return;
+    }
+    if (sincronizandoNube) return;
+    sincronizandoNube = true;
+
+    try {
+        const uid = usuarioActual.id;
+        const ahora = new Date().toISOString();
+
+        // 1. Guardar Perfil y Preferencias
+        await supabaseClient.from('perfiles').upsert({
+            user_id: uid,
+            email: usuarioActual.email,
+            theme_mode: localStorage.getItem('app_theme_mode') || 'dark',
+            theme_color: localStorage.getItem('app_theme_color') || '#FFFFFF',
+            app_pin: appPin,
+            censurado: censurado,
+            updated_at: ahora
+        });
+
+        // 2. Sincronizar Cuentas (respetando orden de las flechitas)
+        await supabaseClient.from('cuentas').delete().eq('user_id', uid);
+        if (cuentas.length > 0) {
+            const filasCuentas = cuentas.map((c, idx) => ({
+                user_id: uid,
+                id: String(c.id),
+                nombre: c.nombre,
+                moneda: c.moneda,
+                orden: idx,
+                updated_at: ahora
+            }));
+            await supabaseClient.from('cuentas').insert(filasCuentas);
+        }
+
+        // 3. Sincronizar Categorías
+        await supabaseClient.from('categorias').delete().eq('user_id', uid);
+        if (categorias.length > 0) {
+            const filasCat = categorias.map((cat, idx) => ({
+                user_id: uid,
+                nombre: cat,
+                orden: idx
+            }));
+            await supabaseClient.from('categorias').insert(filasCat);
+        }
+
+        // 4. Sincronizar Metas
+        await supabaseClient.from('metas').delete().eq('user_id', uid);
+        if (metas.length > 0) {
+            const filasMetas = metas.map((m, idx) => ({
+                user_id: uid,
+                id: String(m.id),
+                nombre: m.nombre,
+                acumulado: Number(m.acumulado) || 0,
+                objetivo: Number(m.objetivo) || 0,
+                moneda: m.moneda || 'USD',
+                imagen: m.imagen || null,
+                orden: idx,
+                updated_at: ahora
+            }));
+            await supabaseClient.from('metas').insert(filasMetas);
+        }
+
+        // 5. Sincronizar Transacciones
+        await supabaseClient.from('transacciones').delete().eq('user_id', uid);
+        if (transacciones.length > 0) {
+            const filasTrans = transacciones.map(t => ({
+                user_id: uid,
+                id: String(t.id),
+                cuenta_id: String(t.cuentaId),
+                monto_usd: Number(t.montoUSD) || 0,
+                tipo: t.tipo,
+                categoria: t.categoria,
+                nota: t.nota || '',
+                moneda_input_original: t.monedaInputOriginal || 'USD',
+                fecha_formateada: t.fechaFormateada || '',
+                fecha: typeof t.fecha === 'string' ? t.fecha : new Date(t.fecha).toISOString(),
+                fecha_iso_local: t.fechaIsoLocal || getLocalYYYYMMDD(new Date(t.fecha || Date.now())),
+                updated_at: ahora
+            }));
+            await supabaseClient.from('transacciones').insert(filasTrans);
+        }
+
+        localStorage.removeItem('assist_pending_sync');
+        actualizarUIEstadoNube();
+    } catch (err) {
+        console.error("Error al sincronizar con Supabase:", err);
+        localStorage.setItem('assist_pending_sync', 'true');
+        actualizarUIEstadoNube();
+    } finally {
+        sincronizandoNube = false;
+    }
+}
+
+async function descargarDesdeNube() {
+    if (!supabaseClient || !usuarioActual || !navigator.onLine) return false;
+    try {
+        const uid = usuarioActual.id;
+
+        const [resPerfil, resCuentas, resCat, resMetas, resTrans] = await Promise.all([
+            supabaseClient.from('perfiles').select('*').eq('user_id', uid).maybeSingle(),
+            supabaseClient.from('cuentas').select('*').eq('user_id', uid).order('orden', { ascending: true }),
+            supabaseClient.from('categorias').select('*').eq('user_id', uid).order('orden', { ascending: true }),
+            supabaseClient.from('metas').select('*').eq('user_id', uid).order('orden', { ascending: true }),
+            supabaseClient.from('transacciones').select('*').eq('user_id', uid)
+        ]);
+
+        const hayDatosEnNube = (
+            (resCuentas.data && resCuentas.data.length > 0) ||
+            (resTrans.data && resTrans.data.length > 0) ||
+            (resMetas.data && resMetas.data.length > 0) ||
+            (resCat.data && resCat.data.length > 0)
+        );
+
+        if (!hayDatosEnNube && !resPerfil.data) {
+            return false;
+        }
+
+        if (resPerfil.data) {
+            if (resPerfil.data.theme_color) cambiarColorAcento(resPerfil.data.theme_color, true);
+            if (resPerfil.data.theme_mode) cambiarModo(resPerfil.data.theme_mode, true);
+            if (resPerfil.data.app_pin !== undefined) {
+                appPin = resPerfil.data.app_pin;
+                if (appPin) localStorage.setItem('app_pin', appPin);
+                else localStorage.removeItem('app_pin');
+            }
+            if (typeof resPerfil.data.censurado === 'boolean') {
+                censurado = resPerfil.data.censurado;
+                localStorage.setItem('censurado', censurado);
+            }
+        }
+
+        if (resCuentas.data) {
+            cuentas = resCuentas.data.map(c => ({
+                id: isNaN(Number(c.id)) ? c.id : Number(c.id),
+                nombre: c.nombre,
+                moneda: c.moneda
+            }));
+        }
+
+        if (resCat.data) {
+            categorias = resCat.data.map(c => c.nombre);
+        }
+
+        if (resMetas.data) {
+            metas = resMetas.data.map(m => ({
+                id: isNaN(Number(m.id)) ? m.id : Number(m.id),
+                nombre: m.nombre,
+                acumulado: Number(m.acumulado) || 0,
+                objetivo: Number(m.objetivo) || 0,
+                moneda: m.moneda || 'USD',
+                imagen: m.imagen || null
+            }));
+        }
+
+        if (resTrans.data) {
+            transacciones = resTrans.data.map(t => ({
+                id: isNaN(Number(t.id)) ? t.id : Number(t.id),
+                cuentaId: isNaN(Number(t.cuenta_id)) ? t.cuenta_id : Number(t.cuenta_id),
+                montoUSD: Number(t.monto_usd) || 0,
+                tipo: t.tipo,
+                categoria: t.categoria,
+                nota: t.nota || '',
+                monedaInputOriginal: t.moneda_input_original || 'USD',
+                fechaFormateada: t.fecha_formateada || '',
+                fecha: t.fecha,
+                fechaIsoLocal: t.fecha_iso_local
+            }));
+            transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+        }
+
+        cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
+
+        localStorage.setItem('cuentas', JSON.stringify(cuentas));
+        localStorage.setItem('categorias', JSON.stringify(categorias));
+        localStorage.setItem('transacciones', JSON.stringify(transacciones));
+        localStorage.setItem('metas', JSON.stringify(metas));
+        localStorage.removeItem('assist_pending_sync');
+
+        cargarSelects();
+        renderizarListasGestion();
+        actualizarInterfaz();
+        actualizarUIEstadoNube();
+        return true;
+    } catch (err) {
+        console.error("Error al descargar datos de Supabase:", err);
+        return false;
+    }
+}
+
+async function forzarSincronizacionManual() {
+    if (!navigator.onLine) return alert("Sin conexión a internet. Tus datos siguen seguros en tu teléfono.");
+    await sincronizarHaciaNube();
+    alert("☁️ ¡Datos sincronizados con éxito en la nube!");
+}
+
+async function cerrarSesionNube() {
+    if (!confirm("¿Deseas cerrar tu sesión en la nube en este dispositivo?")) return;
+    if (navigator.onLine && usuarioActual) {
+        await sincronizarHaciaNube();
+        await supabaseClient.auth.signOut();
+    }
+    usuarioActual = null;
+    transacciones = [];
+    categorias = [];
+    cuentas = [];
+    metas = [];
+    appPin = null;
+    cuentaActivaId = null;
+
+    localStorage.removeItem('transacciones');
+    localStorage.removeItem('categorias');
+    localStorage.removeItem('cuentas');
+    localStorage.removeItem('metas');
+    localStorage.removeItem('app_pin');
+    localStorage.removeItem('assist_skip_auth');
+    localStorage.removeItem('assist_pending_sync');
+
+    cargarSelects();
+    renderizarListasGestion();
+    actualizarInterfaz();
+    actualizarUIEstadoNube();
+    abrirPantallaAuth();
+}
+
+// Detectar reconexión automática a internet (WiFi / Datos)
+window.addEventListener('online', () => {
+    actualizarUIEstadoNube();
+    if (usuarioActual && localStorage.getItem('assist_pending_sync') === 'true') {
+        sincronizarHaciaNube();
+    }
+});
+window.addEventListener('offline', () => {
+    actualizarUIEstadoNube();
+});
+
 // ================= SEGURIDAD, TEMAS Y PANTALLA DE CARGA =================
 window.addEventListener('load', () => {
     const savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
     const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
-    cambiarColorAcento(savedThemeColor);
-    cambiarModo(savedThemeMode);
+    cambiarColorAcento(savedThemeColor, true);
+    cambiarModo(savedThemeMode, true);
 
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
 
@@ -53,7 +433,13 @@ window.addEventListener('load', () => {
                 pinScreen.style.zIndex = '100000'; 
                 setTimeout(() => pinInput.focus(), 10); 
             } else {
-                appContainer.classList.add('app-unlocked');
+                // Si es un usuario nuevo sin sesión ni datos locales, mostramos la bienvenida de registro
+                const skipAuth = localStorage.getItem('assist_skip_auth') === 'true';
+                if (!usuarioActual && !tieneDatosLocales() && !skipAuth) {
+                    abrirPantallaAuth();
+                } else {
+                    appContainer.classList.add('app-unlocked');
+                }
             }
         }, 500); 
     }, 1200); 
@@ -65,14 +451,16 @@ document.getElementById('pin-screen').addEventListener('click', () => {
 });
 
 // Temas
-function cambiarColorAcento(color) {
+function cambiarColorAcento(color, omitirSync = false) {
     document.documentElement.style.setProperty('--accent', color);
     localStorage.setItem('app_theme_color', color);
+    if (!omitirSync && usuarioActual) sincronizarHaciaNube();
 }
-function cambiarModo(modo) {
+function cambiarModo(modo, omitirSync = false) {
     document.documentElement.setAttribute('data-theme', modo);
     document.body.setAttribute('data-theme', modo);
     localStorage.setItem('app_theme_mode', modo);
+    if (!omitirSync && usuarioActual) sincronizarHaciaNube();
 }
 
 // Auto-Bloqueo
@@ -114,9 +502,11 @@ function configurarPIN() {
     if (nuevo === null) return;
     if (nuevo === "") {
         localStorage.removeItem('app_pin'); appPin = null; alert("PIN desactivado.");
+        if (usuarioActual) sincronizarHaciaNube();
     } else if (nuevo.length === 4 && !isNaN(nuevo)) {
         localStorage.setItem('app_pin', nuevo); appPin = nuevo; alert("PIN configurado con éxito.");
         reiniciarInactividad();
+        if (usuarioActual) sincronizarHaciaNube();
     } else { alert("Debe ser un número de 4 dígitos."); }
 }
 
@@ -147,6 +537,7 @@ function resetearPIN() {
         localStorage.removeItem('app_pin'); appPin = null;
         document.getElementById('pin-screen').classList.add('oculto');
         document.getElementById('app-main-container').classList.add('app-unlocked');
+        if (usuarioActual) sincronizarHaciaNube();
         alert("PIN eliminado correctamente.");
     } else if (respuesta !== null) { alert("Palabra de seguridad incorrecta."); }
 }
@@ -159,6 +550,7 @@ function toggleCensura(event) {
     censurado = !censurado;
     localStorage.setItem('censurado', censurado);
     actualizarInterfaz();
+    if (usuarioActual) sincronizarHaciaNube();
 }
 
 function formatearMontoCensurado(texto, mantenerFisico = false) {
@@ -1149,6 +1541,7 @@ function guardarYActualizarGestion() {
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     localStorage.setItem('metas', JSON.stringify(metas));
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
+    if (usuarioActual) sincronizarHaciaNube();
 }
 
 // ================= BACKUPS =================
@@ -1188,8 +1581,15 @@ function importarDatos(e) {
                 localStorage.setItem('cuentas', JSON.stringify(cuentas));
                 localStorage.setItem('categorias', JSON.stringify(categorias));
                 
-                alert("¡Datos restaurados correctamente!");
-                window.location.reload(); 
+                if (usuarioActual) {
+                    sincronizarHaciaNube().then(() => {
+                        alert("¡Datos restaurados y respaldados en la nube correctamente!");
+                        window.location.reload();
+                    });
+                } else {
+                    alert("¡Datos restaurados correctamente!");
+                    window.location.reload(); 
+                }
             } else {
                 alert("El archivo no tiene el formato correcto de A$$IST.");
             }
@@ -1204,6 +1604,30 @@ function importarDatos(e) {
 
 // ================= ARRANQUE DE LA APP =================
 async function inicializarApp() {
+    // 1. Verificar si hay sesión guardada de Supabase
+    if (supabaseClient) {
+        try {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data && data.session && data.session.user) {
+                usuarioActual = data.session.user;
+                actualizarUIEstadoNube();
+
+                if (navigator.onLine) {
+                    if (localStorage.getItem('assist_pending_sync') === 'true') {
+                        await sincronizarHaciaNube();
+                    } else {
+                        await descargarDesdeNube();
+                    }
+                }
+            } else {
+                actualizarUIEstadoNube();
+            }
+        } catch (e) {
+            console.error("Modo offline activo:", e);
+            actualizarUIEstadoNube();
+        }
+    }
+
     await obtenerTasas();
     cargarSelects();
     actualizarInterfaz();

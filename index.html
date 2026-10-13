@@ -25,8 +25,35 @@
     
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- LIBRERÍA OFICIAL DE SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body data-theme="dark">
+
+    <!-- Pantalla Minimalista de Inicio de Sesión / Registro (Nube) -->
+    <div id="auth-screen" class="glass-modal oculto" style="z-index: 99997; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column;">
+        <div class="auth-box">
+            <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 80px; height: 80px; margin-bottom: 18px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+            <h2 id="auth-titulo" style="margin-bottom: 6px; font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST</h2>
+            <p id="auth-subtitulo" style="color: var(--text-secondary); font-size: 13px; margin-bottom: 22px; line-height: 1.4;">Sincroniza tus cuentas y movimientos en la nube para no perder nunca tu información.</p>
+
+            <!-- Selector Iniciar Sesión / Crear Cuenta -->
+            <div class="ios-segmented-control" style="margin-bottom: 18px; width: 100%;">
+                <div class="segment activo" id="seg-auth-login" onclick="cambiarModoAuth('login')">Iniciar Sesión</div>
+                <div class="segment" id="seg-auth-registro" onclick="cambiarModoAuth('registro')">Crear Cuenta</div>
+            </div>
+
+            <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                <input type="email" id="auth-email" placeholder="Correo electrónico" autocomplete="email" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;">
+                <input type="password" id="auth-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="current-password" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;">
+            </div>
+
+            <p id="auth-error-msg" class="oculto" style="color: #FF453A; font-size: 12px; font-weight: 600; margin-bottom: 12px; display: none;"></p>
+
+            <button id="btn-auth-submit" class="btn-primario" onclick="procesarAuth()" style="margin-bottom: 12px;">Entrar a mi cuenta</button>
+            <button id="btn-auth-skip" class="btn-secundario" onclick="continuarSinCuenta()" style="background: transparent; border: none; color: var(--text-secondary); font-size: 13px; padding: 8px;">Continuar sin cuenta (Solo en este navegador)</button>
+        </div>
+    </div>
 
     <!-- Pantalla de Bloqueo PIN -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
@@ -240,6 +267,34 @@
                     <p>Gestión y Apariencia</p>
                 </div>
             </div>
+
+            <!-- Tarjeta de Sincronización en la Nube (Supabase) -->
+            <section class="gestion-seccion" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h3 class="section-subtitle" style="margin-bottom: 0;">Respaldo en la Nube</h3>
+                    <span id="cloud-status-badge" class="cloud-badge desconectado">Local</span>
+                </div>
+
+                <!-- Vista cuando NO ha iniciado sesión -->
+                <div id="cloud-logged-out-box">
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                        Tus datos están guardados en este dispositivo. Inicia sesión o regístrate para respaldarlos en la nube y no perderlos si borras el navegador.
+                    </p>
+                    <button class="btn-primario" onclick="abrirPantallaAuth()">☁️ Conectar Cuenta / Registrarme</button>
+                </div>
+
+                <!-- Vista cuando SÍ ha iniciado sesión -->
+                <div id="cloud-logged-in-box" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 10px 14px; border-radius: 14px; border: 1px solid var(--border-light);">
+                        <div style="overflow: hidden;">
+                            <small style="color: var(--text-secondary); font-size: 11px; display: block;">Sesión activa</small>
+                            <strong id="cloud-user-email" style="font-size: 14px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
+                        </div>
+                        <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px;">🔄 Sincronizar</button>
+                    </div>
+                    <button class="btn-secundario" onclick="cerrarSesionNube()" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25);">Cerrar Sesión</button>
+                </div>
+            </section>
 
             <!-- Modos y Temas Ampliados -->
             <section class="gestion-seccion" style="padding: 15px;">
