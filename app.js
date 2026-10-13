@@ -57,8 +57,6 @@ window.addEventListener('load', () => {
             } else {
                 appContainer.classList.add('app-unlocked');
             }
-            
-            validarDiaCeroGastos();
         }, 600); 
     }, 1500); // 1.5s mostrando el logo fijamente
 });
@@ -152,22 +150,6 @@ function resetearPIN() {
         document.getElementById('app-main-container').classList.add('app-unlocked');
         alert("PIN eliminado correctamente.");
     } else if (respuesta !== null) { alert("Palabra de seguridad incorrecta."); }
-}
-
-function validarDiaCeroGastos() {
-    if (transacciones.length === 0) return;
-    const ayer = new Date();
-    ayer.setDate(ayer.getDate() - 1);
-    const ayerStr = getLocalYYYYMMDD(ayer);
-    
-    // Verificamos si en la bd hay un gasto ayer estrictamente local
-    const gastoAyer = transacciones.find(t => t.tipo === 'gasto' && t.fechaIsoLocal === ayerStr);
-    
-    if (!gastoAyer) {
-        const trophy = document.getElementById('trophy-notification');
-        trophy.classList.remove('oculto');
-        setTimeout(() => { trophy.classList.add('oculto'); }, 3500);
-    }
 }
 
 // ================= CENSURAR MONTOS =================
@@ -695,8 +677,10 @@ function actualizarListaTransacciones() {
         const matchSearch = t.categoria.toLowerCase().includes(query) || (t.nota && t.nota.toLowerCase().includes(query));
         let matchDate = true;
         
-        if(fechaFiltro && t.fechaIsoLocal) {
-            matchDate = (t.fechaIsoLocal === fechaFiltro);
+        if(fechaFiltro) {
+            const fechaT = t.fecha ? new Date(t.fecha) : new Date(t.id);
+            const isoLocal = t.fechaIsoLocal || getLocalYYYYMMDD(fechaT);
+            matchDate = (isoLocal === fechaFiltro);
         }
         return matchSearch && matchDate;
     });
@@ -767,7 +751,7 @@ function renderizarGrafico(transFiltered) {
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: 'var(--text-primary)', font: {size: 10} } } }
+            plugins: { legend: { position: 'right', labels: { color: '#FFFFFF', font: {size: 10} } } }
         }
     });
 }
