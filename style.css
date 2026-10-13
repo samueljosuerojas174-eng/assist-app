@@ -59,8 +59,8 @@ body { color: var(--text-primary); overscroll-behavior-y: none; }
 @keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* Animacion Desbloqueo FaceID */
-.unlock-anim { animation: faceIdUnlock 0.5s var(--ios-spring) forwards !important; }
+/* Animacion Desbloqueo FaceID Acelerada */
+.unlock-anim { animation: faceIdUnlock 0.3s var(--ios-spring) forwards !important; }
 @keyframes faceIdUnlock { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; pointer-events: none;} }
 
 /* Slider Cuentas */
@@ -141,14 +141,53 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 .btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
 
-/* 1. Metas de Ahorro Premium */
-.meta-item-card { margin-bottom: 15px; background: var(--card-dark); border-radius: 20px; border: 1px solid var(--border-light); position: relative; overflow: hidden; height: 110px; cursor: pointer; transition: transform 0.3s var(--ios-spring); }
-.meta-item-card:active { transform: scale(0.95); }
-.meta-bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: inherit; filter: blur(5px); transform: scale(1.1); opacity: 0.6; z-index: 0; pointer-events: none;}
-.meta-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; padding: 20px; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between; }
-[data-theme="light"] .meta-content { background: rgba(255,255,255,0.7); }
-.progress-bg { width: 100%; height: 8px; background: rgba(150,150,150,0.3); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
-.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s var(--ios-spring); }
+/* 1. Metas de Ahorro - Ajuste Visual */
+.meta-item-card { 
+    margin-bottom: 15px; 
+    background: var(--card-dark); 
+    border-radius: 20px; 
+    border: 1px solid var(--border-light); 
+    position: relative; 
+    overflow: hidden; 
+    height: 120px; 
+    cursor: pointer; 
+    transition: transform 0.3s var(--ios-spring); 
+}
+.meta-item-card:active { transform: scale(0.97); }
+
+/* Capa de imagen de fondo: se muestra completa y con difuminado suave */
+.meta-bg-overlay { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background-size: 100% 100%; /* Fuerza a la imagen a estirarse exactamente al ancho y alto del cuadro */
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: blur(0.5px); 
+    opacity: 0.65;
+    z-index: 0; 
+    pointer-events: none;
+}
+
+/* Capa de texto: degradado oscuro ligero para garantizar lectura */
+.meta-content { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    z-index: 1; 
+    padding: 16px 20px; 
+    background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 100%); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+}
+[data-theme="light"] .meta-content { 
+    background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%); 
+}
 
 /* Paleta Ampliada de 20+ Colores */
 .palette-container { display: flex; gap: 12px; overflow-x: auto; padding: 5px; scrollbar-width: none; -ms-overflow-style: none; }

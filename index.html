@@ -286,9 +286,15 @@
     <!-- Modal Detalles de Meta (Pantalla Completa Pura) -->
     <div id="modal-detalle-meta" class="glass-modal oculto" style="z-index: 10000; align-items: flex-end;">
         <div class="glass-modal-content" style="padding: 0; height: 92vh; border-radius: 32px 32px 0 0; overflow: hidden; background: var(--bg-dark); border:none;" onclick="event.stopPropagation()">
-            <!-- Cabecera Fotográfica Difuminada -->
-            <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; background-size: cover; background-position: center; background-repeat: no-repeat;">
-                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, var(--bg-dark) 100%);"></div>
+            
+            <!-- Cabecera Fotográfica Nítida con Degradado abajo -->
+            <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; overflow: hidden;">
+                <!-- Fondo Nítido Local -->
+                <div id="meta-detail-bg-blur" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0.9;"></div>
+                
+                <!-- Este es el degradado que funde las "patas" de la foto con el fondo de la app -->
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
+                
                 <button class="btn-close-modal" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.5); color: #fff;" onclick="cerrarModal('modal-detalle-meta'); actualizarInterfaz();">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -318,7 +324,7 @@
         </div>
     </div>
 
-    <!-- Modal Abono / Retiro Meta -->
+    <!-- Modal Abono / Retiro Meta con Selector de Moneda -->
     <div id="modal-accion-meta" class="glass-modal oculto" style="z-index: 10001;" onclick="cerrarModal('modal-accion-meta')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header">
@@ -330,7 +336,12 @@
             <p id="desc-accion-meta" style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;"></p>
             
             <div class="input-wrapper">
-                <input type="number" id="monto-accion-meta" placeholder="Monto USD" step="0.01" inputmode="decimal">
+                <input type="number" id="monto-accion-meta" placeholder="Monto" step="0.01" inputmode="decimal">
+                <div class="wrapper-divider"></div>
+                <select id="moneda-accion-meta" class="custom-select-inline">
+                    <option value="USD">USD</option>
+                    <option value="VES">VES</option>
+                </select>
             </div>
             <div class="input-group">
                 <select id="sel-cuenta-accion-meta" class="custom-select-btn"></select>
@@ -343,7 +354,7 @@
         </div>
     </div>
 
-    <!-- Modal Cuentas -->
+    <!-- Modal Cuentas con USDT Y EUR -->
     <div id="modal-cuentas" class="glass-modal oculto" onclick="cerrarModal('modal-cuentas')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header">
@@ -358,6 +369,7 @@
                 <select id="sel-nueva-moneda" class="custom-select-btn" style="min-width: 100px; flex: 0 0 auto;">
                     <option value="VES">Bs</option>
                     <option value="USD">USD</option>
+                    <option value="USDT">USDT</option>
                 </select>
             </div>
             <button class="btn-secundario" onclick="agregarCuenta()">+ Agregar Cuenta</button>

@@ -53,15 +53,15 @@ window.addEventListener('load', () => {
             // 2. Al desaparecer el splash, subimos el PIN y enfocamos el teclado
             if (appPin) {
                 pinScreen.style.zIndex = '100000'; 
-                setTimeout(() => pinInput.focus(), 50); 
+                setTimeout(() => pinInput.focus(), 10); 
             } else {
                 appContainer.classList.add('app-unlocked');
             }
-        }, 600); 
-    }, 1500); // 1.5s mostrando el logo fijamente
+        }, 500); 
+    }, 1200); 
 });
 
-// Forzar autofocus al tocar la pantalla de bloqueo (por si el usuario lo pierde)
+// Forzar autofocus al tocar la pantalla de bloqueo
 document.getElementById('pin-screen').addEventListener('click', () => {
     document.getElementById('input-pin').focus();
 });
@@ -123,8 +123,11 @@ function configurarPIN() {
 }
 
 function verificarPIN() {
-    const input = document.getElementById('input-pin').value;
-    if (input === appPin) {
+    const input = document.getElementById('input-pin');
+    if (input.value === appPin) {
+        // Forza Ocultar Teclado Inmediatamente
+        input.blur(); 
+        
         // Animacion FaceID
         const screen = document.getElementById('pin-screen');
         const container = document.getElementById('app-main-container');
@@ -133,12 +136,12 @@ function verificarPIN() {
         setTimeout(() => {
             screen.classList.add('oculto');
             screen.style.opacity = '1';
-        }, 300);
-        document.getElementById('input-pin').value = '';
+            input.value = '';
+        }, 200);
         reiniciarInactividad();
     } else {
         alert("PIN incorrecto");
-        document.getElementById('input-pin').value = '';
+        input.value = '';
     }
 }
 
@@ -173,7 +176,7 @@ function abrirModal(id) {
     document.getElementById(id).classList.remove('oculto');
     document.body.style.overflow = 'hidden'; 
     if (id === 'modal-historial') {
-        document.getElementById('filtro-fecha').value = ''; // Limpiamos al entrar
+        document.getElementById('filtro-fecha').value = ''; 
         actualizarListaTransacciones(); 
     }
     if (id === 'modal-cuentas' || id === 'modal-categorias') renderizarListasGestion();
@@ -261,28 +264,30 @@ function renderizarMetas() {
     const lista = document.getElementById('lista-metas-principal');
     if(!lista) return;
     lista.innerHTML = '';
-    if(metas.length === 0) { lista.innerHTML = '<p style="color:var(--text-secondary); font-size:13px; text-align:center;">No tienes metas activas. ¡Crea una!</p>'; return; }
+    if(metas.length === 0) { 
+        lista.innerHTML = '<p style="color:var(--text-secondary); font-size:13px; text-align:center;">No tienes metas activas. ¡Crea una!</p>'; 
+        return; 
+    }
     
     metas.forEach((m, i) => {
         let pct = (m.acumulado / m.objetivo) * 100;
         if(pct > 100) pct = 100;
-        const bgStyle = m.imagen ? `background-image: url(${m.imagen});` : `background: var(--card-dark);`;
+        const bgStyle = m.imagen ? `background-image: url(${m.imagen});` : ``;
 
         lista.innerHTML += `
-        <div class="meta-item-card" style="${bgStyle}" onclick="abrirDetalleMeta(${i})">
-            <div class="meta-bg-overlay"></div>
+        <div class="meta-item-card" onclick="abrirDetalleMeta(${i})">
+            <div class="meta-bg-overlay" style="${bgStyle}"></div>
             <div class="meta-content">
                 <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
-                    <strong style="font-size:18px;">${m.nombre}</strong>
-                    <span style="font-size:14px; font-weight:bold;">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
+                    <strong style="font-size:18px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">${m.nombre}</strong>
+                    <span style="font-size:14px; font-weight:bold; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
                 </div>
                 <div class="progress-bg" style="height:6px;"><div class="progress-fill" style="width: ${pct}%;"></div></div>
-                <small style="color:var(--text-primary); font-size:12px; font-weight:600;">${pct.toFixed(1)}% de ${m.objetivo}</small>
+                <small style="color:var(--text-primary); font-size:12px; font-weight:600; text-shadow: 0 1px 4px rgba(0,0,0,0.8);">${pct.toFixed(1)}% de ${m.objetivo}</small>
             </div>
         </div>`;
     });
 }
-
 // Vista Detalle Meta
 function abrirDetalleMeta(index) {
     metaAbonoActualIndex = index;
@@ -290,9 +295,13 @@ function abrirDetalleMeta(index) {
     let pct = (m.acumulado / m.objetivo) * 100;
     if(pct > 100) pct = 100;
 
-    const header = document.getElementById('meta-detail-header');
-    header.style.backgroundImage = m.imagen ? `url(${m.imagen})` : 'none';
-    header.style.backgroundColor = m.imagen ? 'transparent' : 'var(--card-dark)';
+    const bgOverlayDetail = document.getElementById('meta-detail-bg-blur');
+    if(m.imagen) {
+        bgOverlayDetail.style.backgroundImage = `url(${m.imagen})`;
+        bgOverlayDetail.style.display = 'block';
+    } else {
+        bgOverlayDetail.style.display = 'none';
+    }
 
     document.getElementById('meta-detail-title').innerText = m.nombre;
     document.getElementById('meta-detail-amounts').innerText = `${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))} / ${m.objetivo.toFixed(2)}`;
@@ -347,6 +356,7 @@ function prepararAccionMeta(tipo) {
     document.getElementById('monto-accion-meta').value = '';
     document.getElementById('nota-accion-meta').value = '';
     document.getElementById('fecha-accion-meta').value = getLocalYYYYMMDD();
+    document.getElementById('moneda-accion-meta').value = 'USD'; 
 
     const selectCuenta = document.getElementById('sel-cuenta-accion-meta');
     selectCuenta.innerHTML = '';
@@ -357,6 +367,8 @@ function prepararAccionMeta(tipo) {
 
 document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     const monto = parseFloat(document.getElementById('monto-accion-meta').value);
+    const monedaAccion = document.getElementById('moneda-accion-meta').value;
+    
     if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
 
     const cuentaId = document.getElementById('sel-cuenta-accion-meta').value;
@@ -366,9 +378,13 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     const cuenta = cuentas.find(c => c.id == cuentaId);
     const meta = metas[metaAbonoActualIndex];
 
-    if (metaAccionTipo === 'retirar' && monto > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
+    // Convertir si el usuario elige VES
+    let montoUSD = monto;
+    if (monedaAccion === 'VES') montoUSD = monto / tasaBCV;
 
-    // Lógica estricta de fecha para Abonos
+    if (metaAccionTipo === 'retirar' && montoUSD > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
+
+    // Lógica estricta de fecha para Abonos y Retiros
     const valFecha = document.getElementById('fecha-accion-meta').value; 
     const dateObj = valFecha ? new Date(valFecha + "T00:00:00") : new Date();
     const isoLocal = getLocalYYYYMMDD(dateObj);
@@ -379,23 +395,23 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     const baseNota = metaAccionTipo === 'abonar' ? `Abono a meta: ${meta.nombre}` : `Retiro de meta: ${meta.nombre}`;
 
     const transaccion = {
-        id: dateObj.getTime() + Math.random(), // Evitar colisiones si se registran varias en un dia
+        id: dateObj.getTime() + Math.random(),
         cuentaId: cuentaId,
-        montoUSD: monto,
+        montoUSD: montoUSD,
         tipo: tTipo,
         categoria: 'Ahorro',
         nota: notaUser ? `${baseNota} - ${notaUser}` : baseNota,
-        monedaInputOriginal: cuenta.moneda, 
+        monedaInputOriginal: monedaAccion, 
         fechaFormateada: fechaFormateada,
         fecha: dateObj,
-        fechaIsoLocal: isoLocal // Para filtro estricto
+        fechaIsoLocal: isoLocal
     };
     
     transacciones.push(transaccion);
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     
-    if (metaAccionTipo === 'abonar') { metas[metaAbonoActualIndex].acumulado += monto; } 
-    else { metas[metaAbonoActualIndex].acumulado -= monto; }
+    if (metaAccionTipo === 'abonar') { metas[metaAbonoActualIndex].acumulado += montoUSD; } 
+    else { metas[metaAbonoActualIndex].acumulado -= montoUSD; }
 
     guardarYActualizarGestion();
     cerrarModal('modal-accion-meta');
@@ -405,6 +421,8 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
 function eliminarMeta(index) {
     if(confirm("¿Seguro que deseas eliminar esta meta? (El dinero ahorrado NO regresará a tus cuentas automáticamente)")) {
         metas.splice(index, 1); guardarYActualizarGestion();
+        cerrarModal('modal-detalle-meta');
+        actualizarInterfaz();
     }
 }
 
@@ -836,17 +854,42 @@ function importarDatos(e) {
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
+            
+            // Verificamos que sea un backup de A$$IST válido
             if(data.transacciones && data.cuentas) {
-                transacciones = data.transacciones; categorias = data.categorias; cuentas = data.cuentas; metas = data.metas || [];
-                // Compatibilidad hacia atras con isoLocal
-                transacciones.forEach(t => { if(!t.fechaIsoLocal) t.fechaIsoLocal = getLocalYYYYMMDD(new Date(t.fecha)); });
+                transacciones = data.transacciones; 
+                categorias = data.categorias || []; // Fallback por si en el backup no hay categorías
+                cuentas = data.cuentas; 
+                metas = data.metas || [];
+                
+                // Compatibilidad hacia atrás super segura (evita que crashee con fechas viejas o inexistentes)
+                transacciones.forEach(t => { 
+                    if(!t.fechaIsoLocal) {
+                        let d = t.fecha ? new Date(t.fecha) : new Date(t.id);
+                        if (isNaN(d.getTime())) d = new Date(); // Si la fecha antigua es ilegible, usa hoy por seguridad
+                        t.fechaIsoLocal = getLocalYYYYMMDD(d);
+                    }
+                });
+                
+                // Guardado directo a memoria
                 localStorage.setItem('transacciones', JSON.stringify(transacciones));
                 localStorage.setItem('metas', JSON.stringify(metas));
-                guardarYActualizarGestion(); alert("Datos restaurados correctamente!");
+                localStorage.setItem('cuentas', JSON.stringify(cuentas));
+                localStorage.setItem('categorias', JSON.stringify(categorias));
+                
+                alert("¡Datos restaurados correctamente!");
+                window.location.reload(); 
+            } else {
+                alert("El archivo no tiene el formato correcto de A$$IST.");
             }
-        } catch (err) { alert("Archivo inválido o corrupto."); }
+        } catch (err) { 
+            console.error("Error al importar:", err);
+            alert("Archivo inválido o corrupto."); 
+        }
     };
     reader.readAsText(file);
+    // Permite volver a seleccionar el mismo archivo si hay algún error
+    e.target.value = '';
 }
 
 // ================= ARRANQUE DE LA APP =================
