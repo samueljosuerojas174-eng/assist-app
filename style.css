@@ -471,15 +471,35 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 #calc-variacion-box { margin-top: 0 !important; font-size: 12px !important; }
 #calc-variacion-box.oculto { display: none; }
 
-/* ================= ASKBOT (DISEÑO INMERSIVO ESTILO GEMINI / CHATGPT + FIX TECLADO iOS) ================= */
-#tab-askbot.vista-activa {
-    display: flex;
-    flex-direction: column;
-    height: calc(var(--askbot-vh, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 82px);
+/* ================= ASKBOT (ANCLAJE FIJO Y ADAPTACIÓN ELÁSTICA ESTILO GEMINI iOS) ================= */
+html.askbot-tab-open,
+body.askbot-tab-open,
+body.askbot-kb-open {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
 }
 
+body.askbot-tab-open .app-container,
 body.askbot-kb-open .app-container {
+    overflow: hidden !important;
     padding-bottom: 10px !important;
+}
+
+#tab-askbot.vista-activa {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: calc(env(safe-area-inset-top) + 6px) 20px calc(78px + env(safe-area-inset-bottom)) 20px;
+    display: flex;
+    flex-direction: column;
+    height: var(--askbot-vh, 100dvh);
+    z-index: 40;
+    overflow: hidden;
+    transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1), padding-bottom 0.25s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 body.askbot-kb-open #bottom-nav-bar {
@@ -489,12 +509,18 @@ body.askbot-kb-open #bottom-nav-bar {
 }
 
 body.askbot-kb-open #tab-askbot.vista-activa {
-    height: calc(var(--askbot-vh, 100dvh) - env(safe-area-inset-top) - 12px);
+    height: var(--askbot-vh, 100dvh);
+    padding-bottom: 10px !important;
 }
 
 .askbot-header-bar {
     margin: 4px 0 8px !important;
     flex-shrink: 0;
+    transition: margin 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-header-bar {
+    margin: 0 0 6px !important;
 }
 
 .askbot-header-badge {
@@ -520,11 +546,17 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     min-height: 0;
     overflow: hidden;
     position: relative;
+    transition: padding 0.25s var(--ios-spring);
 }
 
-/* Pantalla Hero de Bienvenida (Zero-State que desaparece al enviar mensaje) */
+body.askbot-kb-open .askbot-container {
+    padding: 10px 12px;
+}
+
+/* Pantalla Hero de Bienvenida (Zero-State que se compacta sin cortarse al abrir teclado) */
 .askbot-welcome-hero {
     flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -533,7 +565,14 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     padding: 10px 6px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     animation: scaleFadeIn 0.35s var(--ios-spring) forwards;
+    transition: padding 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-welcome-hero {
+    justify-content: flex-start;
+    padding: 2px 4px 4px 4px;
 }
 
 .askbot-welcome-hero.oculto-hero {
@@ -543,6 +582,7 @@ body.askbot-kb-open #tab-askbot.vista-activa {
 .askbot-hero-orb {
     width: 56px;
     height: 56px;
+    flex-shrink: 0;
     border-radius: 20px;
     background: var(--input-bg);
     border: 1px solid var(--border-light);
@@ -552,6 +592,15 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     font-size: 26px;
     margin-bottom: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    transition: width 0.25s var(--ios-spring), height 0.25s var(--ios-spring), font-size 0.25s var(--ios-spring), margin-bottom 0.25s var(--ios-spring), border-radius 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-hero-orb {
+    width: 38px;
+    height: 38px;
+    border-radius: 13px;
+    font-size: 18px;
+    margin-bottom: 5px;
 }
 
 .askbot-hero-title {
@@ -560,6 +609,13 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     color: var(--text-primary);
     letter-spacing: -0.5px;
     margin-bottom: 6px;
+    flex-shrink: 0;
+    transition: font-size 0.25s var(--ios-spring), margin-bottom 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-hero-title {
+    font-size: 18px;
+    margin-bottom: 2px;
 }
 
 .askbot-hero-sub {
@@ -568,6 +624,14 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     line-height: 1.4;
     max-width: 300px;
     margin-bottom: 18px;
+    flex-shrink: 0;
+    transition: font-size 0.25s var(--ios-spring), margin-bottom 0.25s var(--ios-spring), line-height 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-hero-sub {
+    font-size: 11.5px;
+    line-height: 1.28;
+    margin-bottom: 8px;
 }
 
 .askbot-chips {
@@ -575,6 +639,12 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     width: 100%;
+    flex-shrink: 0;
+    transition: gap 0.25s var(--ios-spring);
+}
+
+body.askbot-kb-open .askbot-chips {
+    gap: 6px;
 }
 
 .askbot-chip {
@@ -590,14 +660,26 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    transition: transform 0.25s var(--ios-spring), border-color 0.25s;
+    transition: transform 0.25s var(--ios-spring), border-color 0.25s, padding 0.25s var(--ios-spring), font-size 0.25s var(--ios-spring), gap 0.25s var(--ios-spring);
 }
+
+body.askbot-kb-open .askbot-chip {
+    padding: 7px 10px;
+    font-size: 11px;
+    gap: 2px;
+    border-radius: 13px;
+}
+
 .askbot-chip:active {
     transform: scale(0.94);
     border-color: var(--accent);
 }
 .askbot-chip .chip-icon {
     font-size: 16px;
+    transition: font-size 0.25s var(--ios-spring);
+}
+body.askbot-kb-open .askbot-chip .chip-icon {
+    font-size: 13px;
 }
 .askbot-chip .chip-text {
     line-height: 1.3;
@@ -685,7 +767,10 @@ body.askbot-kb-open #tab-askbot.vista-activa {
     padding: 6px 6px 6px 14px;
     margin-top: 8px;
     flex-shrink: 0;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, margin-top 0.25s var(--ios-spring);
+}
+body.askbot-kb-open .askbot-input-bar {
+    margin-top: 6px;
 }
 .askbot-input-bar:focus-within {
     border-color: var(--accent);
@@ -767,7 +852,7 @@ body.askbot-kb-open #tab-askbot.vista-activa {
 .modal-list::-webkit-scrollbar-thumb { background: rgba(150,150,150,0.15); border-radius: 5px; }
 
 /* BARRA INFERIOR (5 PESTAÑAS) */
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); transition: transform 0.25s ease, opacity 0.25s ease; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s ease; }
 [data-theme="light"] .bottom-nav { background: rgba(255, 255, 255, 0.85); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #8E8E93; cursor: pointer; transition: color 0.3s; width: 20%; z-index: 2; position: relative; }
 .nav-item.activo { color: var(--accent); }
@@ -819,6 +904,17 @@ body[data-theme="glass"] {
     border-left: 1px solid rgba(255, 255, 255, 0.15);
     box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     transition: none !important;
+}
+
+/* Mantiene la fluidez del teclado de AskBot incluso en Liquid Glass */
+[data-theme="glass"] #tab-askbot.vista-activa {
+    transition: height 0.25s cubic-bezier(0.25, 1, 0.5, 1), padding-bottom 0.25s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+[data-theme="glass"] .askbot-hero-orb {
+    transition: width 0.25s var(--ios-spring), height 0.25s var(--ios-spring), font-size 0.25s var(--ios-spring), margin-bottom 0.25s var(--ios-spring), border-radius 0.25s var(--ios-spring) !important;
+}
+[data-theme="glass"] .askbot-chip {
+    transition: transform 0.25s var(--ios-spring), border-color 0.25s, padding 0.25s var(--ios-spring), font-size 0.25s var(--ios-spring), gap 0.25s var(--ios-spring) !important;
 }
 
 /* Burbuja del usuario, botón enviar de AskBot y guardar nombre en modo Liquid Glass */
