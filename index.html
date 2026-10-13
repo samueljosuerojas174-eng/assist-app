@@ -8,13 +8,22 @@
     <meta name="apple-mobile-web-app-title" content="A$$IST">
     <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
+    <!-- Icono nativo para iOS -->
+    <link rel="apple-touch-icon" href="logo.jpg">
     <title>A$$IST</title>
     <link rel="stylesheet" href="style.css">
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <!-- Pantalla de Bloqueo PIN (Fondo 100% negro, se sitúa justo detrás del splash) -->
+    <!-- Trofeo "Día Cero Gastos" (Gamificación) -->
+    <div id="trophy-notification" class="trophy-anim oculto">
+        <span style="font-size:24px;">🏆</span>
+        <span>¡Día Cero Gastos superado!</span>
+        <span style="font-size:24px;">🎉</span>
+    </div>
+
+    <!-- Pantalla de Bloqueo PIN -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: #000000 !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
             <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
@@ -45,9 +54,7 @@
 
             <!-- Tarjeta de Balance -->
             <div class="slider-cuentas-container">
-                <div class="slider-cuentas" id="slider-cuentas">
-                    <!-- Se inyectan via JS -->
-                </div>
+                <div class="slider-cuentas" id="slider-cuentas"></div>
                 <div class="slider-dots" id="slider-dots"></div>
             </div>
 
@@ -101,9 +108,10 @@
                     </select>
                 </div>
 
-                <!-- Input para notas -->
+                <!-- Selector de Fecha de Movimiento + Nota -->
                 <div class="input-group">
-                    <input type="text" id="val-nota" placeholder="Nota o etiqueta (Opcional)" style="margin-bottom: 10px; width: 100%;">
+                    <input type="date" id="val-fecha" style="width: 40%; font-size: 14px; padding: 12px 10px;">
+                    <input type="text" id="val-nota" placeholder="Nota (Opcional)" style="width: 60%;">
                 </div>
 
                 <button class="btn-primario" onclick="agregarTransaccion()">Registrar</button>
@@ -131,7 +139,6 @@
             </div>
 
             <section class="calc-cambio-container blur-effect">
-                
                 <div class="ios-segmented-control">
                     <div class="segment activo" id="seg-bcv" onclick="setTasaModo('BCV')">BCV</div>
                     <div class="segment" id="seg-usdt" onclick="setTasaModo('USDT')">USDT</div>
@@ -171,14 +178,44 @@
             </section>
         </div>
 
+        <!-- ================= APARTADO: METAS DE AHORRO ================= -->
+        <div id="tab-metas" class="vista-oculta">
+            <div class="header-title">
+                <div>
+                    <h1>Metas</h1>
+                    <p>Objetivos de Ahorro</p>
+                </div>
+            </div>
+            
+            <section class="add-transaction" style="padding: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 class="section-subtitle" style="margin-bottom: 0;">Mis Metas Activas</h3>
+                    <button onclick="agregarMeta()" style="background:transparent; border:none; color:var(--accent); font-size:24px; font-weight:bold; cursor:pointer;">+</button>
+                </div>
+                <div id="lista-metas"></div>
+            </section>
+        </div>
+
         <!-- ================= APARTADO: GESTIÓN (COMPACTO) ================= -->
         <div id="tab-categorias" class="vista-oculta">
             <div class="header-title">
                 <div>
                     <h1>Ajustes</h1>
-                    <p>Gestión de datos</p>
+                    <p>Gestión y Apariencia</p>
                 </div>
             </div>
+
+            <!-- Temas de Colores Personalizados -->
+            <section class="gestion-seccion" style="padding: 15px; display: flex; flex-direction: column; align-items: center;">
+                <h3 class="section-subtitle">Tema de Color</h3>
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 5px;">
+                    <div class="theme-dot" style="background:#FFFFFF;" onclick="cambiarTema('#FFFFFF')"></div>
+                    <div class="theme-dot" style="background:#32D74B;" onclick="cambiarTema('#32D74B')"></div>
+                    <div class="theme-dot" style="background:#0A84FF;" onclick="cambiarTema('#0A84FF')"></div>
+                    <div class="theme-dot" style="background:#BF5AF2;" onclick="cambiarTema('#BF5AF2')"></div>
+                    <div class="theme-dot" style="background:#FF9F0A;" onclick="cambiarTema('#FF9F0A')"></div>
+                </div>
+            </section>
             
             <section class="gestion-seccion" style="display: flex; flex-direction: column; gap: 15px;">
                 <h3 class="section-subtitle">Opciones de Administración</h3>
@@ -209,13 +246,11 @@
                     </button>
                 </div>
 
-                <!-- Filtros Inteligentes -->
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar (cat, nota...)" style="flex:1; padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; outline:none;" oninput="actualizarListaTransacciones()">
-                    <select id="filtro-mes" class="custom-select-btn" style="padding: 10px; font-size: 13px;" onchange="actualizarListaTransacciones()">
-                        <option value="todos">Todo</option>
-                        <option value="mes">Este Mes</option>
-                    </select>
+                <!-- Filtros Inteligentes (Buscador y Calendario) -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar..." style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: #fff; outline:none;" oninput="actualizarListaTransacciones()">
+                    <input type="date" id="filtro-fecha" class="custom-select-btn" style="padding: 9px; font-size: 13px; width: 135px; flex: 0 0 auto; padding-right: 10px; background-image:none;" onchange="actualizarListaTransacciones()">
+                    <button onclick="document.getElementById('filtro-fecha').value=''; actualizarListaTransacciones()" style="background: transparent; border: none; color: var(--text-secondary); font-size: 12px; font-weight: bold; cursor: pointer;">Todo</button>
                 </div>
             </div>
             
@@ -224,6 +259,7 @@
                 <canvas id="graficoGastos"></canvas>
             </div>
 
+            <!-- Soporte para deslizar (Swipe to delete) se genera en JS -->
             <ul id="lista-transacciones" class="modal-list"></ul>
         </div>
     </div>
@@ -243,8 +279,6 @@
                 <select id="sel-nueva-moneda" class="custom-select-btn" style="min-width: 100px; flex: 0 0 auto;">
                     <option value="VES">Bs</option>
                     <option value="USD">USD</option>
-                    <option value="USDT">USDT</option>
-                    <option value="EUR">EUR</option>
                 </select>
             </div>
             <button class="btn-secundario" onclick="agregarCuenta()">+ Agregar Cuenta</button>
@@ -268,6 +302,27 @@
         </div>
     </div>
 
+    <!-- Modal para Seleccionar Cuenta de Abono a Meta -->
+    <div id="modal-seleccionar-cuenta-meta" class="glass-modal oculto" onclick="cerrarModal('modal-seleccionar-cuenta-meta')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header">
+                <h2>Selecciona la cuenta</h2>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-seleccionar-cuenta-meta')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <p style="color: var(--text-secondary); font-size: 14px;">El monto se registrará como un gasto en la cuenta seleccionada para mantener tu balance al día.</p>
+            </div>
+            <div class="input-group">
+                <select id="sel-cuenta-abono" class="custom-select-btn">
+                    <!-- Se llena vía JS -->
+                </select>
+            </div>
+            <button class="btn-primario" onclick="procesarAbonoMeta()">Confirmar Abono</button>
+        </div>
+    </div>
+
     <!-- Barra Inferior -->
     <nav class="bottom-nav">
         <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
@@ -278,8 +333,12 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             <span class="nav-text">Conversión</span>
         </div>
+        <div class="nav-item" onclick="cambiarPestana('tab-metas', this)">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span class="nav-text">Metas</span>
+        </div>
         <div class="nav-item" onclick="cambiarPestana('tab-categorias', this)">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>

@@ -6,6 +6,7 @@
     --border-light: rgba(255, 255, 255, 0.08);
     --text-primary: #FFFFFF;
     --text-secondary: #8E8E93;
+    /* La variable accent ahora puede ser inyectada y controlada por JS */
     --accent: #FFFFFF;
 }
 
@@ -76,30 +77,35 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .input-wrapper input { border: none !important; background: transparent !important; padding: 12px 14px !important; flex: 1; outline: none; font-size: 20px; font-weight: 700; color: #FFFFFF !important; width: 100%;}
 .input-wrapper .wrapper-divider { width: 1px; height: 24px; background: var(--border-light); }
 
-select.custom-select-btn { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background: rgba(255,255,255,0.05); color: #FFFFFF; cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s; overflow: hidden; white-space: nowrap; }
-select.custom-select-btn:active { transform: scale(0.95); background-color: rgba(255,255,255,0.12); }
+select.custom-select-btn, input[type="date"], input[type="month"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background-color: rgba(255,255,255,0.05); color: #FFFFFF; cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s, border 0.3s; overflow: hidden; white-space: nowrap; }
+select.custom-select-btn:active, input[type="date"]:active, input[type="month"]:active { transform: scale(0.95); background-color: rgba(255,255,255,0.12); }
+select.custom-select-btn:focus, input[type="date"]:focus, input[type="month"]:focus { border-color: var(--accent); outline: none;}
 
 select.custom-select-inline { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 0px center; padding-right: 20px; border: none; background-color: transparent; color: #FFFFFF; font-size: 15px; font-weight: 600; cursor: pointer; padding: 12px 14px; transition: opacity 0.3s; }
 select.custom-select-inline:active { opacity: 0.5; }
 select.custom-select-inline option:disabled { color: var(--text-secondary); }
 
 .input-group { display: flex; gap: 12px; margin-bottom: 10px; transition: all 0.3s; }
-input:not([type="hidden"]):not(#monto), select:not(#moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
+input:not([type="hidden"]):not(#monto):not([type="date"]):not([type="month"]), select:not(#moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
 select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
 
-/* Soporte para ocultar elementos */
 #val-categoria { transition: all 0.3s var(--ios-spring); transform-origin: right; }
 .oculto { opacity: 0; max-width: 0; padding: 0 !important; border: none !important; overflow: hidden; flex: 0; margin: 0; pointer-events: none;}
 
 /* Botones Principales */
-.btn-primario { width: 100%; padding: 12px; background-color: var(--text-primary); color: var(--bg-dark); border: none; border-radius: 16px; font-size: 16px; font-weight: 700; cursor: pointer; transition: transform 0.4s var(--ios-spring), box-shadow 0.3s; box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
+.btn-primario { width: 100%; padding: 12px; background-color: var(--accent); color: var(--bg-dark); border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; transition: transform 0.4s var(--ios-spring), box-shadow 0.3s; box-shadow: 0 4px 12px rgba(255,255,255,0.1); }
 .btn-primario:active { transform: scale(0.92); box-shadow: 0 2px 6px rgba(255,255,255,0.05); }
 .btn-secundario { width: 100%; padding: 12px; background-color: rgba(255,255,255,0.1); color: var(--text-primary); border: none; border-radius: 16px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px;}
 .btn-secundario:active { transform: scale(0.94); background-color: rgba(255,255,255,0.15); }
 
-/* Listas UI */
-.lista-gestion, #lista-transacciones { list-style: none; }
+/* Listas UI y Swipe to Delete */
+.lista-gestion, #lista-transacciones { list-style: none; overflow: hidden; }
+
+.swipe-container { position: relative; overflow: hidden; padding: 0 !important; border-radius: 18px; margin-bottom: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent;}
+.swipe-content { position: relative; width: 100%; padding: 16px; background: #1c1c1e; z-index: 2; display: flex; justify-content: space-between; align-items: center; border-radius: 18px; }
+.swipe-action { position: absolute; top: 0; right: 0; width: 80px; height: 100%; background: #FF453A; color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; z-index: 1; cursor: pointer; border-radius: 0 18px 18px 0; }
+
 .transaccion-item { background: rgba(255,255,255,0.03); padding: 16px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid transparent; }
 .trans-izq strong { font-size: 17px; display: block; font-weight: 600; }
 .trans-izq small { color: var(--text-secondary); font-size: 13px; }
@@ -112,6 +118,19 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .btn-editar:active, .btn-eliminar:active { transform: scale(0.8); }
 .btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 .btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
+
+/* 1. Metas de Ahorro Visuales */
+.meta-item { margin-bottom: 12px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 16px; border: 1px solid var(--border-light); }
+.progress-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom:10px; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s var(--ios-spring); }
+
+/* 4. Trofeo Gamificación */
+.trophy-anim { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 12px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15); z-index: 100000; display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideDownFadeOut 3.5s forwards var(--ios-spring); }
+@keyframes slideDownFadeOut { 0% { top: -50px; opacity: 0; } 15% { top: 30px; opacity: 1; } 85% { top: 30px; opacity: 1; } 100% { top: -50px; opacity: 0; } }
+
+/* 5. Temas de Colores */
+.theme-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: transform 0.3s var(--ios-spring); }
+.theme-dot:active { transform: scale(0.8); }
 
 /* Calculadora UI */
 .calc-cambio-container { padding: 25px; border-radius: 28px; border: 1px solid var(--border-light); }
@@ -138,7 +157,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 #calc-variacion-box { margin-top: 0 !important; font-size: 12px !important; }
 #calc-variacion-box.oculto { display: none; }
 
-/* ================= VENTANAS MODALES GLASS (NUEVO) ================= */
+/* ================= VENTANAS MODALES GLASS ================= */
 .glass-modal {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -165,7 +184,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 /* Para que la lista scrollee fluidamente solo dentro del modal */
 .modal-list {
     overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; 
-    margin-bottom: 10px; max-height: 55vh; padding-right: 4px;
+    margin-bottom: 10px; max-height: 55vh; padding-right: 4px; overflow-x: hidden;
 }
 .modal-list::-webkit-scrollbar { width: 5px; }
 .modal-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 5px; }
@@ -173,6 +192,6 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 /* BARRA INFERIOR */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #636366; cursor: pointer; transition: color 0.3s; width: 33%; }
-.nav-item.activo { color: var(--text-primary); }
+.nav-item.activo { color: var(--accent); }
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
 .nav-text { font-size: 11px; font-weight: 600; }
