@@ -201,11 +201,11 @@ function toggleCategoriaSelect() {
     if (boxTransf) {
         if (tipo === 'transferencia') {
             boxTransf.classList.remove('oculto'); boxTransf.style.display = 'flex';
-            valMonedaSelect.disabled = true;
+            valMonedaSelect.classList.add('oculto'); // Oculta el botón de moneda a la derecha del monto
             renderizarSelectsTransferencia();
         } else {
             boxTransf.classList.add('oculto'); boxTransf.style.display = 'none';
-            valMonedaSelect.disabled = false;
+            valMonedaSelect.classList.remove('oculto'); // Lo devuelve si quita transferencia
         }
     }
 
@@ -239,34 +239,64 @@ function renderizarSelectsTransferencia() {
     const valO = selOrigen.value; const valD = selDestino.value;
 
     selOrigen.innerHTML = ''; selDestino.innerHTML = '';
-    cuentas.forEach(c => {
-        selOrigen.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
-        selDestino.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
+    
+    // Filtra para mostrar SOLAMENTE las cuentas que sean de USDT o VES
+    const cuentasValidas = cuentas.filter(c => c.moneda === 'USDT' || c.moneda === 'VES');
+
+    cuentasValidas.forEach(c => {
+        // Omite el (USDT) al lado del nombre para que sea más corto y limpio
+        selOrigen.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
+        selDestino.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
     });
 
-    if (valO && cuentas.find(c=>c.id==valO)) selOrigen.value = valO;
-    if (valD && cuentas.find(c=>c.id==valD)) selDestino.value = valD;
-    actualizarUI_Transferencia();
+    if (valO && cuentasValidas.find(c=>c.id==valO)) selOrigen.value = valO;
+    if (valD && cuentasValidas.find(c=>c.id==valD)) selDestino.value = valD;
+    
+    actualizarUI_Transferencia(false); // Inicia sin forzar cambio
 }
 
-function actualizarUI_Transferencia() {
+// El parámetro 'origenCambio' le dice a la app quién gatilló la función
+function actualizarUI_Transferencia(origenCambio = false) {
     const idO = document.getElementById('sel-transf-origen').value;
     const idD = document.getElementById('sel-transf-destino').value;
     if (!idO || !idD) return;
 
-    const cOrigen = cuentas.find(c => c.id == idO);
-    const cDestino = cuentas.find(c => c.id == idD);
-    document.getElementById('val-moneda').value = cOrigen.moneda; 
+    let cOrigen = cuentas.find(c => c.id == idO);
+    let cDestino = cuentas.find(c => c.id == idD);
     
+    // LÓGICA DE EMPAREJAMIENTO AUTOMÁTICO
+    const cuentasUSDT = cuentas.filter(c => c.moneda === 'USDT');
+    const cuentasVES = cuentas.filter(c => c.moneda === 'VES');
+
+    // Si cambió el origen y solo hay una cuenta de cada tipo, empareja automático el destino
+    if (origenCambio && cuentasUSDT.length === 1 && cuentasVES.length === 1) {
+        if (cOrigen.moneda === 'USDT') {
+            document.getElementById('sel-transf-destino').value = cuentasVES[0].id;
+        } else if (cOrigen.moneda === 'VES') {
+            document.getElementById('sel-transf-destino').value = cuentasUSDT[0].id;
+        }
+        // Refresca la variable destino por si la cambiamos
+        cDestino = cuentas.find(c => c.id == document.getElementById('sel-transf-destino').value);
+    }
+    // Si cambió el destino y solo hay una cuenta de cada tipo, empareja automático el origen
+    else if (!origenCambio && cuentasUSDT.length === 1 && cuentasVES.length === 1) {
+        if (cDestino.moneda === 'USDT') {
+            document.getElementById('sel-transf-origen').value = cuentasVES[0].id;
+        } else if (cDestino.moneda === 'VES') {
+            document.getElementById('sel-transf-origen').value = cuentasUSDT[0].id;
+        }
+        // Refresca la variable origen por si la cambiamos
+        cOrigen = cuentas.find(c => c.id == document.getElementById('sel-transf-origen').value);
+    }
+
     const boxTasa = document.getElementById('box-transf-tasa');
     const inputTasa = document.getElementById('input-transf-tasa');
     
     if (cOrigen.moneda !== cDestino.moneda) {
         boxTasa.classList.remove('oculto'); boxTasa.style.display = 'flex';
-        if ((cOrigen.moneda === 'USDT' || cDestino.moneda === 'USDT') && inputTasa.value === '') {
+        // Auto-sugiere la tasa paralela si interviene USDT
+        if (inputTasa.value === '') {
             inputTasa.value = tasaParalelo.toFixed(2);
-        } else if ((cOrigen.moneda === 'USD' || cDestino.moneda === 'USD') && inputTasa.value === '') {
-            inputTasa.value = tasaBCV.toFixed(2);
         }
     } else {
         boxTasa.classList.add('oculto'); boxTasa.style.display = 'none';

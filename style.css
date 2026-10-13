@@ -102,7 +102,7 @@ body { color: var(--text-primary); overscroll-behavior-y: none; }
 .input-wrapper input { border: none !important; background: transparent !important; padding: 12px 14px !important; flex: 1; outline: none; font-size: 20px; font-weight: 700; color: var(--text-primary) !important; width: 100%;}
 .input-wrapper .wrapper-divider { width: 1px; height: 24px; background: var(--border-light); }
 
-select.custom-select-btn, input[type="date"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s, border 0.3s; overflow: hidden; white-space: nowrap; }
+select.custom-select-btn, input[type="date"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; transition: transform 0.4s var(--ios-spring), border 0.3s; overflow: hidden; white-space: nowrap; }
 select.custom-select-btn:active, input[type="date"]:active { transform: scale(0.95); opacity: 0.8; }
 select.custom-select-btn:focus, input[type="date"]:focus { border-color: var(--accent); outline: none;}
 
@@ -122,7 +122,7 @@ select.custom-select-inline {
     font-size: 13px; 
     font-weight: 700; 
     cursor: pointer; 
-    transition: transform 0.3s var(--ios-spring), background-color 0.3s; 
+    transition: transform 0.3s var(--ios-spring); 
     box-shadow: 0 2px 8px rgba(0,0,0,0.15); 
 }
 select.custom-select-inline:active { 
@@ -132,7 +132,7 @@ select.custom-select-inline:active {
 select.custom-select-inline option:disabled { color: var(--text-secondary); }
 
 .input-group { display: flex; gap: 12px; margin-bottom: 10px; transition: all 0.3s; }
-input:not([type="hidden"]):not(#monto):not([type="date"]):not([type="file"]), select:not(#moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: var(--input-bg) !important; color: var(--text-primary) !important; outline: none; transition: border 0.3s; }
+input:not([type="hidden"]):not(#monto):not([type="date"]):not([type="file"]), select:not(#val-moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: var(--input-bg) !important; color: var(--text-primary) !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
 select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
 [data-theme="light"] select option { background-color: #FFFFFF !important; color: #000000 !important; }
@@ -142,7 +142,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 /* Botones Principales */
 .btn-primario { width: 100%; padding: 12px; background-color: var(--accent); color: #000; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; transition: transform 0.4s var(--ios-spring), box-shadow 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .btn-primario:active { transform: scale(0.92); }
-.btn-secundario { width: 100%; padding: 12px; background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s; display: flex; justify-content: center; align-items: center; gap: 8px;}
+.btn-secundario { width: 100%; padding: 12px; background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 0.4s var(--ios-spring); display: flex; justify-content: center; align-items: center; gap: 8px;}
 .btn-secundario:active { transform: scale(0.94); background-color: rgba(150,150,150,0.15); }
 
 /* Listas UI y Swipe to Delete */
@@ -342,7 +342,6 @@ body[data-theme="glass"] {
     color: #FFFFFF !important; 
     text-shadow: 0 2px 5px rgba(0,0,0,0.5);
     box-shadow: 0 8px 25px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 2px 10px rgba(255,255,255,0.15);
-    transition: transform 0.4s var(--ios-spring), box-shadow 0.3s, background 0.3s;
 }
 
 /* Botones grises (Secundarios): Más translúcidos y gelatinosos */
@@ -356,10 +355,11 @@ body[data-theme="glass"] {
 }
 
 /* Inputs, Cajas de texto y Segmentos (Gelatina profunda) */
+/* EXCLUYE a #monto para evitar el cuadro doble */
 [data-theme="glass"] .input-wrapper,
 [data-theme="glass"] select.custom-select-btn,
 [data-theme="glass"] select.custom-select-inline,
-[data-theme="glass"] input,
+[data-theme="glass"] input:not(#monto),
 [data-theme="glass"] .calc-row,
 [data-theme="glass"] .ios-segmented-control {
     background: rgba(255, 255, 255, 0.02) !important;
@@ -392,4 +392,14 @@ body[data-theme="glass"] {
 [data-theme="glass"] .swipe-container {
     background: transparent;
     border: none;
+}
+
+/* Oculta la papelera roja hasta que deslices de verdad */
+[data-theme="glass"] .swipe-action {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+[data-theme="glass"] .swipe-container:hover .swipe-action,
+[data-theme="glass"] .swipe-container:active .swipe-action {
+    opacity: 1;
 }

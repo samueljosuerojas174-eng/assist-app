@@ -129,11 +129,11 @@
                     <div style="display: flex; gap: 10px;">
                         <div style="flex: 1;">
                             <label style="font-size: 11px; color: var(--text-secondary); font-weight: bold;">DESDE (Origen)</label>
-                            <select id="sel-transf-origen" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia()"></select>
+                            <select id="sel-transf-origen" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia(true)"></select>
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 11px; color: var(--text-secondary); font-weight: bold;">HACIA (Destino)</label>
-                            <select id="sel-transf-destino" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia()"></select>
+                            <select id="sel-transf-destino" class="custom-select-btn" style="width: 100%; margin-top: 4px;" onchange="actualizarUI_Transferencia(false)"></select>
                         </div>
                     </div>
                     
@@ -242,7 +242,7 @@
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('dark')">Oscuro</button>
-                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass</button>
+                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass (Beta)</button>
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('light')">Claro</button>
                 </div>
                 
