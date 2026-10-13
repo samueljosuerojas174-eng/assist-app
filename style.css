@@ -1,4 +1,4 @@
-/* ================= VARIABLES Y TEMAS ================= */
+/* ================= VARIABLES GLOBALES Y TEMAS ================= */
 :root {
     --ios-spring: cubic-bezier(0.25, 1, 0.5, 1);
     --accent: #FFFFFF;
@@ -20,30 +20,31 @@
     --text-primary: #000000;
     --text-secondary: #8E8E93;
     --input-bg: rgba(0,0,0,0.05);
-    /* Forzamos acentos oscuros si estaba en blanco */
 }
 
 [data-theme="glass"] {
     --bg-dark: #000000;
-    --card-dark: rgba(255, 255, 255, 0.03);
-    --border-light: rgba(255, 255, 255, 0.05);
+    --card-dark: rgba(255, 255, 255, 0.04);
+    --border-light: rgba(255, 255, 255, 0.08);
     --text-primary: #FFFFFF;
     --text-secondary: #A0A0A5;
     --input-bg: rgba(255,255,255,0.02);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--text-primary); overscroll-behavior-y: none; transition: background-color 0.4s ease; }
+
+/* Sin background-color aqui, lo maneja el script del HTML para evitar flashes */
+body { color: var(--text-primary); overscroll-behavior-y: none; }
 
 .app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch;}
 
 /* Pantalla de Carga */
 #splash-screen {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background-color: #000; z-index: 99999; display: flex; justify-content: center; align-items: center;
+    background-color: var(--bg-dark); z-index: 99999; display: flex; justify-content: center; align-items: center;
     transition: opacity 0.6s var(--ios-spring), visibility 0.6s;
 }
-.splash-logo { width: 85px; height: 85px; border-radius: 20px; animation: pulse 1.5s infinite var(--ios-spring); box-shadow: 0 4px 20px rgba(255,255,255,0.15);}
+.splash-logo { width: 85px; height: 85px; border-radius: 20px; animation: pulse 1.5s infinite var(--ios-spring); box-shadow: 0 4px 20px rgba(0,0,0,0.3);}
 @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
 
 .header-title { margin: 10px 0 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -59,10 +60,6 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 @keyframes scaleFadeIn { 0% { opacity: 0; transform: translateY(15px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
 
-/* Animacion Desbloqueo FaceID */
-.unlock-anim { animation: faceIdUnlock 0.5s var(--ios-spring) forwards !important; }
-@keyframes faceIdUnlock { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.1); opacity: 0; pointer-events: none;} }
-
 /* Slider Cuentas */
 .slider-cuentas-container { margin-bottom: 10px; width: 100%; overflow: hidden; position: relative; }
 .slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth;}
@@ -70,7 +67,7 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .balance-section { scroll-snap-align: start; scroll-snap-stop: always; flex: 0 0 100%; border: 1px solid var(--border-light); padding: 15px 20px; border-radius: 24px; text-align: center; }
 .balance-section h2 { font-size: 15px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: center; align-items: center; }
 .balance-section h1 { font-size: clamp(24px, 8vw, 38px); font-weight: 800; letter-spacing: -1.5px; margin: 2px 0; word-wrap: break-word; color: var(--text-primary); }
-.balance-tipo { font-size: 13px; background: rgba(150,150,150,0.1); padding: 5px 14px; border-radius: 20px; font-weight: 500; display: inline-block; color: var(--text-primary);}
+.balance-tipo { font-size: 13px; background: var(--input-bg); padding: 5px 14px; border-radius: 20px; font-weight: 500; display: inline-block; color: var(--text-primary);}
 .slider-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
 .dot { width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%; opacity: 0.3; transition: opacity 0.3s; }
 .dot.activo { opacity: 1; background: var(--accent); }
@@ -101,21 +98,20 @@ html, body { min-height: 100%; background-color: var(--bg-dark); color: var(--te
 .input-wrapper input { border: none !important; background: transparent !important; padding: 12px 14px !important; flex: 1; outline: none; font-size: 20px; font-weight: 700; color: var(--text-primary) !important; width: 100%;}
 .input-wrapper .wrapper-divider { width: 1px; height: 24px; background: var(--border-light); }
 
-select.custom-select-btn, input[type="date"], input[type="month"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s, border 0.3s; overflow: hidden; white-space: nowrap; }
-select.custom-select-btn:active, input[type="date"]:active, input[type="month"]:active { transform: scale(0.95); opacity: 0.8; }
-select.custom-select-btn:focus, input[type="date"]:focus, input[type="month"]:focus { border-color: var(--accent); outline: none;}
+select.custom-select-btn, input[type="date"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; transition: transform 0.4s var(--ios-spring), background-color 0.3s, border 0.3s; overflow: hidden; white-space: nowrap; }
+select.custom-select-btn:active, input[type="date"]:active { transform: scale(0.95); opacity: 0.8; }
+select.custom-select-btn:focus, input[type="date"]:focus { border-color: var(--accent); outline: none;}
 
 select.custom-select-inline { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 0px center; padding-right: 20px; border: none; background-color: transparent; color: var(--text-primary); font-size: 15px; font-weight: 600; cursor: pointer; padding: 12px 14px; transition: opacity 0.3s; }
 select.custom-select-inline:active { opacity: 0.5; }
 select.custom-select-inline option:disabled { color: var(--text-secondary); }
 
 .input-group { display: flex; gap: 12px; margin-bottom: 10px; transition: all 0.3s; }
-input:not([type="hidden"]):not(#monto):not([type="date"]):not([type="month"]):not([type="file"]), select:not(#moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: var(--input-bg) !important; color: var(--text-primary) !important; outline: none; transition: border 0.3s; }
+input:not([type="hidden"]):not(#monto):not([type="date"]):not([type="file"]), select:not(#moneda) { flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; font-size: 15px; font-weight: 500; background: var(--input-bg) !important; color: var(--text-primary) !important; outline: none; transition: border 0.3s; }
 input:focus { border-color: var(--accent); }
 select option { background-color: #1A1A1A !important; color: #FFFFFF !important; }
 [data-theme="light"] select option { background-color: #FFFFFF !important; color: #000000 !important; }
 
-#val-categoria { transition: all 0.3s var(--ios-spring); transform-origin: right; }
 .oculto { opacity: 0; max-width: 0; padding: 0 !important; border: none !important; overflow: hidden; flex: 0; margin: 0; pointer-events: none;}
 
 /* Botones Principales */
@@ -125,7 +121,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .btn-secundario:active { transform: scale(0.94); background-color: rgba(150,150,150,0.15); }
 
 /* Listas UI y Swipe to Delete */
-.lista-gestion, #lista-transacciones { list-style: none; overflow: hidden; }
+.lista-gestion, #lista-transacciones, #lista-historial-meta { list-style: none; overflow: hidden; }
 
 .swipe-container { position: relative; overflow: hidden; padding: 0 !important; border-radius: 18px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid transparent;}
 .swipe-content { position: relative; width: 100%; padding: 16px; background: var(--card-dark); z-index: 2; display: flex; justify-content: space-between; align-items: center; border-radius: 18px; }
@@ -142,20 +138,23 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .btn-editar { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
 .btn-eliminar { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
 
-/* 1. Metas de Ahorro Visuales (Imagenes Difuminadas) */
-.meta-item { margin-bottom: 12px; background: var(--card-dark); border-radius: 16px; border: 1px solid var(--border-light); position: relative; overflow: hidden; }
-.meta-bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: inherit; filter: blur(4px); transform: scale(1.1); opacity: 0.6; z-index: 0; pointer-events: none;}
-.meta-content { position: relative; z-index: 1; padding: 14px; background: rgba(0,0,0,0.3); }
+/* 1. Metas de Ahorro Premium */
+.meta-item-card { margin-bottom: 15px; background: var(--card-dark); border-radius: 20px; border: 1px solid var(--border-light); position: relative; overflow: hidden; height: 110px; cursor: pointer; transition: transform 0.3s var(--ios-spring); }
+.meta-item-card:active { transform: scale(0.95); }
+.meta-bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: inherit; filter: blur(5px); transform: scale(1.1); opacity: 0.6; z-index: 0; pointer-events: none;}
+.meta-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; padding: 20px; background: rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between; }
 [data-theme="light"] .meta-content { background: rgba(255,255,255,0.7); }
-.progress-bg { width: 100%; height: 8px; background: rgba(150,150,150,0.3); border-radius: 4px; overflow: hidden; margin-bottom:10px; }
+.progress-bg { width: 100%; height: 8px; background: rgba(150,150,150,0.3); border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
 .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s var(--ios-spring); }
 
 /* Trofeo Gamificación */
 .trophy-anim { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 12px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.15); z-index: 100000; display:flex; align-items:center; gap:10px; color:#fff; font-weight:800; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideDownFadeOut 3.5s forwards var(--ios-spring); }
 @keyframes slideDownFadeOut { 0% { top: -50px; opacity: 0; } 15% { top: 30px; opacity: 1; } 85% { top: 30px; opacity: 1; } 100% { top: -50px; opacity: 0; } }
 
-/* Temas de Colores */
-.theme-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(150,150,150,0.2); transition: transform 0.3s var(--ios-spring); }
+/* Paleta Ampliada de 20+ Colores */
+.palette-container { display: flex; gap: 12px; overflow-x: auto; padding: 5px; scrollbar-width: none; -ms-overflow-style: none; }
+.palette-container::-webkit-scrollbar { display: none; }
+.theme-dot { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(150,150,150,0.2); transition: transform 0.3s var(--ios-spring); }
 .theme-dot:active { transform: scale(0.8); }
 
 /* Calculadora UI */
@@ -216,7 +215,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .modal-list::-webkit-scrollbar { width: 5px; }
 .modal-list::-webkit-scrollbar-thumb { background: rgba(150,150,150,0.15); border-radius: 5px; }
 
-/* BARRA INFERIOR LIQUID GLASS SWIPE */
+/* BARRA INFERIOR LIQUID GLASS SWIPE PERFECTO */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: calc(65px + env(safe-area-inset-bottom)); background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(25px) saturate(200%); -webkit-backdrop-filter: blur(25px) saturate(200%); border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start; padding-top: 12px; z-index: 50; padding-bottom: env(safe-area-inset-bottom); }
 [data-theme="light"] .bottom-nav { background: rgba(255, 255, 255, 0.85); }
 .nav-item { display: flex; flex-direction: column; align-items: center; color: #8E8E93; cursor: pointer; transition: color 0.3s; width: 25%; z-index: 2; position: relative; }
@@ -224,4 +223,4 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .nav-icon { width: 24px; height: 24px; margin-bottom: 5px; }
 .nav-text { font-size: 11px; font-weight: 600; }
 
-.nav-indicator { position: absolute; top: 6px; height: 48px; background: rgba(150,150,150,0.15); border-radius: 16px; z-index: 1; transition: transform 0.3s var(--ios-spring), width 0.3s var(--ios-spring); }
+.nav-indicator { position: absolute; top: 8px; height: 50px; background: rgba(150,150,150,0.2); border-radius: 18px; z-index: 1; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s cubic-bezier(0.25, 1, 0.5, 1); backdrop-filter: blur(10px); }

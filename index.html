@@ -6,30 +6,33 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="A$$IST">
-    <meta name="theme-color" content="#000000">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="logo.jpg">
     <title>A$$IST</title>
-    <!-- Prevenir pantallazo blanco en PWA iOS -->
-    <style>html, body { background-color: #000000; margin: 0; padding: 0; width: 100%; height: 100%; }</style>
+    
+    <!-- SCRIPT INLINE PARA EVITAR PANTALLAZO BLANCO EN IPHONE -->
+    <script>
+        const tMode = localStorage.getItem('app_theme_mode') || 'dark';
+        const tColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+        document.documentElement.setAttribute('data-theme', tMode);
+        document.documentElement.style.setProperty('--accent', tColor);
+    </script>
+    <style>
+        html, body { background-color: var(--bg-dark); margin: 0; padding: 0; width: 100%; height: 100%; transition: background-color 0.4s ease; }
+    </style>
+    
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body data-theme="dark">
-    <!-- Trofeo "Día Cero Gastos" -->
-    <div id="trophy-notification" class="trophy-anim oculto">
-        <span style="font-size:24px;">🏆</span>
-        <span>¡Día Cero Gastos superado!</span>
-        <span style="font-size:24px;">🎉</span>
-    </div>
 
-    <!-- Pantalla de Bloqueo PIN con Teclado Automático -->
-    <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: #000000 !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
+    <!-- Pantalla de Bloqueo PIN -->
+    <div id="pin-screen" class="glass-modal oculto" style="z-index: 999999; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
             <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
             <h2 style="margin-bottom: 20px; font-size: 24px; color: var(--text-primary);">Ingresa tu PIN</h2>
-            <!-- autofocus, inputmode y pattern hacen que se abra el teclado numérico solo en iOS -->
-            <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" autofocus style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: var(--text-primary); outline: none;" placeholder="••••" maxlength="4">
+            <!-- Input optimizado para iOS -->
+            <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" placeholder="••••" maxlength="4" autocomplete="off">
             <button onclick="resetearPIN()" style="background: transparent; border: none; color: var(--text-secondary); margin-top: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; transition: color 0.3s;">¿Olvidaste tu PIN?</button>
         </div>
     </div>
@@ -39,7 +42,15 @@
         <img src="logo.jpg" alt="A$$IST Logo" class="splash-logo">
     </div>
 
-    <div class="app-container">
+    <!-- Trofeo "Día Cero Gastos" -->
+    <div id="trophy-notification" class="trophy-anim oculto">
+        <span style="font-size:24px;">🏆</span>
+        <span>¡Día Cero Gastos superado!</span>
+        <span style="font-size:24px;">🎉</span>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL (Aquí ocurre la animación FaceID) -->
+    <div class="app-container faceid-hidden" id="app-main-container">
         
         <!-- ================= APARTADO: INICIO ================= -->
         <div id="tab-inicio" class="vista-activa">
@@ -52,7 +63,7 @@
                 <img src="logo.jpg" alt="Logo" class="app-logo">
             </div>
 
-            <!-- Tarjeta de Balance (Aquí funciona el Doble Toque) -->
+            <!-- Tarjeta de Balance -->
             <div class="slider-cuentas-container" id="slider-cuentas-wrapper">
                 <div class="slider-cuentas" id="slider-cuentas"></div>
                 <div class="slider-dots" id="slider-dots"></div>
@@ -89,7 +100,7 @@
                 <h3 class="section-subtitle">Registrar Movimiento</h3>
                 
                 <div class="input-wrapper">
-                    <input type="number" id="monto" placeholder="0.00" step="0.01">
+                    <input type="number" id="monto" placeholder="0.00" step="0.01" inputmode="decimal">
                     <div class="wrapper-divider"></div>
                     <select id="val-moneda" class="custom-select-inline">
                         <option value="USD">USD</option>
@@ -107,7 +118,6 @@
                     </select>
                 </div>
 
-                <!-- Selector de Fecha + Nota -->
                 <div class="input-group">
                     <input type="date" id="val-fecha" style="width: 40%; font-size: 14px; padding: 12px 10px;">
                     <input type="text" id="val-nota" placeholder="Nota (Opcional)" style="width: 60%;">
@@ -149,28 +159,28 @@
                 </div>
                 <div class="tasa-activa-box">
                     <label>Tasa a usar (Bs):</label>
-                    <input type="number" id="input-tasa-activa" value="0.00" disabled oninput="recalcularDesdeTasa()">
+                    <input type="number" id="input-tasa-activa" value="0.00" disabled oninput="recalcularDesdeTasa()" inputmode="decimal">
                 </div>
                 <div class="calc-divider"></div>
                 <div class="input-calc-group">
                     <label id="lbl-divisa">🇺🇸 Dólares (USD)</label>
                     <div class="calc-row">
                         <span id="sym-divisa">$</span>
-                        <input type="number" id="calc-usd" placeholder="0.00" oninput="calcularDesde('USD')">
+                        <input type="number" id="calc-usd" placeholder="0.00" oninput="calcularDesde('USD')" inputmode="decimal">
                     </div>
                 </div>
                 <div class="input-calc-group">
                     <label>🇻🇪 Bolívares (VES)</label>
                     <div class="calc-row">
                         <span>Bs</span>
-                        <input type="number" id="calc-ves" placeholder="0.00" oninput="calcularDesde('VES')">
+                        <input type="number" id="calc-ves" placeholder="0.00" oninput="calcularDesde('VES')" inputmode="decimal">
                     </div>
                 </div>
                 <button class="btn-secundario" onclick="limpiarCalc()">Limpiar Campos</button>
             </section>
         </div>
 
-        <!-- ================= APARTADO: METAS DE AHORRO (4ta pestaña) ================= -->
+        <!-- ================= APARTADO: METAS DE AHORRO ================= -->
         <div id="tab-metas" class="vista-oculta">
             <div class="header-title">
                 <div>
@@ -179,12 +189,12 @@
                 </div>
             </div>
             
-            <section class="add-transaction" style="padding: 15px; background: transparent; border: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 10px;">
+            <section class="add-transaction" style="padding: 15px; background: transparent; border: none; box-shadow: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;">
                     <h3 class="section-subtitle" style="margin-bottom: 0;">Metas Activas</h3>
-                    <button onclick="abrirModal('modal-nueva-meta')" style="background:var(--accent); color:var(--bg-dark); border:none; border-radius: 50%; width: 32px; height: 32px; font-size:20px; font-weight:bold; cursor:pointer; display: flex; align-items: center; justify-content: center;">+</button>
+                    <button onclick="abrirModal('modal-nueva-meta')" style="background:var(--accent); color:#000; border:none; border-radius: 50%; width: 32px; height: 32px; font-size:20px; font-weight:bold; cursor:pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">+</button>
                 </div>
-                <div id="lista-metas"></div>
+                <div id="lista-metas-principal"></div>
             </section>
         </div>
 
@@ -197,7 +207,7 @@
                 </div>
             </div>
 
-            <!-- Modos y Temas -->
+            <!-- Modos y Temas Ampliados -->
             <section class="gestion-seccion" style="padding: 15px;">
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
@@ -205,13 +215,30 @@
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass</button>
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('light')">Claro</button>
                 </div>
+                
                 <h3 class="section-subtitle" style="text-align: center;">Color de Acento</h3>
-                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 5px;">
+                <!-- Paleta amplia deslizable horizontal -->
+                <div class="palette-container">
                     <div class="theme-dot" style="background:#FFFFFF;" onclick="cambiarColorAcento('#FFFFFF')"></div>
+                    <div class="theme-dot" style="background:#000000;" onclick="cambiarColorAcento('#000000')"></div>
                     <div class="theme-dot" style="background:#32D74B;" onclick="cambiarColorAcento('#32D74B')"></div>
                     <div class="theme-dot" style="background:#0A84FF;" onclick="cambiarColorAcento('#0A84FF')"></div>
                     <div class="theme-dot" style="background:#BF5AF2;" onclick="cambiarColorAcento('#BF5AF2')"></div>
                     <div class="theme-dot" style="background:#FF9F0A;" onclick="cambiarColorAcento('#FF9F0A')"></div>
+                    <div class="theme-dot" style="background:#FF453A;" onclick="cambiarColorAcento('#FF453A')"></div>
+                    <div class="theme-dot" style="background:#64D2FF;" onclick="cambiarColorAcento('#64D2FF')"></div>
+                    <div class="theme-dot" style="background:#FFD60A;" onclick="cambiarColorAcento('#FFD60A')"></div>
+                    <div class="theme-dot" style="background:#FF375F;" onclick="cambiarColorAcento('#FF375F')"></div>
+                    <div class="theme-dot" style="background:#5E5CE6;" onclick="cambiarColorAcento('#5E5CE6')"></div>
+                    <div class="theme-dot" style="background:#30D158;" onclick="cambiarColorAcento('#30D158')"></div>
+                    <div class="theme-dot" style="background:#FF6482;" onclick="cambiarColorAcento('#FF6482')"></div>
+                    <div class="theme-dot" style="background:#00C7BE;" onclick="cambiarColorAcento('#00C7BE')"></div>
+                    <div class="theme-dot" style="background:#E586C6;" onclick="cambiarColorAcento('#E586C6')"></div>
+                    <div class="theme-dot" style="background:#8D7156;" onclick="cambiarColorAcento('#8D7156')"></div>
+                    <div class="theme-dot" style="background:#B3B3B3;" onclick="cambiarColorAcento('#B3B3B3')"></div>
+                    <div class="theme-dot" style="background:#FFB340;" onclick="cambiarColorAcento('#FFB340')"></div>
+                    <div class="theme-dot" style="background:#4A90E2;" onclick="cambiarColorAcento('#4A90E2')"></div>
+                    <div class="theme-dot" style="background:#50E3C2;" onclick="cambiarColorAcento('#50E3C2')"></div>
                 </div>
             </section>
             
@@ -233,21 +260,27 @@
 
     <!-- ================= VENTANAS MODALES ================= -->
     
-    <!-- Modal Historial Inteligente -->
+    <!-- Modal Historial -->
     <div id="modal-historial" class="glass-modal oculto" onclick="cerrarModal('modal-historial')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2>Historial</h2>
-                    <button class="btn-close-modal" onclick="cerrarModal('modal-historial')">
-                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
+                    <!-- BOTONES TOTAL Y CALENDARIO -->
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto;" onclick="document.getElementById('filtro-fecha').value=''; actualizarListaTransacciones()">Total</button>
+                        <div style="position: relative; display: flex; align-items: center;">
+                            <!-- Input date nativo estricto -->
+                            <input type="date" id="filtro-fecha" style="position: absolute; opacity: 0; width: 100%; height: 100%; z-index: 2; cursor: pointer;" onchange="actualizarListaTransacciones()">
+                            <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto; z-index: 1;">📅 Día</button>
+                        </div>
+                        <button class="btn-close-modal" style="margin-left: 5px;" onclick="cerrarModal('modal-historial')">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
                 </div>
-                <!-- Filtros (Buscador y Calendario Exacto) -->
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar..." style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(255,255,255,0.05); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
-                    <input type="date" id="filtro-fecha" class="custom-select-btn" style="padding: 9px; font-size: 13px; width: 135px; flex: 0 0 auto; padding-right: 10px; background-image:none;" onchange="actualizarListaTransacciones()">
-                    <button onclick="document.getElementById('filtro-fecha').value=''; actualizarListaTransacciones()" style="background: transparent; border: none; color: var(--text-secondary); font-size: 12px; font-weight: bold; cursor: pointer;">Todo</button>
+                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar categoría o nota..." style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
                 </div>
             </div>
             
@@ -255,6 +288,67 @@
                 <canvas id="graficoGastos"></canvas>
             </div>
             <ul id="lista-transacciones" class="modal-list"></ul>
+        </div>
+    </div>
+
+    <!-- Modal Detalles de Meta (Pantalla Completa Pura) -->
+    <div id="modal-detalle-meta" class="glass-modal oculto" style="z-index: 10000; align-items: flex-end;">
+        <div class="glass-modal-content" style="padding: 0; height: 92vh; border-radius: 32px 32px 0 0; overflow: hidden; background: var(--bg-dark); border:none;" onclick="event.stopPropagation()">
+            <!-- Cabecera Fotográfica Difuminada -->
+            <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; background-size: cover; background-position: center; background-repeat: no-repeat;">
+                <!-- Degradado para integrar la foto con el fondo de la app -->
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, var(--bg-dark) 100%);"></div>
+                <button class="btn-close-modal" style="position: absolute; top: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.5); color: #fff;" onclick="cerrarModal('modal-detalle-meta'); actualizarInterfaz();">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <div style="position: absolute; bottom: 20px; left: 25px; right: 25px; z-index: 10;">
+                    <h1 id="meta-detail-title" style="font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8);">Meta</h1>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <span id="meta-detail-amounts" style="font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.9); text-shadow: 0 1px 5px rgba(0,0,0,0.8);">USD 0.00 / 0.00</span>
+                        <span id="meta-detail-pct" style="font-size: 18px; font-weight: 800; color: var(--accent); text-shadow: 0 1px 5px rgba(0,0,0,0.8);">0%</span>
+                    </div>
+                    <div class="progress-bg" style="height: 10px; margin-top: 10px; background: rgba(255,255,255,0.2); box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
+                        <div id="meta-detail-bar" class="progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Internos -->
+            <div style="display: flex; gap: 15px; padding: 20px 25px;">
+                <button class="btn-primario" onclick="prepararAccionMeta('abonar')" style="flex:1; padding: 14px;">+ Abonar</button>
+                <button class="btn-secundario" onclick="prepararAccionMeta('retirar')" style="flex:1; padding: 14px; border: 1px solid var(--accent); color: var(--accent); background: transparent;">- Retirar</button>
+            </div>
+
+            <!-- Historial de la Meta -->
+            <div style="padding: 0 25px; flex: 1; overflow-y: auto;">
+                <h3 class="section-subtitle" style="margin-bottom: 15px;">Historial de Movimientos</h3>
+                <ul id="lista-historial-meta" class="modal-list" style="max-height: none; padding-bottom: 50px;"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Abono / Retiro Meta -->
+    <div id="modal-accion-meta" class="glass-modal oculto" style="z-index: 10001;" onclick="cerrarModal('modal-accion-meta')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header">
+                <h2 id="titulo-accion-meta">Abonar a Meta</h2>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-accion-meta')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p id="desc-accion-meta" style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;"></p>
+            
+            <div class="input-wrapper">
+                <input type="number" id="monto-accion-meta" placeholder="Monto USD" step="0.01" inputmode="decimal">
+            </div>
+            <div class="input-group">
+                <select id="sel-cuenta-accion-meta" class="custom-select-btn"></select>
+            </div>
+            <div class="input-group">
+                <input type="date" id="fecha-accion-meta" style="width: 40%; font-size: 14px; padding: 12px 10px;">
+                <input type="text" id="nota-accion-meta" placeholder="Nota (Opcional)" style="width: 60%;">
+            </div>
+            <button class="btn-primario" id="btn-ejecutar-meta">Confirmar</button>
         </div>
     </div>
 
@@ -296,11 +390,11 @@
         </div>
     </div>
 
-    <!-- Modal Nueva Meta (Con Imagen) -->
+    <!-- Modal Nueva Meta -->
     <div id="modal-nueva-meta" class="glass-modal oculto" onclick="cerrarModal('modal-nueva-meta')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header">
-                <h2>Crear Meta de Ahorro</h2>
+                <h2>Crear Meta</h2>
                 <button class="btn-close-modal" onclick="cerrarModal('modal-nueva-meta')">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
@@ -309,43 +403,22 @@
                 <input type="text" id="in-meta-nombre" placeholder="¿Para qué ahorras? (Ej: Coche)">
             </div>
             <div class="input-group">
-                <input type="number" id="in-meta-obj" placeholder="Monto objetivo (USD)" step="0.01">
+                <input type="number" id="in-meta-obj" placeholder="Monto objetivo (USD)" step="0.01" inputmode="decimal">
             </div>
             <div class="input-group" style="flex-direction: column; gap: 5px;">
-                <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen (Opcional)</label>
+                <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
+                <!-- Se codifica en Base64 para guardarse en localStorage -->
                 <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
             </div>
             <button class="btn-primario" onclick="guardarNuevaMeta()">Guardar Meta</button>
         </div>
     </div>
 
-    <!-- Modal Abono / Retiro Meta -->
-    <div id="modal-accion-meta" class="glass-modal oculto" onclick="cerrarModal('modal-accion-meta')">
-        <div class="glass-modal-content" onclick="event.stopPropagation()">
-            <div class="glass-modal-header">
-                <h2 id="titulo-accion-meta">Abonar a Meta</h2>
-                <button class="btn-close-modal" onclick="cerrarModal('modal-accion-meta')">
-                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <p id="desc-accion-meta" style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;"></p>
-            
-            <div class="input-wrapper">
-                <input type="number" id="monto-accion-meta" placeholder="Monto USD" step="0.01">
-            </div>
-            <div class="input-group">
-                <select id="sel-cuenta-accion-meta" class="custom-select-btn"></select>
-            </div>
-            <div class="input-group">
-                <input type="text" id="nota-accion-meta" placeholder="Nota (Opcional)">
-            </div>
-            <button class="btn-primario" id="btn-ejecutar-meta">Confirmar</button>
-        </div>
-    </div>
-
-    <!-- Barra Inferior Deslizable (Liquid Glass Swipe) -->
+    <!-- Barra Inferior Liquid Glass -->
     <nav class="bottom-nav" id="main-bottom-nav">
+        <!-- El indicador descansa por DEBÁS de los iconos -->
         <div class="nav-indicator" id="nav-indicator"></div>
+        
         <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
             <span class="nav-text">A$$IST</span>
