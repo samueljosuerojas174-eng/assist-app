@@ -35,6 +35,155 @@ function getLocalYYYYMMDD(d = new Date()) {
     return new Date(fechaSegura.getTime() - tzOffset).toISOString().split('T')[0];
 }
 
+// ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING) =================
+const PASOS_TUTORIAL = [
+    {
+        icono: "🚀",
+        titulo: "Bienvenido a A$$IST",
+        desc: "Tu centro de control financiero personal. Diseñado para ser ultrarrápido, funcionar con o sin internet y adaptarse a la economía real.",
+        tip: "✨ <b>Arquitectura Local-First:</b> Todo lo que hagas se guarda al instante en tu teléfono y se respalda silenciosamente en la nube cuando tienes conexión."
+    },
+    {
+        icono: "💳",
+        titulo: "1. Crea tus Cuentas",
+        desc: "El primer paso es registrar dónde tienes tu dinero: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b>.",
+        tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En el Inicio, desliza la tarjeta principal hacia los lados para cambiar de cuenta activa."
+    },
+    {
+        icono: "🏷️",
+        titulo: "2. Categorías Inteligentes",
+        desc: "Organiza en qué se va tu dinero creando tus propias categorías personalizadas (Ej: Comida, Transporte, Suscripciones, Ocio).",
+        tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente en qué moneda pagaste por última vez cada categoría para ahorrarte toques."
+    },
+    {
+        icono: "⚡",
+        titulo: "3. Gastos, Ingresos y Comisiones",
+        desc: "Registra cualquier movimiento en segundos. La app bloquea monedas incompatibles según la cuenta que tengas activa en pantalla.",
+        tip: "🇻🇪 <b>Pagos en Bolívares:</b> Al registrar un gasto en VES, puedes elegir si pagaste con <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
+    },
+    {
+        icono: "🔄",
+        titulo: "4. Transferencias y Cambios P2P",
+        desc: "¿Cambiaste USDT a Bolívares en Binance o viceversa? Elige la opción <b>Transferir</b> en el panel de registro.",
+        tip: "⚡ En un solo paso, A$$IST descuenta el saldo de la cuenta de origen y suma el monto convertido en la cuenta de destino usando la tasa que indiques."
+    },
+    {
+        icono: "🤖",
+        titulo: "5. AskBot: Copiloto IA",
+        desc: "En la barra inferior tienes a <b>AskBot</b>, tu asesor financiero con Inteligencia Artificial conectado en vivo a tus datos reales.",
+        tip: "✨ <b>Contexto automático:</b> Pregúntale si es viable hacer una compra hoy, en qué categoría estás gastando de más o cómo aprovechar la brecha entre BCV y USDT."
+    },
+    {
+        icono: "💱",
+        titulo: "6. Calculadora en Tiempo Real",
+        desc: "En la pestaña <b>Conversión</b> tienes las tasas del día (BCV, USDT y Euro) actualizadas automáticamente junto con su variación porcentual.",
+        tip: "🧮 Escribe arriba en divisas o abajo en Bolívares para convertir en ambas direcciones al instante, o usa el modo <b>Propia</b> para calcular con una tasa libre."
+    },
+    {
+        icono: "📊",
+        titulo: "7. Historial, Filtros y Metas",
+        desc: "Toca <b>Ver Historial y Gráficos</b> para analizar tus gastos por categoría, buscar por palabra clave o filtrar los movimientos de un día exacto.",
+        tip: "🗑️ <b>Desliza hacia la izquierda (Swipe)</b> cualquier movimiento del historial para eliminarlo. Y en la pestaña <b>Metas</b>, crea ahorros visuales con foto y barra de progreso."
+    },
+    {
+        icono: "🔒",
+        titulo: "8. Modo Pánico, PIN y Temas",
+        desc: "Tu privacidad y estilo están blindados. Personaliza la app en <b>Ajustes</b> con el modo Oscuro, Claro o <b>Liquid Glass</b> y más de 20 colores de acento.",
+        tip: "🕵️‍♂️ <b>Truco Pro:</b> Da <b>doble toque rápido</b> sobre la tarjeta de tu balance (o toca el icono del ojo) para activar el <b>Modo Pánico</b> y ocultar todos tus montos con asteriscos."
+    }
+];
+
+let pasoTutorialActual = 0;
+let tutTouchStartX = 0;
+
+function actualizarHeaderTutorial() {
+    const btn = document.getElementById('btn-tutorial-header');
+    if (!btn) return;
+    const visto = localStorage.getItem('assist_tutorial_visto') === 'true';
+    if (!visto) {
+        btn.classList.remove('oculto');
+        btn.style.display = 'inline-flex';
+    } else {
+        btn.classList.add('oculto');
+        btn.style.display = 'none';
+    }
+}
+
+function iniciarTutorial() {
+    pasoTutorialActual = 0;
+    renderizarPasoTutorial();
+    abrirModal('modal-tutorial');
+}
+
+function renderizarPasoTutorial() {
+    const paso = PASOS_TUTORIAL[pasoTutorialActual];
+    if (!paso) return;
+
+    const slideBody = document.getElementById('tut-slide-body');
+    if (slideBody) {
+        slideBody.style.animation = 'none';
+        void slideBody.offsetWidth;
+        slideBody.style.animation = 'scaleFadeIn 0.35s var(--ios-spring) forwards';
+    }
+
+    document.getElementById('tut-icono').innerText = paso.icono;
+    document.getElementById('tut-titulo').innerText = paso.titulo;
+    document.getElementById('tut-desc').innerHTML = paso.desc;
+    document.getElementById('tut-detalle').innerHTML = paso.tip;
+    document.getElementById('tut-paso-contador').innerText = `PASO ${pasoTutorialActual + 1} DE ${PASOS_TUTORIAL.length}`;
+
+    const dotsContainer = document.getElementById('tut-dots');
+    if (dotsContainer) {
+        dotsContainer.innerHTML = '';
+        PASOS_TUTORIAL.forEach((_, idx) => {
+            dotsContainer.innerHTML += `<div class="tut-dot ${idx === pasoTutorialActual ? 'activo' : ''}"></div>`;
+        });
+    }
+
+    const btnPrev = document.getElementById('btn-tut-prev');
+    const btnNext = document.getElementById('btn-tut-next');
+    if (btnPrev) {
+        btnPrev.disabled = (pasoTutorialActual === 0);
+        btnPrev.style.opacity = (pasoTutorialActual === 0) ? '0.35' : '1';
+    }
+    if (btnNext) {
+        btnNext.innerText = (pasoTutorialActual === PASOS_TUTORIAL.length - 1) ? "¡Empezar!" : "Siguiente";
+    }
+}
+
+function moverPasoTutorial(direccion) {
+    pasoTutorialActual += direccion;
+    if (pasoTutorialActual < 0) {
+        pasoTutorialActual = 0;
+        return;
+    }
+    if (pasoTutorialActual >= PASOS_TUTORIAL.length) {
+        completarTutorial();
+        return;
+    }
+    renderizarPasoTutorial();
+}
+
+function completarTutorial() {
+    localStorage.setItem('assist_tutorial_visto', 'true');
+    cerrarModal('modal-tutorial');
+    actualizarHeaderTutorial();
+}
+
+function omitirTutorial() {
+    completarTutorial();
+}
+
+function tutTouchStart(e) {
+    tutTouchStartX = e.changedTouches[0].screenX;
+}
+
+function tutTouchEnd(e) {
+    const diff = e.changedTouches[0].screenX - tutTouchStartX;
+    if (diff < -45) moverPasoTutorial(1);
+    else if (diff > 45) moverPasoTutorial(-1);
+}
+
 // ================= AUTENTICACIÓN Y SINCRONIZACIÓN SUPABASE =================
 function cambiarModoAuth(modo) {
     authModoActual = modo;
@@ -69,6 +218,12 @@ function continuarSinCuenta() {
         appContainer.classList.add('app-unlocked');
     }
     actualizarUIEstadoNube();
+    actualizarHeaderTutorial();
+
+    // Si es un usuario nuevo que nunca ha visto el tutorial, lo abre automáticamente
+    if (localStorage.getItem('assist_tutorial_visto') !== 'true' && !tieneDatosLocales()) {
+        setTimeout(() => iniciarTutorial(), 350);
+    }
 }
 
 function tieneDatosLocales() {
@@ -123,6 +278,8 @@ async function procesarAuth() {
     const textoOriginal = btn.innerText;
     btn.innerText = "Conectando...";
 
+    const eraUsuarioNuevoSinDatos = !tieneDatosLocales();
+
     try {
         if (authModoActual === 'registro') {
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
@@ -155,9 +312,15 @@ async function procesarAuth() {
         document.getElementById('auth-screen').classList.add('oculto');
         document.getElementById('app-main-container').classList.add('app-unlocked');
         actualizarUIEstadoNube();
+        actualizarHeaderTutorial();
         cargarSelects();
         renderizarListasGestion();
         actualizarInterfaz();
+
+        // Si el usuario acaba de crear su cuenta desde cero y no tiene datos, abrimos el tutorial automáticamente
+        if (localStorage.getItem('assist_tutorial_visto') !== 'true' && (authModoActual === 'registro' || !tieneDatosLocales()) && eraUsuarioNuevoSinDatos) {
+            setTimeout(() => iniciarTutorial(), 400);
+        }
     } catch (err) {
         mostrarErrorAuth(err.message || "Error al autenticar. Verifica tus datos.");
     } finally {
@@ -445,6 +608,7 @@ window.addEventListener('load', () => {
     cambiarModo(savedThemeMode, true);
 
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
+    actualizarHeaderTutorial();
 
     const splash = document.getElementById('splash-screen');
     const pinScreen = document.getElementById('pin-screen');
@@ -1112,6 +1276,216 @@ function cambiarPestana(idPestana, elementoNav) {
     elementoNav.classList.add('activo');
 }
 
+// ================= ASKBOT (ASISTENTE FINANCIERO CON IA) =================
+let askbotEsperandoRespuesta = false;
+
+function inicializarAskBot() {
+    const box = document.getElementById('askbot-messages');
+    if (!box) return;
+    if (box.children.length === 0) {
+        agregarBurbujaAskBot(
+            "👋 ¡Hola! Soy **AskBot**, tu copiloto financiero en **A$$IST**.\n\nConozco en tiempo real tus saldos en USD, USDT y Bs, tus gastos del mes, tus metas y las tasas del día. ¿Qué analizamos hoy?",
+            "bot"
+        );
+    }
+}
+
+function limpiarChatAskBot() {
+    const box = document.getElementById('askbot-messages');
+    if (!box) return;
+    box.innerHTML = '';
+    inicializarAskBot();
+}
+
+function formatearTextoAskBot(texto) {
+    if (!texto) return '';
+    let seguro = String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    seguro = seguro.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    seguro = seguro.replace(/^\s*[\*\-]\s+(.*)$/gm, '• $1');
+    seguro = seguro.replace(/\n/g, '<br>');
+    return seguro;
+}
+
+function agregarBurbujaAskBot(texto, rol = 'bot') {
+    const box = document.getElementById('askbot-messages');
+    if (!box) return null;
+    const div = document.createElement('div');
+    div.className = `askbot-bubble ${rol}`;
+    if (rol === 'bot') {
+        div.innerHTML = formatearTextoAskBot(texto);
+    } else {
+        div.innerText = texto;
+    }
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+}
+
+function mostrarIndicadorEscribiendoAskBot() {
+    const box = document.getElementById('askbot-messages');
+    if (!box) return null;
+    const div = document.createElement('div');
+    div.className = 'askbot-bubble bot askbot-typing';
+    div.id = 'askbot-typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    return div;
+}
+
+function quitarIndicadorEscribiendoAskBot() {
+    const el = document.getElementById('askbot-typing-indicator');
+    if (el) el.remove();
+}
+
+function generarContextoFinancieroIA() {
+    const hoy = new Date();
+    const mesActualPrefix = getLocalYYYYMMDD(hoy).slice(0, 7); // YYYY-MM
+
+    // 1. Tasas y diferencial cambiario
+    const brechaPct = tasaBCV > 0 ? (((tasaParalelo - tasaBCV) / tasaBCV) * 100).toFixed(2) : "0.00";
+    let resumenTasas = `Tasa BCV Oficial: Bs ${tasaBCV.toFixed(2)} | Tasa USDT (Paralelo): Bs ${tasaParalelo.toFixed(2)} | Tasa EUR Oficial: Bs ${tasaEUR.toFixed(2)} | Brecha BCV vs USDT: ${brechaPct}%`;
+
+    // 2. Cuentas y balances actuales
+    let totalPatrimonioUSD = 0;
+    let detalleCuentas = [];
+    if (cuentas.length === 0) {
+        detalleCuentas.push("Sin cuentas creadas todavía.");
+    } else {
+        cuentas.forEach(c => {
+            let balUSD = 0;
+            transacciones.forEach(t => {
+                if (t.cuentaId == c.id) {
+                    balUSD += (t.tipo === 'ingreso' ? Number(t.montoUSD) : -Number(t.montoUSD));
+                }
+            });
+            totalPatrimonioUSD += balUSD;
+
+            if (c.moneda === 'VES') {
+                const balBs = Math.max(0, balUSD * tasaBCV);
+                detalleCuentas.push(`- ${c.nombre} (VES): Bs ${balBs.toFixed(2)} (equiv. $${balUSD.toFixed(2)} a BCV)`);
+            } else if (c.moneda === 'USDT') {
+                const eqBs = balUSD * tasaParalelo;
+                detalleCuentas.push(`- ${c.nombre} (USDT): ${balUSD.toFixed(2)} USDT (equiv. Bs ${eqBs.toFixed(2)} a tasa USDT)`);
+            } else {
+                detalleCuentas.push(`- ${c.nombre} (${c.moneda}): $${balUSD.toFixed(2)}`);
+            }
+        });
+    }
+
+    // 3. Ingresos y Gastos del mes actual por categoría
+    let totalGastosMesUSD = 0;
+    let totalIngresosMesUSD = 0;
+    const gastosPorCategoria = {};
+
+    transacciones.forEach(t => {
+        const fechaT = t.fecha ? new Date(t.fecha) : new Date();
+        const iso = t.fechaIsoLocal || getLocalYYYYMMDD(fechaT);
+        if (iso.startsWith(mesActualPrefix) && t.categoria !== 'Transferencia / P2P') {
+            if (t.tipo === 'gasto') {
+                totalGastosMesUSD += Number(t.montoUSD) || 0;
+                const cat = t.categoria || 'Varios';
+                gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + (Number(t.montoUSD) || 0);
+            } else if (t.tipo === 'ingreso') {
+                totalIngresosMesUSD += Number(t.montoUSD) || 0;
+            }
+        }
+    });
+
+    const listaCategoriasMes = Object.entries(gastosPorCategoria)
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat, monto]) => `${cat}: $${monto.toFixed(2)}`)
+        .join(', ') || 'Sin gastos registrados este mes';
+
+    // 4. Metas de ahorro
+    const detalleMetas = metas.length > 0
+        ? metas.map(m => {
+            const pct = m.objetivo > 0 ? ((m.acumulado / m.objetivo) * 100).toFixed(1) : "0.0";
+            return `- ${m.nombre}: $${Number(m.acumulado).toFixed(2)} ahorrados de $${Number(m.objetivo).toFixed(2)} (${pct}%)`;
+        }).join('\n')
+        : 'Sin metas de ahorro activas.';
+
+    return [
+        `FECHA LOCAL: ${getLocalYYYYMMDD(hoy)}`,
+        `TASAS DEL DÍA: ${resumenTasas}`,
+        `BALANCE TOTAL ESTIMADO (USD): $${totalPatrimonioUSD.toFixed(2)}`,
+        `CUENTAS DEL USUARIO:\n${detalleCuentas.join('\n')}`,
+        `RESUMEN DEL MES ACTUAL (${mesActualPrefix}): Ingresos: $${totalIngresosMesUSD.toFixed(2)} | Gastos: $${totalGastosMesUSD.toFixed(2)}`,
+        `DESGLOSE DE GASTOS DEL MES POR CATEGORÍA: ${listaCategoriasMes}`,
+        `METAS DE AHORRO ACTIVAS:\n${detalleMetas}`
+    ].join('\n\n');
+}
+
+function enviarSugerenciaAskBot(texto) {
+    const input = document.getElementById('askbot-input');
+    if (!input) return;
+    input.value = texto;
+    enviarMensajeAskBot();
+}
+
+async function enviarMensajeAskBot() {
+    if (askbotEsperandoRespuesta) return;
+
+    const input = document.getElementById('askbot-input');
+    const btnSend = document.getElementById('btn-askbot-send');
+    if (!input) return;
+
+    const mensaje = input.value.trim();
+    if (!mensaje) return;
+
+    input.value = '';
+    agregarBurbujaAskBot(mensaje, 'user');
+
+    if (!navigator.onLine) {
+        agregarBurbujaAskBot(
+            "📡 **Sin conexión a internet.**\nNecesitas señal para consultar a AskBot. Tus cuentas, metas y registros locales siguen funcionando al 100%.",
+            "bot"
+        );
+        return;
+    }
+
+    askbotEsperandoRespuesta = true;
+    if (btnSend) btnSend.disabled = true;
+    mostrarIndicadorEscribiendoAskBot();
+
+    try {
+        const contexto = generarContextoFinancieroIA();
+        let respuestaTexto = null;
+
+        // Llamada directa al endpoint de la Edge Function en Supabase (funciona con o sin sesión iniciada)
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/asistente-ia`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({ mensaje, contexto })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data?.error || `Error del servidor (${res.status})`);
+        }
+
+        respuestaTexto = data?.respuesta || "No pude generar una respuesta en este momento.";
+        quitarIndicadorEscribiendoAskBot();
+        agregarBurbujaAskBot(respuestaTexto, 'bot');
+    } catch (err) {
+        console.error("Error al consultar AskBot:", err);
+        quitarIndicadorEscribiendoAskBot();
+        agregarBurbujaAskBot(
+            `⚠️ **Detalle de conexión con AskBot:** ${err.message || "Verifica tu conexión a internet e intenta nuevamente."}`,
+            "bot"
+        );
+    } finally {
+        askbotEsperandoRespuesta = false;
+        if (btnSend) btnSend.disabled = false;
+    }
+}
+
 // ================= CEREBRO INTELIGENTE DE TASAS =================
 function procesarHistorial(key, currentValor, currentFecha) {
     let history = JSON.parse(localStorage.getItem(`history_${key}`));
@@ -1639,6 +2013,9 @@ function importarDatos(e) {
 
 // ================= ARRANQUE DE LA APP =================
 async function inicializarApp() {
+    actualizarHeaderTutorial();
+    inicializarAskBot();
+
     // 1. Verificar si hay sesión guardada de Supabase
     if (supabaseClient) {
         try {
