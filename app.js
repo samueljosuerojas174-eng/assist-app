@@ -337,36 +337,33 @@ document.getElementById('val-moneda').addEventListener('change', toggleCategoria
 function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     const selectMoneda = document.getElementById('val-moneda');
-    if(!cuentaActiva) return;
+    if (!cuentaActiva || !selectMoneda) return;
 
-    if (cuentaActiva.moneda === 'VES') {
-        Array.from(selectMoneda.options).forEach(opt => {
-            opt.disabled = false;
-            opt.hidden = false;
-        });
-    } else if (cuentaActiva.moneda === 'USD') {
-        selectMoneda.value = 'USD'; 
-        Array.from(selectMoneda.options).forEach(opt => {
-            if (opt.value === 'VES' || opt.value === 'EUR') {
-                opt.disabled = true;
-                if (opt.value === 'EUR') opt.hidden = true;
-            } else {
-                opt.disabled = false;
-                opt.hidden = false;
-            }
-        });
-    } else {
+    const optUSD = selectMoneda.querySelector('option[value="USD"]');
+    const optVES = selectMoneda.querySelector('option[value="VES"]');
+    const optEUR = selectMoneda.querySelector('option[value="EUR"]');
+
+    if (cuentaActiva.moneda === 'USD') {
+        // Cuenta en Dólares Físicos: Únicamente USD
+        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
+        if (optVES) { optVES.disabled = true;  optVES.hidden = true; }
+        if (optEUR) { optEUR.disabled = true;  optEUR.hidden = true; }
+        selectMoneda.value = 'USD';
+
+    } else if (cuentaActiva.moneda === 'USDT') {
+        // Cuenta en USDT: Se oculta EUR (solo quedan USD y VES)
+        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
+        if (optVES) { optVES.disabled = false; optVES.hidden = false; }
+        if (optEUR) { optEUR.disabled = true;  optEUR.hidden = true; }
         if (selectMoneda.value === 'EUR') selectMoneda.value = 'USD';
-        Array.from(selectMoneda.options).forEach(opt => {
-            if (opt.value === 'EUR') {
-                opt.disabled = true;
-                opt.hidden = true;
-            } else {
-                opt.disabled = false;
-                opt.hidden = false;
-            }
-        });
+
+    } else if (cuentaActiva.moneda === 'VES') {
+        // Cuenta en Bolívares: Quedan activas las 3 (USD, VES y EUR)
+        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
+        if (optVES) { optVES.disabled = false; optVES.hidden = false; }
+        if (optEUR) { optEUR.disabled = false; optEUR.hidden = false; }
     }
+
     toggleCategoriaSelect();
 }
 
@@ -434,14 +431,23 @@ function renderizarMetas() {
 
         lista.innerHTML += `
         <div class="meta-item-card" onclick="abrirDetalleMeta(${i})">
-            <div class="meta-bg-overlay" style="${bgStyle}"></div>
-            <div class="meta-content">
-                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
-                    <strong style="font-size:18px; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">${m.nombre}</strong>
-                    <span style="font-size:14px; font-weight:bold; text-shadow: 0 2px 6px rgba(0,0,0,0.8);">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
+            <!-- Zona Superior: Imagen y Título -->
+            <div class="meta-card-top">
+                <div class="meta-bg-overlay" style="${bgStyle}"></div>
+                <div class="meta-top-content">
+                    <strong style="font-size:18px; text-shadow: 0 2px 8px rgba(0,0,0,0.9);">${m.nombre}</strong>
+                    <span style="font-size:14px; font-weight:bold; text-shadow: 0 2px 8px rgba(0,0,0,0.9);">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
                 </div>
-                <div class="progress-bg" style="height:6px;"><div class="progress-fill" style="width: ${pct}%;"></div></div>
-                <small style="color:var(--text-primary); font-size:12px; font-weight:600; text-shadow: 0 1px 4px rgba(0,0,0,0.8);">${pct.toFixed(1)}% de ${m.objetivo}</small>
+            </div>
+            <!-- Zona Inferior: Espacio limpio solo para la barra y datos -->
+            <div class="meta-card-bottom">
+                <div class="progress-bg" style="height: 10px; margin-bottom: 6px;">
+                    <div class="progress-fill" style="width: ${pct}%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <small style="color:var(--text-secondary); font-size:12px; font-weight:600;">Progreso</small>
+                    <small style="color:var(--text-primary); font-size:12px; font-weight:700;">${pct.toFixed(1)}% de ${m.objetivo.toFixed(2)}</small>
+                </div>
             </div>
         </div>`;
     });
