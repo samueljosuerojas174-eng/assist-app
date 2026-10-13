@@ -30,8 +30,9 @@ let tasasData = {
 
 // Convierte una fecha a YYYY-MM-DD estricto en la zona local
 function getLocalYYYYMMDD(d = new Date()) {
-    const tzOffset = d.getTimezoneOffset() * 60000;
-    return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
+    const fechaSegura = (d instanceof Date && !isNaN(d.getTime())) ? d : new Date();
+    const tzOffset = fechaSegura.getTimezoneOffset() * 60000;
+    return new Date(fechaSegura.getTime() - tzOffset).toISOString().split('T')[0];
 }
 
 // ================= AUTENTICACIÓN Y SINCRONIZACIÓN SUPABASE =================
@@ -180,7 +181,7 @@ async function sincronizarHaciaNube() {
         const ahora = new Date().toISOString();
 
         // 1. Guardar Perfil y Preferencias
-        await supabaseClient.from('perfiles').upsert({
+        const { error: errPerfil } = await supabaseClient.from('perfiles').upsert({
             user_id: uid,
             email: usuarioActual.email,
             theme_mode: localStorage.getItem('app_theme_mode') || 'dark',
@@ -189,6 +190,7 @@ async function sincronizarHaciaNube() {
             censurado: censurado,
             updated_at: ahora
         });
+        if (errPerfil) throw errPerfil;
 
         // 2. Sincronizar Cuentas (respetando orden de las flechitas)
         await supabaseClient.from('cuentas').delete().eq('user_id', uid);
@@ -201,18 +203,21 @@ async function sincronizarHaciaNube() {
                 orden: idx,
                 updated_at: ahora
             }));
-            await supabaseClient.from('cuentas').insert(filasCuentas);
+            const { error: errCuentas } = await supabaseClient.from('cuentas').upsert(filasCuentas);
+            if (errCuentas) throw errCuentas;
         }
 
         // 3. Sincronizar Categorías
         await supabaseClient.from('categorias').delete().eq('user_id', uid);
         if (categorias.length > 0) {
-            const filasCat = categorias.map((cat, idx) => ({
+            const categoriasUnicas = [...new Set(categorias)];
+            const filasCat = categoriasUnicas.map((cat, idx) => ({
                 user_id: uid,
-                nombre: cat,
+                nombre: String(cat),
                 orden: idx
             }));
-            await supabaseClient.from('categorias').insert(filasCat);
+            const { error: errCat } = await supabaseClient.from('categorias').upsert(filasCat);
+            if (errCat) throw errCat;
         }
 
         // 4. Sincronizar Metas
@@ -229,27 +234,41 @@ async function sincronizarHaciaNube() {
                 orden: idx,
                 updated_at: ahora
             }));
-            await supabaseClient.from('metas').insert(filasMetas);
+            const { error: errMetas } = await supabaseClient.from('metas').upsert(filasMetas);
+            if (errMetas) throw errMetas;
         }
 
-        // 5. Sincronizar Transacciones
+        // 5. Sincronizar Transacciones (Blindado contra fechas antiguas o vacías)
         await supabaseClient.from('transacciones').delete().eq('user_id', uid);
         if (transacciones.length > 0) {
-            const filasTrans = transacciones.map(t => ({
-                user_id: uid,
-                id: String(t.id),
-                cuenta_id: String(t.cuentaId),
-                monto_usd: Number(t.montoUSD) || 0,
-                tipo: t.tipo,
-                categoria: t.categoria,
-                nota: t.nota || '',
-                moneda_input_original: t.monedaInputOriginal || 'USD',
-                fecha_formateada: t.fechaFormateada || '',
-                fecha: typeof t.fecha === 'string' ? t.fecha : new Date(t.fecha).toISOString(),
-                fecha_iso_local: t.fechaIsoLocal || getLocalYYYYMMDD(new Date(t.fecha || Date.now())),
-                updated_at: ahora
-            }));
-            await supabaseClient.from('transacciones').insert(filasTrans);
+            const filasTrans = transacciones.map((t, idx) => {
+                let fechaValida = new Date();
+                if (t.fecha) {
+                    const parsed = new Date(t.fecha);
+                    if (!isNaN(parsed.getTime())) fechaValida = parsed;
+                } else if (t.id && !isNaN(Number(t.id))) {
+                    const parsedId = new Date(Number(t.id));
+                    if (!isNaN(parsedId.getTime())) fechaValida = parsedId;
+                }
+
+                return {
+                    user_id: uid,
+                    id: t.id !== undefined && t.id !== null ? String(t.id) : `${Date.now()}_${idx}`,
+                    cuenta_id: String(t.cuentaId),
+                    monto_usd: Number(t.montoUSD) || 0,
+                    tipo: t.tipo || 'gasto',
+                    categoria: t.categoria || 'Varios',
+                    nota: t.nota || '',
+                    moneda_input_original: t.monedaInputOriginal || 'USD',
+                    fecha_formateada: t.fechaFormateada || '',
+                    fecha: fechaValida.toISOString(),
+                    fecha_iso_local: t.fechaIsoLocal || getLocalYYYYMMDD(fechaValida),
+                    updated_at: ahora
+                };
+            });
+
+            const { error: errTrans } = await supabaseClient.from('transacciones').upsert(filasTrans);
+            if (errTrans) throw errTrans;
         }
 
         localStorage.removeItem('assist_pending_sync');
@@ -258,6 +277,7 @@ async function sincronizarHaciaNube() {
         console.error("Error al sincronizar con Supabase:", err);
         localStorage.setItem('assist_pending_sync', 'true');
         actualizarUIEstadoNube();
+        throw err;
     } finally {
         sincronizandoNube = false;
     }
@@ -287,6 +307,9 @@ async function descargarDesdeNube() {
             return false;
         }
 
+        // Candado de seguridad: si la nube tiene 0 transacciones pero el teléfono sí tiene transacciones locales, subimos las del teléfono
+        const necesitaSubirTransLocales = (!resTrans.data || resTrans.data.length === 0) && transacciones.length > 0;
+
         if (resPerfil.data) {
             if (resPerfil.data.theme_color) cambiarColorAcento(resPerfil.data.theme_color, true);
             if (resPerfil.data.theme_mode) cambiarModo(resPerfil.data.theme_mode, true);
@@ -301,7 +324,7 @@ async function descargarDesdeNube() {
             }
         }
 
-        if (resCuentas.data) {
+        if (resCuentas.data && resCuentas.data.length > 0) {
             cuentas = resCuentas.data.map(c => ({
                 id: isNaN(Number(c.id)) ? c.id : Number(c.id),
                 nombre: c.nombre,
@@ -309,11 +332,11 @@ async function descargarDesdeNube() {
             }));
         }
 
-        if (resCat.data) {
+        if (resCat.data && resCat.data.length > 0) {
             categorias = resCat.data.map(c => c.nombre);
         }
 
-        if (resMetas.data) {
+        if (resMetas.data && resMetas.data.length > 0) {
             metas = resMetas.data.map(m => ({
                 id: isNaN(Number(m.id)) ? m.id : Number(m.id),
                 nombre: m.nombre,
@@ -324,7 +347,7 @@ async function descargarDesdeNube() {
             }));
         }
 
-        if (resTrans.data) {
+        if (resTrans.data && resTrans.data.length > 0) {
             transacciones = resTrans.data.map(t => ({
                 id: isNaN(Number(t.id)) ? t.id : Number(t.id),
                 cuentaId: isNaN(Number(t.cuenta_id)) ? t.cuenta_id : Number(t.cuenta_id),
@@ -346,7 +369,12 @@ async function descargarDesdeNube() {
         localStorage.setItem('categorias', JSON.stringify(categorias));
         localStorage.setItem('transacciones', JSON.stringify(transacciones));
         localStorage.setItem('metas', JSON.stringify(metas));
-        localStorage.removeItem('assist_pending_sync');
+
+        if (necesitaSubirTransLocales) {
+            await sincronizarHaciaNube();
+        } else {
+            localStorage.removeItem('assist_pending_sync');
+        }
 
         cargarSelects();
         renderizarListasGestion();
@@ -361,14 +389,18 @@ async function descargarDesdeNube() {
 
 async function forzarSincronizacionManual() {
     if (!navigator.onLine) return alert("Sin conexión a internet. Tus datos siguen seguros en tu teléfono.");
-    await sincronizarHaciaNube();
-    alert("☁️ ¡Datos sincronizados con éxito en la nube!");
+    try {
+        await sincronizarHaciaNube();
+        alert("☁️ ¡Datos sincronizados con éxito en la nube!");
+    } catch (e) {
+        alert("⚠️ Hubo un detalle al sincronizar: " + (e.message || "Intenta de nuevo."));
+    }
 }
 
 async function cerrarSesionNube() {
     if (!confirm("¿Deseas cerrar tu sesión en la nube en este dispositivo?")) return;
     if (navigator.onLine && usuarioActual) {
-        await sincronizarHaciaNube();
+        try { await sincronizarHaciaNube(); } catch (e) { console.error(e); }
         await supabaseClient.auth.signOut();
     }
     usuarioActual = null;
@@ -398,7 +430,7 @@ async function cerrarSesionNube() {
 window.addEventListener('online', () => {
     actualizarUIEstadoNube();
     if (usuarioActual && localStorage.getItem('assist_pending_sync') === 'true') {
-        sincronizarHaciaNube();
+        sincronizarHaciaNube().catch(e => console.error(e));
     }
 });
 window.addEventListener('offline', () => {
@@ -454,13 +486,13 @@ document.getElementById('pin-screen').addEventListener('click', () => {
 function cambiarColorAcento(color, omitirSync = false) {
     document.documentElement.style.setProperty('--accent', color);
     localStorage.setItem('app_theme_color', color);
-    if (!omitirSync && usuarioActual) sincronizarHaciaNube();
+    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 function cambiarModo(modo, omitirSync = false) {
     document.documentElement.setAttribute('data-theme', modo);
     document.body.setAttribute('data-theme', modo);
     localStorage.setItem('app_theme_mode', modo);
-    if (!omitirSync && usuarioActual) sincronizarHaciaNube();
+    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 // Auto-Bloqueo
@@ -502,11 +534,11 @@ function configurarPIN() {
     if (nuevo === null) return;
     if (nuevo === "") {
         localStorage.removeItem('app_pin'); appPin = null; alert("PIN desactivado.");
-        if (usuarioActual) sincronizarHaciaNube();
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
     } else if (nuevo.length === 4 && !isNaN(nuevo)) {
         localStorage.setItem('app_pin', nuevo); appPin = nuevo; alert("PIN configurado con éxito.");
         reiniciarInactividad();
-        if (usuarioActual) sincronizarHaciaNube();
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
     } else { alert("Debe ser un número de 4 dígitos."); }
 }
 
@@ -537,7 +569,7 @@ function resetearPIN() {
         localStorage.removeItem('app_pin'); appPin = null;
         document.getElementById('pin-screen').classList.add('oculto');
         document.getElementById('app-main-container').classList.add('app-unlocked');
-        if (usuarioActual) sincronizarHaciaNube();
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
         alert("PIN eliminado correctamente.");
     } else if (respuesta !== null) { alert("Palabra de seguridad incorrecta."); }
 }
@@ -550,7 +582,7 @@ function toggleCensura(event) {
     censurado = !censurado;
     localStorage.setItem('censurado', censurado);
     actualizarInterfaz();
-    if (usuarioActual) sincronizarHaciaNube();
+    if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 function formatearMontoCensurado(texto, mantenerFisico = false) {
@@ -1541,7 +1573,7 @@ function guardarYActualizarGestion() {
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     localStorage.setItem('metas', JSON.stringify(metas));
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
-    if (usuarioActual) sincronizarHaciaNube();
+    if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 // ================= BACKUPS =================
@@ -1584,6 +1616,9 @@ function importarDatos(e) {
                 if (usuarioActual) {
                     sincronizarHaciaNube().then(() => {
                         alert("¡Datos restaurados y respaldados en la nube correctamente!");
+                        window.location.reload();
+                    }).catch(() => {
+                        alert("¡Datos restaurados localmente! Se sincronizarán con la nube en breve.");
                         window.location.reload();
                     });
                 } else {
