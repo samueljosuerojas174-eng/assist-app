@@ -19,8 +19,9 @@
         <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
             <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
             <h2 style="margin-bottom: 20px; font-size: 24px; color: #fff;">Ingresa tu PIN</h2>
-            <input type="password" id="input-pin" style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: #121212; color: #fff; outline: none;" placeholder="••••" maxlength="4">
+            <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: #121212; color: #fff; outline: none;" placeholder="••••" maxlength="4">
             <button class="btn-primario" onclick="verificarPIN()">Desbloquear</button>
+            <button onclick="resetearPIN()" style="background: transparent; border: none; color: var(--text-secondary); margin-top: 20px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; transition: color 0.3s;">¿Olvidaste tu PIN?</button>
         </div>
     </div>
 

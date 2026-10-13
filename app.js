@@ -71,6 +71,20 @@ function verificarPIN() {
     }
 }
 
+// Nueva función de reseteo de seguridad
+function resetearPIN() {
+    const respuesta = prompt('Escribe "RESETEAR" para eliminar el PIN guardado y restaurar el acceso:');
+    
+    if (respuesta === "RESETEAR") {
+        localStorage.removeItem('app_pin');
+        appPin = null;
+        document.getElementById('pin-screen').classList.add('oculto');
+        alert("PIN eliminado correctamente.");
+    } else if (respuesta !== null) {
+        alert("Palabra de seguridad incorrecta.");
+    }
+}
+
 // ================= CENSURAR MONTOS (OJO BINANCE) =================
 let censurado = localStorage.getItem('censurado') === 'true';
 
