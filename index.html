@@ -290,8 +290,7 @@
             <!-- Cabecera Fotográfica Nítida con Degradado abajo -->
             <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; overflow: hidden;">
                 <!-- Fondo Nítido Local -->
-                <div id="meta-detail-bg-blur" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; opacity: 0.9;"></div>
-                
+                <div id="meta-detail-bg-blur" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: 60%; background-repeat: no-repeat; background-position: center top 30px; opacity: 1;"></div>
                 <!-- Este es el degradado que funde las "patas" de la foto con el fondo de la app -->
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
                 
@@ -409,9 +408,9 @@
                 <input type="number" id="in-meta-obj" placeholder="Monto objetivo (USD)" step="0.01" inputmode="decimal">
             </div>
             <div class="input-group" style="flex-direction: column; gap: 5px;">
-                <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
-                <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
-            </div>
+    <label style="font-size: 13px; color: var(--text-secondary);">Añadir Imagen Local (Opcional)</label>
+    <input type="file" id="in-meta-img" accept="image/*" style="font-size: 12px; padding: 10px;">
+</div>
             <button class="btn-primario" onclick="guardarNuevaMeta()">Guardar Meta</button>
         </div>
     </div>
