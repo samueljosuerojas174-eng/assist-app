@@ -30,6 +30,9 @@
 </head>
 <body data-theme="dark">
 
+    <!-- Input Global Oculto para Subir Foto de Perfil desde Galería -->
+    <input type="file" id="in-perfil-img" accept="image/*" style="display: none;" onchange="procesarFotoPerfil(event)">
+
     <!-- Pantalla Minimalista de Inicio de Sesión / Registro (Nube) -->
     <div id="auth-screen" class="glass-modal oculto" style="z-index: 99997; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column;">
         <div class="auth-box">
@@ -44,8 +47,8 @@
             </div>
 
             <div style="width: 100%; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
-                <input type="email" id="auth-email" placeholder="Correo electrónico" autocomplete="email" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;">
-                <input type="password" id="auth-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="current-password" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 15px; outline: none;">
+                <input type="email" id="auth-email" placeholder="Correo electrónico" autocomplete="email" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 16px; outline: none;">
+                <input type="password" id="auth-password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="current-password" style="width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); font-size: 16px; outline: none;">
             </div>
 
             <p id="auth-error-msg" class="oculto" style="color: #FF453A; font-size: 12px; font-weight: 600; margin-bottom: 12px; display: none;"></p>
@@ -80,11 +83,15 @@
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div>
                         <h1>A$$IST</h1>
-                        <p>Control de Capital</p>
+                        <p id="header-greeting-sub">Control de Capital</p>
                     </div>
                     <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">🎓 Tutorial</button>
                 </div>
-                <img src="logo.jpg" alt="Logo" class="app-logo">
+                <!-- Botón Interactivo de Avatar / Perfil -->
+                <button id="btn-avatar-header" class="avatar-header-btn" onclick="abrirModal('modal-perfil')" aria-label="Abrir Mi Perfil">
+                    <img src="logo.jpg" alt="Perfil" id="header-user-avatar" class="app-logo avatar-header-img">
+                    <span class="avatar-online-dot" id="header-avatar-dot"></span>
+                </button>
             </div>
 
             <!-- Tarjeta de Balance -->
@@ -193,32 +200,54 @@
             </button>
         </div>
 
-        <!-- ================= APARTADO: ASKBOT (ASISTENTE IA) ================= -->
+        <!-- ================= APARTADO: ASKBOT (ASISTENTE IA INMERSIVO) ================= -->
         <div id="tab-askbot" class="vista-oculta">
-            <div class="header-title">
-                <div>
-                    <h1>AskBot</h1>
-                    <p>Copiloto Financiero IA</p>
+            <div class="header-title askbot-header-bar">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="askbot-header-badge">🤖</div>
+                    <div>
+                        <h1 style="font-size: 26px;">AskBot</h1>
+                        <p style="font-size: 12px;">Copiloto Financiero Híbrido</p>
+                    </div>
                 </div>
-                <button class="btn-tutorial-pill" onclick="limpiarChatAskBot()" title="Limpiar conversación">🗑️ Limpiar</button>
+                <button class="btn-tutorial-pill" onclick="limpiarChatAskBot()" title="Nueva conversación">🗑️ Limpiar</button>
             </div>
 
-            <section class="askbot-container blur-effect">
-                <!-- Sugerencias rápidas deslizable -->
-                <div class="askbot-chips">
-                    <button class="askbot-chip" onclick="enviarSugerenciaAskBot('¿En qué categoría se me está yendo más el dinero este mes y cómo puedo ajustarme?')">📊 Análisis del mes</button>
-                    <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Según mis saldos actuales y mis metas, ¿cuánto dinero libre tengo hoy para gastar sin descapitalizarme?')">💸 ¿Cuánto puedo gastar hoy?</button>
-                    <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Analiza la brecha actual entre BCV y USDT con mis cuentas y dime qué moneda me conviene usar hoy.')">🇻🇪 Estrategia BCV vs USDT</button>
-                    <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Dame un plan práctico para completar mis metas de ahorro activas más rápido.')">🎯 Acelerar mis metas</button>
+            <section id="askbot-container" class="askbot-container blur-effect">
+                <!-- Estado Inicial de Bienvenida (Desaparece al enviar el primer mensaje) -->
+                <div id="askbot-welcome-hero" class="askbot-welcome-hero">
+                    <div class="askbot-hero-orb">✨</div>
+                    <h2 id="askbot-hero-title" class="askbot-hero-title">¿En qué te ayudo hoy?</h2>
+                    <p class="askbot-hero-sub">
+                        Consultas de saldos, tasas, conversiones y gastos al instante <strong>offline</strong>, o estrategias profundas con <strong>IA en vivo</strong>.
+                    </p>
+                    <div class="askbot-chips">
+                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('¿En qué categoría se me está yendo más el dinero este mes y cómo puedo ajustarme?')">
+                            <span class="chip-icon">📊</span>
+                            <span class="chip-text">Análisis de gastos del mes</span>
+                        </button>
+                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Según mis saldos actuales y mis metas, ¿cuánto dinero libre tengo hoy para gastar sin descapitalizarme?')">
+                            <span class="chip-icon">💸</span>
+                            <span class="chip-text">¿Cuánto puedo gastar hoy?</span>
+                        </button>
+                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Analiza la brecha actual entre BCV y USDT con mis cuentas y dime qué moneda me conviene usar hoy.')">
+                            <span class="chip-icon">🇻🇪</span>
+                            <span class="chip-text">Estrategia BCV vs USDT</span>
+                        </button>
+                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Dame un plan práctico para completar mis metas de ahorro activas más rápido.')">
+                            <span class="chip-icon">🎯</span>
+                            <span class="chip-text">Plan para acelerar mis metas</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Ventana de Mensajes -->
-                <div id="askbot-messages" class="askbot-messages"></div>
+                <div id="askbot-messages" class="askbot-messages oculto-chat"></div>
 
-                <!-- Barra de Entrada -->
+                <!-- Barra de Entrada Fija Abajo -->
                 <div class="askbot-input-bar">
-                    <input type="text" id="askbot-input" placeholder="Pregúntale a AskBot sobre tus finanzas..." autocomplete="off" onkeydown="if(event.key === 'Enter') enviarMensajeAskBot()">
-                    <button id="btn-askbot-send" class="btn-askbot-send" onclick="enviarMensajeAskBot()">
+                    <input type="text" id="askbot-input" placeholder="Pregunta a AskBot..." autocomplete="off" onkeydown="if(event.key === 'Enter') enviarMensajeAskBot()">
+                    <button id="btn-askbot-send" class="btn-askbot-send" onclick="enviarMensajeAskBot()" aria-label="Enviar">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                     </button>
                 </div>
@@ -294,26 +323,47 @@
             </section>
         </div>
 
-        <!-- ================= APARTADO: GESTIÓN ================= -->
+        <!-- ================= APARTADO: GESTIÓN / AJUSTES ================= -->
         <div id="tab-categorias" class="vista-oculta">
             <div class="header-title">
                 <div>
                     <h1>Ajustes</h1>
-                    <p>Gestión y Apariencia</p>
+                    <p>Perfil, Gestión y Apariencia</p>
                 </div>
             </div>
 
-            <!-- Tarjeta de Sincronización en la Nube (Supabase) -->
-            <section class="gestion-seccion" style="padding: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <h3 class="section-subtitle" style="margin-bottom: 0;">Respaldo en la Nube</h3>
-                    <span id="cloud-status-badge" class="cloud-badge desconectado">Local</span>
+            <!-- Tarjeta Completa de Mi Perfil y Sincronización en la Nube -->
+            <section class="gestion-seccion perfil-card" style="padding: 18px 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <h3 class="section-subtitle" style="margin-bottom: 0;">Mi Perfil</h3>
+                    <span id="cloud-status-badge" class="cloud-badge desconectado">Solo Local</span>
                 </div>
+
+                <!-- Cabecera de Avatar + Nombre Editable -->
+                <div class="perfil-top-row">
+                    <div class="perfil-avatar-wrapper" onclick="seleccionarFotoPerfil()" title="Cambiar foto de perfil">
+                        <img src="logo.jpg" alt="Avatar" id="settings-user-avatar" class="perfil-avatar-img">
+                        <div class="perfil-avatar-edit-badge">📷</div>
+                    </div>
+                    <div class="perfil-info-col">
+                        <label style="font-size: 11px; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Nombre de Usuario</label>
+                        <div class="perfil-name-input-row">
+                            <input type="text" id="in-perfil-nombre" placeholder="Tu nombre o apodo..." maxlength="28" oninput="sincronizarInputsNombre(this.value)" onkeydown="if(event.key === 'Enter') guardarPerfilUsuario()">
+                            <button class="btn-guardar-nombre" onclick="guardarPerfilUsuario()" title="Guardar nombre">✓</button>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 6px;">
+                            <button class="btn-link-perfil" onclick="seleccionarFotoPerfil()">Cambiar foto</button>
+                            <button id="btn-quitar-foto-settings" class="btn-link-perfil danger oculto" onclick="eliminarFotoPerfil()" style="display: none;">Quitar foto</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calc-divider" style="margin: 14px 0;"></div>
 
                 <!-- Vista cuando NO ha iniciado sesión -->
                 <div id="cloud-logged-out-box">
-                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                        Tus datos están guardados en este dispositivo. Inicia sesión o regístrate para respaldarlos en la nube y no perderlos si borras el navegador.
+                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                        Tus datos están guardados en este dispositivo. Inicia sesión o regístrate para respaldarlos en la nube y no perderlos nunca.
                     </p>
                     <button class="btn-primario" onclick="abrirPantallaAuth()">☁️ Conectar Cuenta / Registrarme</button>
                 </div>
@@ -321,11 +371,11 @@
                 <!-- Vista cuando SÍ ha iniciado sesión -->
                 <div id="cloud-logged-in-box" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 10px 14px; border-radius: 14px; border: 1px solid var(--border-light);">
-                        <div style="overflow: hidden;">
-                            <small style="color: var(--text-secondary); font-size: 11px; display: block;">Sesión activa</small>
-                            <strong id="cloud-user-email" style="font-size: 14px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
+                        <div style="overflow: hidden; padding-right: 8px;">
+                            <small style="color: var(--text-secondary); font-size: 11px; display: block;">Correo sincronizado</small>
+                            <strong id="cloud-user-email" style="font-size: 13.5px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
                         </div>
-                        <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px;">🔄 Sincronizar</button>
+                        <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">🔄 Sincronizar</button>
                     </div>
                     <button class="btn-secundario" onclick="cerrarSesionNube()" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25);">Cerrar Sesión</button>
                 </div>
@@ -384,6 +434,63 @@
     </div>
 
     <!-- ================= VENTANAS MODALES ================= -->
+
+    <!-- Modal Desplegable de Mi Perfil (Acceso rápido desde Cabecera) -->
+    <div id="modal-perfil" class="glass-modal oculto" onclick="cerrarModal('modal-perfil')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2>Mi Perfil</h2>
+                    <span id="modal-cloud-status-badge" class="cloud-badge desconectado">Solo Local</span>
+                </div>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-perfil')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Avatar Central y Selector de Foto -->
+            <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 16px;">
+                <div class="perfil-avatar-wrapper grande" onclick="seleccionarFotoPerfil()">
+                    <img src="logo.jpg" alt="Avatar" id="modal-user-avatar" class="perfil-avatar-img grande">
+                    <div class="perfil-avatar-edit-badge">📷</div>
+                </div>
+                <div style="display: flex; gap: 14px; margin-top: 8px;">
+                    <button class="btn-link-perfil" onclick="seleccionarFotoPerfil()">Subir o cambiar foto</button>
+                    <button id="btn-quitar-foto-modal" class="btn-link-perfil danger oculto" onclick="eliminarFotoPerfil()" style="display: none;">Restaurar logo</button>
+                </div>
+            </div>
+
+            <!-- Nombre de Usuario -->
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 12px; color: var(--text-secondary); font-weight: 700; display: block; margin-bottom: 6px; padding-left: 4px;">NOMBRE DE USUARIO</label>
+                <div class="perfil-name-input-row">
+                    <input type="text" id="in-modal-perfil-nombre" placeholder="Escribe tu nombre o apodo..." maxlength="28" oninput="sincronizarInputsNombre(this.value)" onkeydown="if(event.key === 'Enter') guardarPerfilUsuario()">
+                    <button class="btn-guardar-nombre" onclick="guardarPerfilUsuario()">Guardar</button>
+                </div>
+            </div>
+
+            <div class="calc-divider" style="margin: 10px 0 16px;"></div>
+
+            <!-- Estado de Cuenta en la Nube dentro del Modal -->
+            <div id="modal-cloud-logged-out-box">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; text-align: center; line-height: 1.4;">
+                    Conecta tu cuenta gratuita para sincronizar tu perfil, cuentas y movimientos en la nube.
+                </p>
+                <button class="btn-primario" onclick="cerrarModal('modal-perfil'); abrirPantallaAuth();">☁️ Conectar Cuenta / Registrarme</button>
+            </div>
+
+            <div id="modal-cloud-logged-in-box" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 12px 14px; border-radius: 16px; border: 1px solid var(--border-light);">
+                    <div style="overflow: hidden; padding-right: 8px;">
+                        <small style="color: var(--text-secondary); font-size: 11px; display: block;">Sesión activa en la nube</small>
+                        <strong id="modal-cloud-user-email" style="font-size: 14px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
+                    </div>
+                    <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">🔄 Sincronizar</button>
+                </div>
+                <button class="btn-secundario" onclick="cerrarModal('modal-perfil'); cerrarSesionNube();" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25);">Cerrar Sesión</button>
+            </div>
+        </div>
+    </div>
     
     <!-- Modal Historial -->
     <div id="modal-historial" class="glass-modal oculto" onclick="cerrarModal('modal-historial')">
@@ -407,7 +514,7 @@
                 </div>
             </div>
             
-            <div style="width: 100%; height: 180px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light);">
+            <div style="width: 100%; height: 180px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;">
                 <canvas id="graficoGastos"></canvas>
             </div>
             <ul id="lista-transacciones" class="modal-list"></ul>
@@ -419,7 +526,7 @@
         <div class="glass-modal-content" style="padding: 0; height: 92vh; border-radius: 32px 32px 0 0; overflow: hidden; background: var(--bg-dark); border:none;" onclick="event.stopPropagation()">
             
             <!-- Cabecera Fotográfica Nítida con Degradado abajo -->
-            <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; overflow: hidden;">
+            <div id="meta-detail-header" style="position: relative; width: 100%; height: 280px; overflow: hidden; flex-shrink: 0;">
                 <!-- Fondo Nítido Local -->
                 <div id="meta-detail-bg-blur" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: 60%; background-repeat: no-repeat; background-position: center top 30px; opacity: 1;"></div>
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
@@ -449,15 +556,15 @@
             </div>
 
             <!-- Botones de Acción Internos -->
-            <div style="display: flex; gap: 15px; padding: 20px 25px;">
+            <div style="display: flex; gap: 15px; padding: 20px 25px; flex-shrink: 0;">
                 <button class="btn-primario" onclick="prepararAccionMeta('abonar')" style="flex:1; padding: 14px;">+ Abonar</button>
                 <button class="btn-secundario" onclick="prepararAccionMeta('retirar')" style="flex:1; padding: 14px; border: 1px solid var(--accent); color: var(--accent); background: transparent;">- Retirar</button>
             </div>
 
             <!-- Historial de la Meta -->
-            <div style="padding: 0 25px; flex: 1; overflow-y: auto;">
-                <h3 class="section-subtitle" style="margin-bottom: 15px;">Historial de Movimientos</h3>
-                <ul id="lista-historial-meta" class="modal-list" style="max-height: none; padding-bottom: 50px;"></ul>
+            <div style="padding: 0 25px; flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <h3 class="section-subtitle" style="margin-bottom: 15px; flex-shrink: 0;">Historial de Movimientos</h3>
+                <ul id="lista-historial-meta" class="modal-list" style="max-height: none; padding-bottom: 50px; flex: 1;"></ul>
             </div>
         </div>
     </div>
@@ -581,7 +688,7 @@
     </div>
 
     <!-- Barra Inferior Clásica (5 Pestañas con AskBot integrado) -->
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" id="bottom-nav-bar">
         <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
             <span class="nav-text">A$$IST</span>

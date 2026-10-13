@@ -14,6 +14,10 @@ let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [];
 let metas = JSON.parse(localStorage.getItem('metas')) || [];
 let appPin = localStorage.getItem('app_pin') || null;
 
+// Datos de Perfil de Usuario (Local-First)
+let userNombre = localStorage.getItem('assist_user_name') || '';
+let userAvatar = localStorage.getItem('assist_user_avatar') || null;
+
 // Variables Globales
 let tasaBCV = 1;
 let tasaParalelo = 1; 
@@ -33,6 +37,129 @@ function getLocalYYYYMMDD(d = new Date()) {
     const fechaSegura = (d instanceof Date && !isNaN(d.getTime())) ? d : new Date();
     const tzOffset = fechaSegura.getTimezoneOffset() * 60000;
     return new Date(fechaSegura.getTime() - tzOffset).toISOString().split('T')[0];
+}
+
+// ================= PERFIL DE USUARIO Y AVATAR =================
+function actualizarUIPerfil() {
+    const avatarSrc = userAvatar || 'logo.jpg';
+    const tieneAvatar = Boolean(userAvatar);
+
+    const headerAvatar = document.getElementById('header-user-avatar');
+    const settingsAvatar = document.getElementById('settings-user-avatar');
+    const modalAvatar = document.getElementById('modal-user-avatar');
+
+    if (headerAvatar) headerAvatar.src = avatarSrc;
+    if (settingsAvatar) settingsAvatar.src = avatarSrc;
+    if (modalAvatar) modalAvatar.src = avatarSrc;
+
+    const inNombreSettings = document.getElementById('in-perfil-nombre');
+    const inNombreModal = document.getElementById('in-modal-perfil-nombre');
+    if (inNombreSettings && document.activeElement !== inNombreSettings) {
+        inNombreSettings.value = userNombre;
+    }
+    if (inNombreModal && document.activeElement !== inNombreModal) {
+        inNombreModal.value = userNombre;
+    }
+
+    const subGreeting = document.getElementById('header-greeting-sub');
+    if (subGreeting) {
+        subGreeting.innerText = userNombre ? `Hola, ${userNombre}` : 'Control de Capital';
+    }
+
+    const heroTitle = document.getElementById('askbot-hero-title');
+    if (heroTitle) {
+        heroTitle.innerText = userNombre ? `Hola, ${userNombre}` : '¿En qué te ayudo hoy?';
+    }
+
+    const btnQuitarSettings = document.getElementById('btn-quitar-foto-settings');
+    const btnQuitarModal = document.getElementById('btn-quitar-foto-modal');
+    if (btnQuitarSettings) {
+        btnQuitarSettings.classList.toggle('oculto', !tieneAvatar);
+        btnQuitarSettings.style.display = tieneAvatar ? 'inline-block' : 'none';
+    }
+    if (btnQuitarModal) {
+        btnQuitarModal.classList.toggle('oculto', !tieneAvatar);
+        btnQuitarModal.style.display = tieneAvatar ? 'inline-block' : 'none';
+    }
+}
+
+function sincronizarInputsNombre(valor) {
+    const inSettings = document.getElementById('in-perfil-nombre');
+    const inModal = document.getElementById('in-modal-perfil-nombre');
+    if (inSettings && inSettings.value !== valor) inSettings.value = valor;
+    if (inModal && inModal.value !== valor) inModal.value = valor;
+}
+
+function guardarPerfilUsuario() {
+    const inSettings = document.getElementById('in-perfil-nombre');
+    const inModal = document.getElementById('in-modal-perfil-nombre');
+    const nuevoNombre = (inModal && document.activeElement === inModal)
+        ? inModal.value.trim()
+        : (inSettings ? inSettings.value.trim() : '');
+
+    userNombre = nuevoNombre;
+    if (userNombre) {
+        localStorage.setItem('assist_user_name', userNombre);
+    } else {
+        localStorage.removeItem('assist_user_name');
+    }
+
+    if (inSettings) inSettings.blur();
+    if (inModal) inModal.blur();
+
+    actualizarUIPerfil();
+    if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+}
+
+function seleccionarFotoPerfil() {
+    const input = document.getElementById('in-perfil-img');
+    if (input) input.click();
+}
+
+function redimensionarAvatarPerfil(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = 300;
+            canvas.width = size;
+            canvas.height = size;
+
+            // Recorte cuadrado centrado (aspect-fill) para que el avatar quede perfecto
+            const minSide = Math.min(img.width, img.height);
+            const sx = (img.width - minSide) / 2;
+            const sy = (img.height - minSide) / 2;
+
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+            callback(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function procesarFotoPerfil(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    redimensionarAvatarPerfil(file, (base64) => {
+        userAvatar = base64;
+        localStorage.setItem('assist_user_avatar', userAvatar);
+        actualizarUIPerfil();
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    });
+
+    event.target.value = '';
+}
+
+function eliminarFotoPerfil() {
+    if (!userAvatar) return;
+    userAvatar = null;
+    localStorage.removeItem('assist_user_avatar');
+    actualizarUIPerfil();
+    if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 // ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING) =================
@@ -236,31 +363,44 @@ function actualizarUIEstadoNube() {
     const boxIn = document.getElementById('cloud-logged-in-box');
     const emailEl = document.getElementById('cloud-user-email');
 
-    if (!badge || !boxOut || !boxIn) return;
+    const modalBadge = document.getElementById('modal-cloud-status-badge');
+    const modalBoxOut = document.getElementById('modal-cloud-logged-out-box');
+    const modalBoxIn = document.getElementById('modal-cloud-logged-in-box');
+    const modalEmailEl = document.getElementById('modal-cloud-user-email');
+
+    const headerDot = document.getElementById('header-avatar-dot');
 
     if (usuarioActual) {
-        boxOut.classList.add('oculto');
-        boxOut.style.display = 'none';
-        boxIn.classList.remove('oculto');
-        boxIn.style.display = 'flex';
+        if (boxOut) { boxOut.classList.add('oculto'); boxOut.style.display = 'none'; }
+        if (boxIn) { boxIn.classList.remove('oculto'); boxIn.style.display = 'flex'; }
         if (emailEl) emailEl.innerText = usuarioActual.email;
+
+        if (modalBoxOut) { modalBoxOut.classList.add('oculto'); modalBoxOut.style.display = 'none'; }
+        if (modalBoxIn) { modalBoxIn.classList.remove('oculto'); modalBoxIn.style.display = 'flex'; }
+        if (modalEmailEl) modalEmailEl.innerText = usuarioActual.email;
 
         const pendiente = localStorage.getItem('assist_pending_sync') === 'true';
         if (!navigator.onLine || pendiente) {
-            badge.innerText = 'Pendiente (Sin señal)';
-            badge.className = 'cloud-badge pendiente';
+            if (badge) { badge.innerText = 'Pendiente (Sin señal)'; badge.className = 'cloud-badge pendiente'; }
+            if (modalBadge) { modalBadge.innerText = 'Pendiente (Sin señal)'; modalBadge.className = 'cloud-badge pendiente'; }
+            if (headerDot) headerDot.className = 'avatar-online-dot pendiente';
         } else {
-            badge.innerText = 'Sincronizado ☁️';
-            badge.className = 'cloud-badge conectado';
+            if (badge) { badge.innerText = 'Sincronizado ☁️'; badge.className = 'cloud-badge conectado'; }
+            if (modalBadge) { modalBadge.innerText = 'Sincronizado ☁️'; modalBadge.className = 'cloud-badge conectado'; }
+            if (headerDot) headerDot.className = 'avatar-online-dot conectado';
         }
     } else {
-        boxOut.classList.remove('oculto');
-        boxOut.style.display = 'block';
-        boxIn.classList.add('oculto');
-        boxIn.style.display = 'none';
-        badge.innerText = 'Solo Local';
-        badge.className = 'cloud-badge desconectado';
+        if (boxOut) { boxOut.classList.remove('oculto'); boxOut.style.display = 'block'; }
+        if (boxIn) { boxIn.classList.add('oculto'); boxIn.style.display = 'none'; }
+        if (badge) { badge.innerText = 'Solo Local'; badge.className = 'cloud-badge desconectado'; }
+
+        if (modalBoxOut) { modalBoxOut.classList.remove('oculto'); modalBoxOut.style.display = 'block'; }
+        if (modalBoxIn) { modalBoxIn.classList.add('oculto'); modalBoxIn.style.display = 'none'; }
+        if (modalBadge) { modalBadge.innerText = 'Solo Local'; modalBadge.className = 'cloud-badge desconectado'; }
+
+        if (headerDot) headerDot.className = 'avatar-online-dot desconectado';
     }
+    actualizarUIPerfil();
 }
 
 async function procesarAuth() {
@@ -343,8 +483,8 @@ async function sincronizarHaciaNube() {
         const uid = usuarioActual.id;
         const ahora = new Date().toISOString();
 
-        // 1. Guardar Perfil y Preferencias
-        const { error: errPerfil } = await supabaseClient.from('perfiles').upsert({
+        // 1. Guardar Perfil y Preferencias (Con respaldo seguro de nombre y avatar si las columnas existen en la tabla perfiles)
+        const basePerfil = {
             user_id: uid,
             email: usuarioActual.email,
             theme_mode: localStorage.getItem('app_theme_mode') || 'dark',
@@ -352,8 +492,19 @@ async function sincronizarHaciaNube() {
             app_pin: appPin,
             censurado: censurado,
             updated_at: ahora
+        };
+
+        let { error: errPerfil } = await supabaseClient.from('perfiles').upsert({
+            ...basePerfil,
+            user_name: userNombre || null,
+            avatar_url: userAvatar || null
         });
-        if (errPerfil) throw errPerfil;
+
+        // Si la tabla perfiles en Supabase aún no tiene las columnas user_name o avatar_url, guarda sin romper nada
+        if (errPerfil) {
+            const retry = await supabaseClient.from('perfiles').upsert(basePerfil);
+            if (retry.error) throw retry.error;
+        }
 
         // 2. Sincronizar Cuentas (respetando orden de las flechitas)
         await supabaseClient.from('cuentas').delete().eq('user_id', uid);
@@ -485,6 +636,14 @@ async function descargarDesdeNube() {
                 censurado = resPerfil.data.censurado;
                 localStorage.setItem('censurado', censurado);
             }
+            if (resPerfil.data.user_name) {
+                userNombre = resPerfil.data.user_name;
+                localStorage.setItem('assist_user_name', userNombre);
+            }
+            if (resPerfil.data.avatar_url) {
+                userAvatar = resPerfil.data.avatar_url;
+                localStorage.setItem('assist_user_avatar', userAvatar);
+            }
         }
 
         if (resCuentas.data && resCuentas.data.length > 0) {
@@ -609,6 +768,7 @@ window.addEventListener('load', () => {
 
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
     actualizarHeaderTutorial();
+    actualizarUIPerfil();
 
     const splash = document.getElementById('splash-screen');
     const pinScreen = document.getElementById('pin-screen');
@@ -755,20 +915,82 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
     return '********';
 }
 
-// ================= VENTANAS MODALES =================
+// ================= VENTANAS MODALES Y BLOQUEO TOTAL DE SCROLL EN iOS =================
+const MODALES_IDS = [
+    'modal-perfil',
+    'modal-historial',
+    'modal-detalle-meta',
+    'modal-accion-meta',
+    'modal-cuentas',
+    'modal-categorias',
+    'modal-nueva-meta',
+    'modal-tutorial'
+];
+
+let scrollGuardadoModal = 0;
+
+function hayModalAbierto() {
+    return MODALES_IDS.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('oculto');
+    });
+}
+
+function bloquearScrollFondo() {
+    if (!document.body.classList.contains('modal-open')) {
+        scrollGuardadoModal = window.scrollY || document.documentElement.scrollTop || 0;
+        document.documentElement.classList.add('modal-open');
+        document.body.classList.add('modal-open');
+    }
+}
+
+function desbloquearScrollFondo() {
+    if (!hayModalAbierto()) {
+        document.documentElement.classList.remove('modal-open');
+        document.body.classList.remove('modal-open');
+        window.scrollTo(0, scrollGuardadoModal);
+    }
+}
+
+// Interceptor táctil en iOS Safari para impedir que deslizar sobre el fondo del modal mueva el body
+document.addEventListener('touchmove', function(e) {
+    if (!document.body.classList.contains('modal-open')) return;
+
+    const scrollableEl = e.target.closest('.modal-list, .tut-slide, .palette-container');
+    if (!scrollableEl) {
+        e.preventDefault();
+        return;
+    }
+
+    // Si la lista interna no necesita hacer scroll porque cabe completa, bloqueamos el rebote de fondo
+    if (scrollableEl.scrollHeight <= scrollableEl.clientHeight) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
 function abrirModal(id) {
-    document.getElementById(id).classList.remove('oculto');
-    document.body.style.overflow = 'hidden'; 
+    const modal = document.getElementById(id);
+    if (!modal) return;
+
+    bloquearScrollFondo();
+    modal.classList.remove('oculto');
+
     if (id === 'modal-historial') {
         document.getElementById('filtro-fecha').value = ''; 
         actualizarListaTransacciones(); 
     }
-    if (id === 'modal-cuentas' || id === 'modal-categorias') renderizarListasGestion();
+    if (id === 'modal-cuentas' || id === 'modal-categorias') {
+        renderizarListasGestion();
+    }
+    if (id === 'modal-perfil') {
+        actualizarUIEstadoNube();
+    }
 }
 
 function cerrarModal(id) {
-    document.getElementById(id).classList.add('oculto');
-    document.body.style.overflow = ''; 
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('oculto');
+    desbloquearScrollFondo();
 }
 
 // ================= COMPORTAMIENTO INTELIGENTE DEL FORMULARIO =================
@@ -907,14 +1129,14 @@ function calcularMontoTransferencia() {
     document.getElementById('lbl-transf-recibiras').innerText = `${montoRecibir.toFixed(2)}${cDestino ? cDestino.moneda : ''}`;
 }
 
-// Categorías Inteligentes y Auto-Actualización de la UI
+// Categorías Inteligentes y Auto-Actualización de la UI (Respetando opciones válidas de la cuenta activa)
 document.getElementById('val-categoria').addEventListener('change', (e) => {
     const catSelec = e.target.value;
     const lastTrans = [...transacciones].reverse().find(t => t.categoria === catSelec && t.tipo === 'gasto');
     if (lastTrans && lastTrans.monedaInputOriginal) {
         const selectMoneda = document.getElementById('val-moneda');
         const option = Array.from(selectMoneda.options).find(o => o.value === lastTrans.monedaInputOriginal);
-        if (option && !option.disabled) selectMoneda.value = lastTrans.monedaInputOriginal;
+        if (option) selectMoneda.value = lastTrans.monedaInputOriginal;
         toggleCategoriaSelect();
     }
 });
@@ -922,34 +1144,34 @@ document.getElementById('val-categoria').addEventListener('change', (e) => {
 // Evento para cambiar moneda y actualizar los menús de pago
 document.getElementById('val-moneda').addEventListener('change', toggleCategoriaSelect);
 
+// Reconstrucción estricta del DOM en #val-moneda para compatibilidad 100% con iOS Safari
 function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     const selectMoneda = document.getElementById('val-moneda');
     if (!cuentaActiva || !selectMoneda) return;
 
-    const optUSD = selectMoneda.querySelector('option[value="USD"]');
-    const optVES = selectMoneda.querySelector('option[value="VES"]');
-    const optEUR = selectMoneda.querySelector('option[value="EUR"]');
+    const monedaPrevia = selectMoneda.value;
+    let permitidas = ['USD', 'VES', 'EUR'];
 
     if (cuentaActiva.moneda === 'USD') {
         // Cuenta en Dólares Físicos: Únicamente USD
-        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
-        if (optVES) { optVES.disabled = true;  optVES.hidden = true; }
-        if (optEUR) { optEUR.disabled = true;  optEUR.hidden = true; }
-        selectMoneda.value = 'USD';
-
+        permitidas = ['USD'];
     } else if (cuentaActiva.moneda === 'USDT') {
-        // Cuenta en USDT: Se oculta EUR (solo quedan USD y VES)
-        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
-        if (optVES) { optVES.disabled = false; optVES.hidden = false; }
-        if (optEUR) { optEUR.disabled = true;  optEUR.hidden = true; }
-        if (selectMoneda.value === 'EUR') selectMoneda.value = 'USD';
-
+        // Cuenta en USDT: Únicamente USD y VES (sin EUR)
+        permitidas = ['USD', 'VES'];
     } else if (cuentaActiva.moneda === 'VES') {
-        // Cuenta en Bolívares: Quedan activas las 3 (USD, VES y EUR)
-        if (optUSD) { optUSD.disabled = false; optUSD.hidden = false; }
-        if (optVES) { optVES.disabled = false; optVES.hidden = false; }
-        if (optEUR) { optEUR.disabled = false; optEUR.hidden = false; }
+        // Cuenta en Bolívares: Las 3 disponibles (USD, VES y EUR)
+        permitidas = ['USD', 'VES', 'EUR'];
+    }
+
+    selectMoneda.innerHTML = permitidas
+        .map(m => `<option value="${m}">${m}</option>`)
+        .join('');
+
+    if (permitidas.includes(monedaPrevia)) {
+        selectMoneda.value = monedaPrevia;
+    } else {
+        selectMoneda.value = permitidas[0];
     }
 
     toggleCategoriaSelect();
@@ -1270,31 +1492,92 @@ function limpiarCalc() { document.getElementById('calc-usd').value = ''; documen
 
 // ================= NAVEGACIÓN (CLÁSICA SIN DESLIZAMIENTO) =================
 function cambiarPestana(idPestana, elementoNav) {
+    const inputAskbot = document.getElementById('askbot-input');
+    if (inputAskbot && idPestana !== 'tab-askbot') {
+        inputAskbot.blur();
+        document.body.classList.remove('askbot-kb-open');
+    }
+
     document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
+
+    if (idPestana === 'tab-askbot') {
+        ajustarAlturaVisualAskBot();
+    }
 }
 
-// ================= ASKBOT (ASISTENTE FINANCIERO CON IA + MOTOR HÍBRIDO) =================
+// ================= ASKBOT (ASISTENTE FINANCIERO CON IA + MOTOR HÍBRIDO + FIX TECLADO iOS) =================
 let askbotEsperandoRespuesta = false;
+
+function ajustarAlturaVisualAskBot() {
+    const tabAskbot = document.getElementById('tab-askbot');
+    if (!tabAskbot || !tabAskbot.classList.contains('vista-activa')) {
+        document.body.classList.remove('askbot-kb-open');
+        return;
+    }
+
+    const vv = window.visualViewport;
+    if (vv) {
+        document.documentElement.style.setProperty('--askbot-vh', `${vv.height}px`);
+        const tecladoAbierto = (window.innerHeight - vv.height) > 110;
+        document.body.classList.toggle('askbot-kb-open', tecladoAbierto);
+
+        if (tecladoAbierto) {
+            window.scrollTo(0, 0);
+        }
+    } else {
+        document.documentElement.style.setProperty('--askbot-vh', `${window.innerHeight}px`);
+    }
+
+    const box = document.getElementById('askbot-messages');
+    if (box && !box.classList.contains('oculto-chat')) {
+        box.scrollTop = box.scrollHeight;
+    }
+}
+
+function configurarVisualViewportAskBot() {
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', ajustarAlturaVisualAskBot);
+        window.visualViewport.addEventListener('scroll', ajustarAlturaVisualAskBot);
+    }
+    window.addEventListener('resize', ajustarAlturaVisualAskBot);
+
+    const inputAskbot = document.getElementById('askbot-input');
+    if (inputAskbot) {
+        inputAskbot.addEventListener('focus', () => {
+            setTimeout(ajustarAlturaVisualAskBot, 60);
+            setTimeout(ajustarAlturaVisualAskBot, 280);
+        });
+        inputAskbot.addEventListener('blur', () => {
+            setTimeout(ajustarAlturaVisualAskBot, 100);
+        });
+    }
+}
 
 function inicializarAskBot() {
     const box = document.getElementById('askbot-messages');
-    if (!box) return;
+    const hero = document.getElementById('askbot-welcome-hero');
+    if (!box || !hero) return;
+
     if (box.children.length === 0) {
-        agregarBurbujaAskBot(
-            "👋 ¡Hola! Soy **AskBot**, tu copiloto financiero en **A$$IST**.\n\n⚡ **Modo Híbrido Activo:** Respondo al instante tus consultas de saldos, tasas, conversiones, metas y gastos, y uso IA avanzada para tus análisis y presupuestos.",
-            "bot"
-        );
+        hero.classList.remove('oculto-hero');
+        box.classList.add('oculto-chat');
+    } else {
+        hero.classList.add('oculto-hero');
+        box.classList.remove('oculto-chat');
     }
+    actualizarUIPerfil();
 }
 
 function limpiarChatAskBot() {
     const box = document.getElementById('askbot-messages');
+    const hero = document.getElementById('askbot-welcome-hero');
     if (!box) return;
     box.innerHTML = '';
-    inicializarAskBot();
+    if (hero) hero.classList.remove('oculto-hero');
+    box.classList.add('oculto-chat');
 }
 
 function formatearTextoAskBot(texto) {
@@ -1311,7 +1594,17 @@ function formatearTextoAskBot(texto) {
 
 function agregarBurbujaAskBot(texto, rol = 'bot') {
     const box = document.getElementById('askbot-messages');
+    const hero = document.getElementById('askbot-welcome-hero');
     if (!box) return null;
+
+    // Al enviar el primer mensaje, ocultamos por completo la bienvenida y mostramos el chat limpio
+    if (hero && !hero.classList.contains('oculto-hero')) {
+        hero.classList.add('oculto-hero');
+    }
+    if (box.classList.contains('oculto-chat')) {
+        box.classList.remove('oculto-chat');
+    }
+
     const div = document.createElement('div');
     div.className = `askbot-bubble ${rol}`;
     if (rol === 'bot') {
@@ -1327,6 +1620,9 @@ function agregarBurbujaAskBot(texto, rol = 'bot') {
 function mostrarIndicadorEscribiendoAskBot() {
     const box = document.getElementById('askbot-messages');
     if (!box) return null;
+    if (box.classList.contains('oculto-chat')) {
+        box.classList.remove('oculto-chat');
+    }
     const div = document.createElement('div');
     div.className = 'askbot-bubble bot askbot-typing';
     div.id = 'askbot-typing-indicator';
@@ -1487,7 +1783,8 @@ function responderLocalmenteAskBot(mensajeRaw) {
 
     // 6. Detector de SALUDOS
     if (/^(hola|buenas|hey|saludos|buenos dias|buenas tardes|buenas noches|que tal|como estas)\b/.test(txt)) {
-        return `👋 ¡Hola! Actualmente tienes un balance total estimado de **$${totalUSD_Global.toFixed(2)}** en tus cuentas y la tasa BCV está en **Bs ${tasaBCV.toFixed(2)}** (USDT en **Bs ${tasaParalelo.toFixed(2)}**).\n\n¿Qué quieres consultar o analizar?`;
+        const saludoNombre = userNombre ? `¡Hola, **${userNombre}**!` : `¡Hola!`;
+        return `👋 ${saludoNombre} Actualmente tienes un balance total estimado de **$${totalUSD_Global.toFixed(2)}** en tus cuentas y la tasa BCV está en **Bs ${tasaBCV.toFixed(2)}** (USDT en **Bs ${tasaParalelo.toFixed(2)}**).\n\n¿Qué quieres consultar o analizar?`;
     }
 
     return null;
@@ -1557,6 +1854,7 @@ function generarContextoFinancieroIA() {
         : 'Sin metas de ahorro activas.';
 
     return [
+        userNombre ? `USUARIO: ${userNombre}` : '',
         `FECHA LOCAL: ${getLocalYYYYMMDD(hoy)}`,
         `TASAS DEL DÍA: ${resumenTasas}`,
         `BALANCE TOTAL ESTIMADO (USD): $${totalPatrimonioUSD.toFixed(2)}`,
@@ -1564,7 +1862,7 @@ function generarContextoFinancieroIA() {
         `RESUMEN DEL MES ACTUAL (${mesActualPrefix}): Ingresos: $${totalIngresosMesUSD.toFixed(2)} | Gastos: $${totalGastosMesUSD.toFixed(2)}`,
         `DESGLOSE DE GASTOS DEL MES POR CATEGORÍA: ${listaCategoriasMes}`,
         `METAS DE AHORRO ACTIVAS:\n${detalleMetas}`
-    ].join('\n\n');
+    ].filter(Boolean).join('\n\n');
 }
 
 function enviarSugerenciaAskBot(texto) {
@@ -1667,7 +1965,7 @@ async function obtenerTasas() {
 
         tasasData.BCV = procesarHistorial('BCV', dataBCV.promedio, dataBCV.fechaActualizacion);
         tasasData.EUR = procesarHistorial('EUR', dataEUR.promedio, dataEUR.fechaActualizacion);
-        tasasData.USDT = procesarHistorial('USDT', dataParalelo.promedio, dataParalelo.fechaActualizacion);
+        tasasData.USDT = procesarHistorial('USDT', dataParalelo.promedio, dataEUR.fechaActualizacion);
         tasasData.Custom.fecha = new Date().toISOString();
 
         tasaBCV = tasasData.BCV.valor; tasaEUR = tasasData.EUR.valor; tasaParalelo = tasasData.USDT.valor;
@@ -1758,6 +2056,7 @@ function renderizarSliderCuentas() {
 function actualizarInterfaz() {
     renderizarSliderCuentas();
     renderizarMetas();
+    actualizarUIPerfil();
     if (!document.getElementById('modal-historial').classList.contains('oculto')) actualizarListaTransacciones();
 }
 
@@ -2111,7 +2410,14 @@ function guardarYActualizarGestion() {
 
 // ================= BACKUPS =================
 function exportarDatos() {
-    const data = JSON.stringify({ transacciones, categorias, cuentas, metas });
+    const data = JSON.stringify({
+        transacciones,
+        categorias,
+        cuentas,
+        metas,
+        userNombre,
+        userAvatar
+    });
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2132,6 +2438,17 @@ function importarDatos(e) {
                 categorias = data.categorias || []; 
                 cuentas = data.cuentas; 
                 metas = data.metas || [];
+
+                if (data.userNombre !== undefined) {
+                    userNombre = data.userNombre || '';
+                    if (userNombre) localStorage.setItem('assist_user_name', userNombre);
+                    else localStorage.removeItem('assist_user_name');
+                }
+                if (data.userAvatar !== undefined) {
+                    userAvatar = data.userAvatar || null;
+                    if (userAvatar) localStorage.setItem('assist_user_avatar', userAvatar);
+                    else localStorage.removeItem('assist_user_avatar');
+                }
                 
                 transacciones.forEach(t => { 
                     if(!t.fechaIsoLocal) {
@@ -2173,7 +2490,9 @@ function importarDatos(e) {
 // ================= ARRANQUE DE LA APP =================
 async function inicializarApp() {
     actualizarHeaderTutorial();
+    actualizarUIPerfil();
     inicializarAskBot();
+    configurarVisualViewportAskBot();
 
     // 1. Verificar si hay sesión guardada de Supabase
     if (supabaseClient) {
