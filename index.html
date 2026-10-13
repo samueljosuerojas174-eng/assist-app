@@ -98,6 +98,7 @@
                     <select id="val-moneda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
                         <option value="USD">USD</option>
                         <option value="VES">VES</option>
+                        <option value="EUR">EUR</option>
                     </select>
                 </div>
 
@@ -190,6 +191,9 @@
                 <div class="tasa-activa-box">
                     <label>Tasa a usar (Bs):</label>
                     <input type="number" id="input-tasa-activa" value="0.00" disabled oninput="recalcularDesdeTasa()" inputmode="decimal">
+                </div>
+                <div id="aviso-usdt-calc" class="oculto" style="display: none; font-size: 11px; color: #FFD60A; background: rgba(255, 214, 10, 0.08); border: 1px solid rgba(255, 214, 10, 0.2); padding: 8px 10px; border-radius: 12px; margin-top: -10px; margin-bottom: 15px; line-height: 1.35; text-align: center;">
+                    ⚠️ Tasa USDT referencial. El mercado P2P fluctúa constantemente; verifica siempre en tu exchange antes de operar.
                 </div>
                 <div class="calc-divider"></div>
                 <div class="input-calc-group">

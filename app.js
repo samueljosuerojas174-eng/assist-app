@@ -338,12 +338,36 @@ function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     const selectMoneda = document.getElementById('val-moneda');
     if(!cuentaActiva) return;
-    if(cuentaActiva.moneda === 'USD') {
+
+    if (cuentaActiva.moneda === 'VES') {
+        Array.from(selectMoneda.options).forEach(opt => {
+            opt.disabled = false;
+            opt.hidden = false;
+        });
+    } else if (cuentaActiva.moneda === 'USD') {
         selectMoneda.value = 'USD'; 
-        Array.from(selectMoneda.options).forEach(opt => { if (opt.value === 'VES') opt.disabled = true; });
+        Array.from(selectMoneda.options).forEach(opt => {
+            if (opt.value === 'VES' || opt.value === 'EUR') {
+                opt.disabled = true;
+                if (opt.value === 'EUR') opt.hidden = true;
+            } else {
+                opt.disabled = false;
+                opt.hidden = false;
+            }
+        });
     } else {
-        Array.from(selectMoneda.options).forEach(opt => opt.disabled = false);
+        if (selectMoneda.value === 'EUR') selectMoneda.value = 'USD';
+        Array.from(selectMoneda.options).forEach(opt => {
+            if (opt.value === 'EUR') {
+                opt.disabled = true;
+                opt.hidden = true;
+            } else {
+                opt.disabled = false;
+                opt.hidden = false;
+            }
+        });
     }
+    toggleCategoriaSelect();
 }
 
 // ================= METAS DE AHORRO PREMIUM =================
@@ -619,6 +643,17 @@ function setTasaModo(modo) {
     const inputTasa = document.getElementById('input-tasa-activa');
     const lblDivisa = document.getElementById('lbl-divisa');
     const symDivisa = document.getElementById('sym-divisa');
+    const avisoUsdt = document.getElementById('aviso-usdt-calc');
+
+    if (avisoUsdt) {
+        if (modo === 'USDT') {
+            avisoUsdt.classList.remove('oculto');
+            avisoUsdt.style.display = 'block';
+        } else {
+            avisoUsdt.classList.add('oculto');
+            avisoUsdt.style.display = 'none';
+        }
+    }
 
     if(modo === 'BCV') { inputTasa.value = tasasData.BCV.valor.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$'; }
     if(modo === 'USDT') { inputTasa.value = tasasData.USDT.valor.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🪙 Tether (USDT)'; symDivisa.innerText = '₮'; }
@@ -754,7 +789,7 @@ function renderizarSliderCuentas() {
 
     document.querySelectorAll('.balance-section').forEach(section => observer.observe(section));
     const activeIndex = cuentas.findIndex(c => c.id == cuentaActivaId);
-    if (activeIndex > 0) setTimeout(() => { slider.scrollTo({ left: slider.clientWidth * activeIndex, behavior: 'instant' }); }, 10);
+    if (activeIndex >= 0) setTimeout(() => { slider.scrollTo({ left: slider.clientWidth * activeIndex, behavior: 'instant' }); }, 10);
 }
 
 function actualizarInterfaz() {
@@ -856,7 +891,11 @@ function agregarTransaccion() {
     }
 
     let montoUSD = montoTotalOperacion;
-    if (monedaInput === 'VES') montoUSD = montoTotalOperacion / tasaBCV;
+    if (monedaInput === 'VES') {
+        montoUSD = montoTotalOperacion / tasaBCV;
+    } else if (monedaInput === 'EUR') {
+        montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
+    }
 
     let notaFinal = nota;
     if (montoComisionVES > 0) {
@@ -893,18 +932,31 @@ function agregarTransaccion() {
 let swipeStartX = 0;
 let currentSwipeX = 0;
 
-function handleSwipeStart(e, element) { swipeStartX = e.touches[0].clientX; element.style.transition = 'none'; }
+function handleSwipeStart(e, element) {
+    swipeStartX = e.touches[0].clientX;
+    currentSwipeX = swipeStartX;
+    element.style.transition = 'none';
+}
 function handleSwipeMove(e, element) {
     currentSwipeX = e.touches[0].clientX;
     let diff = currentSwipeX - swipeStartX;
     if (diff < -80) diff = -80; if (diff > 0) diff = 0; 
     element.style.transform = `translateX(${diff}px)`;
+    if (element.parentElement) {
+        if (diff < -15) element.parentElement.classList.add('swiped-open');
+        else element.parentElement.classList.remove('swiped-open');
+    }
 }
 function handleSwipeEnd(e, element) {
     element.style.transition = 'transform 0.3s var(--ios-spring)';
     let diff = currentSwipeX - swipeStartX;
-    if (diff < -40) { element.style.transform = `translateX(-80px)`; } 
-    else { element.style.transform = `translateX(0px)`; }
+    if (diff < -40) {
+        element.style.transform = `translateX(-80px)`;
+        if (element.parentElement) element.parentElement.classList.add('swiped-open');
+    } else {
+        element.style.transform = `translateX(0px)`;
+        if (element.parentElement) element.parentElement.classList.remove('swiped-open');
+    }
 }
 
 function actualizarListaTransacciones() {
@@ -1041,6 +1093,8 @@ function renderizarListasGestion() {
                 <li class="transaccion-item" style="padding: 12px 16px;">
                     <div class="trans-izq"><strong style="color:var(--text-primary);">${c.nombre}</strong><small>${c.moneda}</small></div>
                     <div class="acciones-gestion">
+                        <button class="btn-mover" onclick="moverCuenta(${i}, -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+                        <button class="btn-mover" onclick="moverCuenta(${i}, 1)" ${i === cuentas.length - 1 ? 'disabled' : ''}>▼</button>
                         <button class="btn-editar" onclick="editarCuenta(${i})">✏️</button>
                         <button class="btn-eliminar" onclick="eliminarCuenta(${i})">🗑️</button>
                     </div>
@@ -1060,6 +1114,16 @@ function renderizarListasGestion() {
                 </li>`;
         });
     }
+}
+
+function moverCuenta(index, direccion) {
+    const nuevoIndex = index + direccion;
+    if (nuevoIndex < 0 || nuevoIndex >= cuentas.length) return;
+    const temp = cuentas[index];
+    cuentas[index] = cuentas[nuevoIndex];
+    cuentas[nuevoIndex] = temp;
+    cuentaActivaId = cuentas[0].id;
+    guardarYActualizarGestion();
 }
 
 function agregarCuenta() {
