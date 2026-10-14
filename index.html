@@ -33,6 +33,9 @@
     <!-- Input Global Oculto para Subir Foto de Perfil desde Galería -->
     <input type="file" id="in-perfil-img" accept="image/*" style="display: none;" onchange="procesarFotoPerfil(event)">
 
+    <!-- Input Global Oculto para Cambiar Color de una Categoría Existente -->
+    <input type="color" id="in-editar-color-cat" style="display: none;" onchange="aplicarCambioColorCategoriaExistente(event)">
+
     <!-- Pantalla Minimalista de Inicio de Sesión / Registro (Nube) -->
     <div id="auth-screen" class="glass-modal oculto" style="z-index: 99997; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column;">
         <div class="auth-box">
@@ -58,13 +61,30 @@
         </div>
     </div>
 
-    <!-- Pantalla de Bloqueo PIN -->
+    <!-- Pantalla de Bloqueo PIN Interactiva y Animada -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
-        <div style="text-align: center; width: 100%; max-width: 320px; padding: 20px;">
-            <img src="logo.jpg" alt="Logo" class="app-logo" style="width: 90px; height: 90px; margin-bottom: 25px; border-radius: 22px;">
-            <h2 style="margin-bottom: 20px; font-size: 24px; color: var(--text-primary);">Ingresa tu PIN</h2>
-            <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" style="width: 100%; padding: 20px; border-radius: 16px; text-align: center; font-size: 28px; letter-spacing: 15px; margin-bottom: 20px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" placeholder="••••" maxlength="4" autocomplete="off">
-            <button onclick="resetearPIN()" style="background: transparent; border: none; color: var(--text-secondary); margin-top: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: underline; transition: color 0.3s;">¿Olvidaste tu PIN?</button>
+        <div class="pin-box-card" id="pin-box-card">
+            <div class="pin-logo-wrap">
+                <img src="logo.jpg" alt="Logo" class="app-logo pin-logo-img">
+                <span class="pin-lock-badge">🔒</span>
+            </div>
+            <h2 class="pin-title">Ingresa tu PIN</h2>
+            <p class="pin-subtitle" id="pin-status-text">Toca los círculos para abrir el teclado numérico</p>
+
+            <!-- Área interactiva de 4 dígitos con input nativo superpuesto -->
+            <div class="pin-interactive-area" id="pin-interactive-area" onclick="enfocarInputPIN(event)">
+                <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" maxlength="4" autocomplete="off" aria-label="PIN de 4 dígitos">
+                <div class="pin-dots-row" id="pin-dots-row">
+                    <div class="pin-dot-ind"></div>
+                    <div class="pin-dot-ind"></div>
+                    <div class="pin-dot-ind"></div>
+                    <div class="pin-dot-ind"></div>
+                </div>
+            </div>
+
+            <p id="pin-error-feedback" class="pin-error-feedback oculto"></p>
+
+            <button type="button" class="btn-forgot-pin" onclick="resetearPIN(event)">¿Olvidaste tu PIN?</button>
         </div>
     </div>
 
@@ -212,57 +232,27 @@
             </button>
         </div>
 
-        <!-- ================= APARTADO: ASKBOT (ASISTENTE IA INMERSIVO) ================= -->
+        <!-- ================= APARTADO: ASKBOT (EN MANTENIMIENTO LIGERO) ================= -->
         <div id="tab-askbot" class="vista-oculta">
             <div class="header-title askbot-header-bar">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div class="askbot-header-badge">🤖</div>
                     <div>
                         <h1 style="font-size: 26px;">AskBot</h1>
-                        <p style="font-size: 12px;">Copiloto Financiero Híbrido</p>
+                        <p style="font-size: 12px;">Copiloto Financiero</p>
                     </div>
                 </div>
-                <button class="btn-tutorial-pill" onclick="limpiarChatAskBot()" title="Nueva conversación">🗑️ Limpiar</button>
             </div>
 
             <section id="askbot-container" class="askbot-container blur-effect">
-                <!-- Estado Inicial de Bienvenida (Desaparece al enviar el primer mensaje) -->
                 <div id="askbot-welcome-hero" class="askbot-welcome-hero">
-                    <div class="askbot-hero-orb">✨</div>
-                    <h2 id="askbot-hero-title" class="askbot-hero-title">¿En qué te ayudo hoy?</h2>
-                    <p class="askbot-hero-sub">
-                        Consultas de saldos, tasas, conversiones y gastos al instante <strong>offline</strong>, o estrategias profundas con <strong>IA en vivo</strong>.
+                    <div class="askbot-hero-orb" style="margin-top: auto;">🛠️</div>
+                    <h2 id="askbot-hero-title" class="askbot-hero-title">AskBot en Mantenimiento</h2>
+                    <p class="askbot-hero-sub" style="margin-bottom: auto; max-width: 280px;">
+                        Estamos rediseñando el motor de inteligencia artificial desde cero para ofrecerte una experiencia superior en la próxima actualización.
                     </p>
-                    <div class="askbot-chips">
-                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('¿En qué categoría se me está yendo más el dinero este mes y cómo puedo ajustarme?')">
-                            <span class="chip-icon">📊</span>
-                            <span class="chip-text">Análisis de gastos del mes</span>
-                        </button>
-                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Según mis saldos actuales y mis metas, ¿cuánto dinero libre tengo hoy para gastar sin descapitalizarme?')">
-                            <span class="chip-icon">💸</span>
-                            <span class="chip-text">¿Cuánto puedo gastar hoy?</span>
-                        </button>
-                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Analiza la brecha actual entre BCV y USDT con mis cuentas y dime qué moneda me conviene usar hoy.')">
-                            <span class="chip-icon">🇻🇪</span>
-                            <span class="chip-text">Estrategia BCV vs USDT</span>
-                        </button>
-                        <button class="askbot-chip" onclick="enviarSugerenciaAskBot('Dame un plan práctico para completar mis metas de ahorro activas más rápido.')">
-                            <span class="chip-icon">🎯</span>
-                            <span class="chip-text">Plan para acelerar mis metas</span>
-                        </button>
-                    </div>
                 </div>
-
-                <!-- Ventana de Mensajes -->
                 <div id="askbot-messages" class="askbot-messages oculto-chat"></div>
-
-                <!-- Barra de Entrada Fija Abajo -->
-                <div class="askbot-input-bar">
-                    <input type="text" id="askbot-input" placeholder="Pregunta a AskBot..." autocomplete="off" onkeydown="if(event.key === 'Enter') enviarMensajeAskBot()">
-                    <button id="btn-askbot-send" class="btn-askbot-send" onclick="enviarMensajeAskBot()" aria-label="Enviar">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </div>
             </section>
         </div>
 
@@ -453,6 +443,89 @@
 
     <!-- ================= VENTANAS MODALES ================= -->
 
+    <!-- Modal Configurar PIN y 3 Preguntas de Seguridad Personalizadas -->
+    <div id="modal-config-pin" class="glass-modal oculto" style="z-index: 100002;" onclick="cerrarModal('modal-config-pin')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h2>Seguridad y PIN</h2>
+                    <span id="badge-estado-pin" class="cloud-badge desconectado">Inactivo</span>
+                </div>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-config-pin')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="modal-list" style="max-height: 68vh; padding-right: 2px;">
+                <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;">
+                    Define tu PIN numérico de 4 dígitos y <strong>3 preguntas personalizadas</strong> con respuestas cortas. Si olvidas tu PIN, podrás recuperarlo respondiendo con flexibilidad o pidiendo pistas sutiles.
+                </p>
+
+                <!-- Nuevo PIN de 4 dígitos -->
+                <div class="pin-config-block" style="margin-bottom: 14px;">
+                    <label class="pin-config-label">🔢 NUEVO PIN DE 4 DÍGITOS</label>
+                    <input type="password" inputmode="numeric" pattern="[0-9]*" id="in-new-pin" placeholder="Ej: 2580" maxlength="4" autocomplete="off" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 10px;">
+                </div>
+
+                <!-- Pregunta 1 -->
+                <div class="pin-question-card">
+                    <span class="pin-q-badge">Pregunta de Seguridad 1</span>
+                    <input type="text" id="in-pin-q1" placeholder="Ej: ¿Cuál es mi ciudad favorita?" maxlength="70">
+                    <input type="text" id="in-pin-a1" placeholder="Respuesta corta (Ej: Maracay)" maxlength="45">
+                </div>
+
+                <!-- Pregunta 2 -->
+                <div class="pin-question-card">
+                    <span class="pin-q-badge">Pregunta de Seguridad 2</span>
+                    <input type="text" id="in-pin-q2" placeholder="Ej: ¿Nombre de mi primera mascota?" maxlength="70">
+                    <input type="text" id="in-pin-a2" placeholder="Respuesta corta (Ej: Toby)" maxlength="45">
+                </div>
+
+                <!-- Pregunta 3 -->
+                <div class="pin-question-card">
+                    <span class="pin-q-badge">Pregunta de Seguridad 3</span>
+                    <input type="text" id="in-pin-q3" placeholder="Ej: ¿Comida que más me gusta?" maxlength="70">
+                    <input type="text" id="in-pin-a3" placeholder="Respuesta corta (Ej: Cachapa)" maxlength="45">
+                </div>
+
+                <p id="config-pin-msg" class="oculto" style="font-size: 12px; font-weight: 700; text-align: center; margin: 8px 0;"></p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                <button class="btn-primario" onclick="guardarConfiguracionPIN()">🔒 Guardar PIN y Preguntas</button>
+                <button id="btn-desactivar-pin" class="btn-secundario oculto" onclick="desactivarPINActual()" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25); display: none;">Desactivar PIN actual</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Recuperar PIN Olvidado (Tolerancia Inteligente + Pistas Sutiles) -->
+    <div id="modal-recuperar-pin" class="glass-modal oculto" style="z-index: 100003;" onclick="cerrarModal('modal-recuperar-pin')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 12px;">
+                <h2>Recuperar Acceso</h2>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-recuperar-pin')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Contenedor dinámico para la pregunta aleatoria -->
+            <div id="rec-pin-questions-body" class="modal-list" style="max-height: 64vh; padding-right: 2px;"></div>
+
+            <!-- Contenedor de respaldo solo si tenía un PIN viejo sin preguntas configuradas -->
+            <div id="rec-pin-legacy-body" class="oculto" style="display: none; flex-direction: column; gap: 10px; margin-bottom: 14px;">
+                <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.45;">
+                    Este PIN fue creado antes de configurar preguntas de seguridad. Escribe <strong>RESETEAR</strong> para restablecer el acceso y configurar tus nuevas preguntas:
+                </p>
+                <input type="text" id="in-rec-legacy-word" placeholder="Escribe RESETEAR" autocomplete="off" style="text-align: center; font-weight: 700;">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
+                <button class="btn-primario" onclick="verificarRecuperacionPIN()">🔓 Verificar y Cambiar PIN</button>
+                <button id="btn-pedir-pista-pin" class="btn-secundario" onclick="mostrarPistasSutilesPIN()" style="font-size: 13px; padding: 10px;">💡 No recuerdo / Dame una pista sutil</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Desplegable de Mi Perfil (Acceso rápido desde Cabecera) -->
     <div id="modal-perfil" class="glass-modal oculto" onclick="cerrarModal('modal-perfil')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
@@ -510,32 +583,44 @@
         </div>
     </div>
     
-    <!-- Modal Historial -->
+    <!-- Modal Historial Pro (Gráfico con Leyenda Personalizada + Agrupación Total por Mes y Día) -->
     <div id="modal-historial" class="glass-modal oculto" onclick="cerrarModal('modal-historial')">
-        <div class="glass-modal-content" onclick="event.stopPropagation()">
-            <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
+        <div class="glass-modal-content historial-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2>Historial</h2>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto;" onclick="document.getElementById('filtro-fecha').value=''; actualizarListaTransacciones()">Total</button>
+                    <div>
+                        <h2 id="historial-titulo-cuenta">Historial</h2>
+                        <small id="historial-subtitulo-filtro" style="font-size: 11.5px; color: var(--text-secondary); font-weight: 600;">Todos los movimientos</small>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button id="btn-hist-total" class="btn-secundario btn-filtro-hist activo" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;" onclick="mostrarHistorialTotalCuenta()">Total</button>
                         <div style="position: relative; display: flex; align-items: center;">
                             <input type="date" id="filtro-fecha" style="position: absolute; opacity: 0; width: 100%; height: 100%; z-index: 2; cursor: pointer;" onchange="actualizarListaTransacciones()">
-                            <button class="btn-secundario" style="padding: 6px 12px; font-size: 13px; border-radius: 10px; width: auto; z-index: 1;">📅 Día</button>
+                            <button id="btn-hist-dia" class="btn-secundario btn-filtro-hist" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto; z-index: 1;">📅 Día</button>
                         </div>
-                        <button class="btn-close-modal" style="margin-left: 5px;" onclick="cerrarModal('modal-historial')">
+                        <button class="btn-close-modal" style="margin-left: 2px;" onclick="cerrarModal('modal-historial')">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar categoría o nota..." style="flex: 1; padding: 10px; border-radius: 12px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
+                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar categoría, monto o nota..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
                 </div>
             </div>
             
-            <div style="width: 100%; height: 180px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;">
-                <canvas id="graficoGastos"></canvas>
+            <!-- Tarjeta del Gráfico de Dona + Leyenda Lateral de Categorías con Colores -->
+            <div class="historial-chart-card">
+                <div class="chart-canvas-wrap">
+                    <canvas id="graficoGastos"></canvas>
+                    <div class="chart-center-info" id="grafico-total-centro">
+                        <small>GASTOS</small>
+                        <strong>$0.00</strong>
+                    </div>
+                </div>
+                <div id="leyenda-grafico-categorias" class="chart-custom-legend"></div>
             </div>
-            <ul id="lista-transacciones" class="modal-list"></ul>
+
+            <ul id="lista-transacciones" class="modal-list historial-full-list"></ul>
         </div>
     </div>
 
@@ -638,20 +723,31 @@
         </div>
     </div>
 
-    <!-- Modal Categorías -->
+    <!-- Modal Categorías con Selector de Color Personalizado -->
     <div id="modal-categorias" class="glass-modal oculto" onclick="cerrarModal('modal-categorias')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
-            <div class="glass-modal-header">
-                <h2>Mis Categorías</h2>
+            <div class="glass-modal-header" style="margin-bottom: 12px;">
+                <div>
+                    <h2>Mis Categorías</h2>
+                    <small style="font-size: 11.5px; color: var(--text-secondary);">Toca el círculo de color de cualquier categoría para cambiarlo</small>
+                </div>
                 <button class="btn-close-modal" onclick="cerrarModal('modal-categorias')">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
             <ul id="lista-gestion-categorias" class="lista-gestion modal-list"></ul>
-            <div class="input-group" style="margin-top: 10px;">
-                <input type="text" id="nueva-categoria" placeholder="Nombre (Ej: Comida)">
+            
+            <!-- Crear Nueva Categoría con su Color Representativo -->
+            <div class="cat-new-box" style="margin-top: 8px;">
+                <div class="input-group" style="margin-bottom: 8px; align-items: center;">
+                    <label class="cat-color-picker-btn" id="preview-nueva-cat-color" style="background: #0A84FF;" title="Elegir color personalizado">
+                        <input type="color" id="nueva-categoria-color" value="#0A84FF" oninput="seleccionarColorNuevaCat(this.value)">
+                    </label>
+                    <input type="text" id="nueva-categoria" placeholder="Nueva categoría (Ej: Comida)" onkeydown="if(event.key === 'Enter') agregarCategoria()">
+                </div>
+                <div class="palette-container cat-palette-row" id="paleta-color-nueva-cat"></div>
             </div>
-            <button class="btn-secundario" onclick="agregarCategoria()">+ Agregar Categoría</button>
+            <button class="btn-secundario" style="margin-top: 8px;" onclick="agregarCategoria()">+ Agregar Categoría</button>
         </div>
     </div>
 
