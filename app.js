@@ -1501,6 +1501,12 @@ function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
 function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
 
 // ================= NAVEGACIÓN (CLÁSICA SIN DESLIZAMIENTO) =================
+function resetearScrollNativoiOS() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+}
+
 function cambiarPestana(idPestana, elementoNav) {
     const inputAskbot = document.getElementById('askbot-input');
     if (inputAskbot && idPestana !== 'tab-askbot') {
@@ -1514,17 +1520,19 @@ function cambiarPestana(idPestana, elementoNav) {
 
     if (idPestana === 'tab-askbot') {
         document.body.classList.add('askbot-tab-open');
-        window.scrollTo(0, 0);
+        resetearScrollNativoiOS();
         ajustarAlturaVisualAskBot();
     } else {
         document.body.classList.remove('askbot-tab-open');
         document.body.classList.remove('askbot-kb-open');
         document.documentElement.style.setProperty('--askbot-vh', '100dvh');
+        resetearScrollNativoiOS();
     }
 }
 
 // ================= ASKBOT (ASISTENTE FINANCIERO CON IA + MOTOR HÍBRIDO + FIX TECLADO iOS) =================
 let askbotEsperandoRespuesta = false;
+let ultimoAltoTecladoAskBot = 0;
 
 function ajustarAlturaVisualAskBot() {
     const tabAskbot = document.getElementById('tab-askbot');
@@ -1537,21 +1545,29 @@ function ajustarAlturaVisualAskBot() {
     document.body.classList.add('askbot-tab-open');
 
     const vv = window.visualViewport;
+    const inputAskbot = document.getElementById('askbot-input');
+    const tieneFocus = document.activeElement === inputAskbot;
+
     if (vv) {
-        if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0 || document.body.scrollTop !== 0 || vv.offsetTop !== 0) {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
+        if (window.scrollY !== 0 || vv.offsetTop !== 0) {
+            resetearScrollNativoiOS();
         }
 
-        const alturaExacta = Math.round(vv.height);
-        document.documentElement.style.setProperty('--askbot-vh', `${alturaExacta}px`);
+        const diffAltura = window.innerHeight - vv.height;
+        const tecladoAbierto = diffAltura > 100;
 
-        const tecladoAbierto = (window.innerHeight - vv.height) > 100;
-        document.body.classList.toggle('askbot-kb-open', tecladoAbierto);
+        if (tecladoAbierto) {
+            ultimoAltoTecladoAskBot = Math.round(vv.height);
+            document.documentElement.style.setProperty('--askbot-vh', `${ultimoAltoTecladoAskBot}px`);
+            document.body.classList.add('askbot-kb-open');
+        } else if (!tieneFocus) {
+            document.body.classList.remove('askbot-kb-open');
+            document.documentElement.style.setProperty('--askbot-vh', '100dvh');
+            resetearScrollNativoiOS();
+        }
     } else {
-        if (window.scrollY !== 0) window.scrollTo(0, 0);
-        document.documentElement.style.setProperty('--askbot-vh', `${window.innerHeight}px`);
+        resetearScrollNativoiOS();
+        document.documentElement.style.setProperty('--askbot-vh', '100dvh');
     }
 
     const box = document.getElementById('askbot-messages');
@@ -1569,18 +1585,35 @@ function configurarVisualViewportAskBot() {
     window.addEventListener('scroll', () => {
         const tabAskbot = document.getElementById('tab-askbot');
         if (tabAskbot && tabAskbot.classList.contains('vista-activa') && window.scrollY !== 0) {
-            window.scrollTo(0, 0);
+            resetearScrollNativoiOS();
         }
     }, { passive: true });
 
     const inputAskbot = document.getElementById('askbot-input');
     if (inputAskbot) {
+        // Al tocar el input: sube en el milisegundo 0 junto con el teclado de iOS
         inputAskbot.addEventListener('focus', () => {
-            window.scrollTo(0, 0);
-            setTimeout(ajustarAlturaVisualAskBot, 50);
+            resetearScrollNativoiOS();
+            document.body.classList.add('askbot-kb-open');
+            const altoEstimado = ultimoAltoTecladoAskBot > 0
+                ? ultimoAltoTecladoAskBot
+                : Math.round(window.innerHeight * 0.54);
+            document.documentElement.style.setProperty('--askbot-vh', `${altoEstimado}px`);
+
+            const box = document.getElementById('askbot-messages');
+            if (box && !box.classList.contains('oculto-chat')) {
+                setTimeout(() => { box.scrollTop = box.scrollHeight; }, 60);
+            }
         });
+
+        // Al tocar "Listo": baja en el milisegundo 0 y limpia el desfase de Safari al terminar la animación
         inputAskbot.addEventListener('blur', () => {
-            setTimeout(ajustarAlturaVisualAskBot, 50);
+            document.body.classList.remove('askbot-kb-open');
+            document.documentElement.style.setProperty('--askbot-vh', '100dvh');
+            resetearScrollNativoiOS();
+            setTimeout(resetearScrollNativoiOS, 100);
+            setTimeout(resetearScrollNativoiOS, 260);
+            setTimeout(resetearScrollNativoiOS, 420);
         });
     }
 }
