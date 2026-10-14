@@ -131,7 +131,7 @@
                 <h3 class="section-subtitle">Registrar Movimiento</h3>
                 
                 <div class="input-wrapper" style="padding: 5px; padding-left: 0;">
-                    <input type="number" id="monto" placeholder="0.00" step="0.01" inputmode="decimal" oninput="if(document.getElementById('val-tipo').value === 'transferencia') calcularMontoTransferencia()" style="flex: 1; margin-left: 10px;">
+                    <input type="number" id="monto" placeholder="0.00" step="0.01" inputmode="decimal" oninput="if(document.getElementById('val-tipo').value === 'transferencia') calcularMontoTransferencia(); calcularEquivalenteUsdtVes();" style="flex: 1; margin-left: 10px;">
                     <select id="val-moneda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
                         <option value="USD">USD</option>
                         <option value="VES">VES</option>
@@ -153,13 +153,25 @@
                 <!-- Selector de Comisiones Bancarias VES -->
                 <div id="box-comision-ves" class="input-group oculto" style="display: none; flex-direction: column; gap: 8px;">
                     <label style="font-size: 13px; color: var(--text-secondary); padding-left: 5px;">Método de Pago (Bolívares)</label>
-                    <select id="sel-tipo-comision" class="custom-select-btn" onchange="toggleComisionManual()">
+                    <select id="sel-tipo-comision" class="custom-select-btn" onchange="toggleComisionManual(); calcularEquivalenteUsdtVes();">
                         <option value="tarjeta" selected>💳 Tarjeta de Débito / POS (0 Bs)</option>
                         <option value="p2p">📱 Pago Móvil P2P (0,30% - mín Bs 14)</option>
                         <option value="p2c">🏪 Pago Móvil Comercio (1,50% - mín Bs 14)</option>
                         <option value="manual">✍️ Comisión Manual</option>
                     </select>
-                    <input type="number" id="input-comision-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; background: var(--input-bg); color: var(--text-primary); outline: none;">
+                    <input type="number" id="input-comision-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" oninput="calcularEquivalenteUsdtVes()" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; background: var(--input-bg); color: var(--text-primary); outline: none;">
+                </div>
+
+                <!-- Caja de Tasa Personalizada USDT cuando se opera con VES en una cuenta USDT -->
+                <div id="box-tasa-usdt-ves" class="oculto" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 10px; background: var(--input-bg); padding: 12px 15px; border-radius: 16px; border: 1px solid var(--border-light);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">🪙 Tasa USDT aplicada (Bs):</label>
+                        <input type="number" id="input-tasa-usdt-ves" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" style="max-width: 135px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(0,0,0,0.2); color: var(--text-primary); font-size: 14px; font-weight: 700; text-align: right; outline: none;" oninput="calcularEquivalenteUsdtVes()">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px; border-top: 1px solid var(--border-light);">
+                        <span style="font-size: 11.5px; color: var(--text-secondary);">Equivalente en tu cuenta:</span>
+                        <strong id="lbl-usdt-ves-equiv" style="font-size: 14px; color: #32D74B; font-weight: 800;">0.00 USDT</strong>
+                    </div>
                 </div>
 
                 <!-- Caja Especial para Transferencias P2P -->
@@ -430,6 +442,12 @@
                     <input type="file" id="file-import" accept=".json" style="display: none;" onchange="importarDatos(event)">
                 </label>
             </section>
+
+            <!-- Sello de Versión de la App -->
+            <div style="text-align: center; padding: 18px 10px 8px; opacity: 0.75;">
+                <p style="font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.5px;">A$$IST — Control de Capital</p>
+                <span style="display: inline-block; margin-top: 5px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--input-bg); border: 1px solid var(--border-light); padding: 4px 12px; border-radius: 12px;">Versión 3.0</span>
+            </div>
         </div>
     </div>
 

@@ -1010,7 +1010,10 @@ function toggleCategoriaSelect() {
     const selectCategoria = document.getElementById('val-categoria');
     const boxComision = document.getElementById('box-comision-ves');
     const boxTransf = document.getElementById('box-transferencia');
+    const boxTasaUsdtVes = document.getElementById('box-tasa-usdt-ves');
+    const inputTasaUsdtVes = document.getElementById('input-tasa-usdt-ves');
     const valMonedaSelect = document.getElementById('val-moneda');
+    const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     
     // Ocultar Categoría si no es un gasto
     if (tipo === 'ingreso' || tipo === 'transferencia') { 
@@ -1039,6 +1042,51 @@ function toggleCategoriaSelect() {
             toggleComisionManual(); 
         }
     }
+
+    // Activar Tasa Personalizada USDT cuando la cuenta activa es USDT y se opera en VES
+    if (boxTasaUsdtVes) {
+        if (cuentaActiva && cuentaActiva.moneda === 'USDT' && (tipo === 'gasto' || tipo === 'ingreso') && moneda === 'VES') {
+            boxTasaUsdtVes.classList.remove('oculto');
+            boxTasaUsdtVes.style.display = 'flex';
+            if (inputTasaUsdtVes && (!inputTasaUsdtVes.value || parseFloat(inputTasaUsdtVes.value) <= 0)) {
+                inputTasaUsdtVes.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
+            }
+            calcularEquivalenteUsdtVes();
+        } else {
+            boxTasaUsdtVes.classList.add('oculto');
+            boxTasaUsdtVes.style.display = 'none';
+        }
+    }
+}
+
+function calcularEquivalenteUsdtVes() {
+    const boxTasaUsdtVes = document.getElementById('box-tasa-usdt-ves');
+    const lblEquiv = document.getElementById('lbl-usdt-ves-equiv');
+    if (!boxTasaUsdtVes || !lblEquiv || boxTasaUsdtVes.classList.contains('oculto')) return;
+
+    const tipo = document.getElementById('val-tipo').value;
+    const moneda = document.getElementById('val-moneda').value;
+    const monto = parseFloat(document.getElementById('monto').value) || 0;
+    const inputTasa = document.getElementById('input-tasa-usdt-ves');
+    const tasaUsar = parseFloat(inputTasa && inputTasa.value) || tasaParalelo || 1;
+
+    let montoTotalBs = monto;
+    const boxComision = document.getElementById('box-comision-ves');
+    if (tipo === 'gasto' && moneda === 'VES' && boxComision && !boxComision.classList.contains('oculto')) {
+        const tipoComision = document.getElementById('sel-tipo-comision').value;
+        if (tipoComision === 'p2p' && monto > 0) {
+            montoTotalBs += Math.max(14.00, monto * 0.003);
+        } else if (tipoComision === 'p2c' && monto > 0) {
+            montoTotalBs += Math.max(14.00, monto * 0.015);
+        } else if (tipoComision === 'manual') {
+            montoTotalBs += parseFloat(document.getElementById('input-comision-manual').value) || 0;
+        }
+    }
+
+    const equivUsdt = tasaUsar > 0 ? (montoTotalBs / tasaUsar) : 0;
+    const signo = tipo === 'ingreso' ? '+' : '-';
+    lblEquiv.style.color = tipo === 'ingreso' ? '#32D74B' : '#FF453A';
+    lblEquiv.innerText = `${monto > 0 ? signo : ''}${equivUsdt.toFixed(2)} USDT`;
 }
 
 function toggleComisionManual() {
@@ -1145,8 +1193,18 @@ document.getElementById('val-categoria').addEventListener('change', (e) => {
     const lastTrans = [...transacciones].reverse().find(t => t.categoria === catSelec && t.tipo === 'gasto');
     if (lastTrans && lastTrans.monedaInputOriginal) {
         const selectMoneda = document.getElementById('val-moneda');
-        const option = Array.from(selectMoneda.options).find(o => o.value === lastTrans.monedaInputOriginal);
-        if (option) selectMoneda.value = lastTrans.monedaInputOriginal;
+        const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
+        let monedaBuscada = lastTrans.monedaInputOriginal;
+
+        // Compatibilidad cruzada entre USD y USDT según la cuenta activa
+        if (cuentaActiva && cuentaActiva.moneda === 'USDT' && monedaBuscada === 'USD') {
+            monedaBuscada = 'USDT';
+        } else if (cuentaActiva && cuentaActiva.moneda !== 'USDT' && monedaBuscada === 'USDT') {
+            monedaBuscada = 'USD';
+        }
+
+        const option = Array.from(selectMoneda.options).find(o => o.value === monedaBuscada);
+        if (option) selectMoneda.value = monedaBuscada;
         toggleCategoriaSelect();
     }
 });
@@ -1167,8 +1225,8 @@ function actualizarOpcionesMoneda() {
         // Cuenta en Dólares Físicos: Únicamente USD
         permitidas = ['USD'];
     } else if (cuentaActiva.moneda === 'USDT') {
-        // Cuenta en USDT: Únicamente USD y VES (sin EUR)
-        permitidas = ['USD', 'VES'];
+        // Cuenta en USDT: Únicamente USDT y VES (sin USD ni EUR)
+        permitidas = ['USDT', 'VES'];
     } else if (cuentaActiva.moneda === 'VES') {
         // Cuenta en Bolívares: Las 3 disponibles (USD, VES y EUR)
         permitidas = ['USD', 'VES', 'EUR'];
@@ -2779,7 +2837,7 @@ function analizarMensajeAskBotPana(mensajeRaw) {
     if (/\b(bloquea monedas|no me deja elegir eur|no sale bs|por que solo sale usd|monedas permitidas)\b/.test(txt)) {
         const nomActiva = snap.cuentaActivaObj ? `${snap.cuentaActivaObj.nombre} (${snap.cuentaActivaObj.moneda})` : 'Ninguna';
         return {
-            b1: `🧠 **Reglas del Bloqueo Inteligente de Monedas en A$$IST:**\nPara evitar errores contables, el selector de moneda cambia según la tarjeta de cuenta que tengas activa en el carrusel superior:\n• 💵 **Cuenta en USD Físico:** Solo permite registrar en **USD**.\n• 🪙 **Cuenta en USDT:** Permite registrar en **USD** y **VES**.\n• 🇻🇪 **Cuenta en Bolívares (VES):** Permite las 3 monedas (**USD**, **VES** y **EUR**).\n\n📌 *Ahora mismo tienes activa en pantalla:* **${nomActiva}**. Desliza la tarjeta superior hacia los lados para cambiar de cuenta.`,
+            b1: `🧠 **Reglas del Bloqueo Inteligente de Monedas en A$$IST:**\nPara evitar errores contables, el selector de moneda cambia según la tarjeta de cuenta que tengas activa en el carrusel superior:\n• 💵 **Cuenta en USD Físico:** Solo permite registrar en **USD**.\n• 🪙 **Cuenta en USDT:** Permite registrar en **USDT** y **VES** (con opción de poner la tasa USDT personalizada del exchange).\n• 🇻🇪 **Cuenta en Bolívares (VES):** Permite las 3 monedas (**USD**, **VES** y **EUR**).\n\n📌 *Ahora mismo tienes activa en pantalla:* **${nomActiva}**. Desliza la tarjeta superior hacia los lados para cambiar de cuenta.`,
             b2: null
         };
     }
@@ -3107,6 +3165,12 @@ async function obtenerTasas() {
 
         tasaBCV = tasasData.BCV.valor; tasaEUR = tasasData.EUR.valor; tasaParalelo = tasasData.USDT.valor;
 
+        const inputTasaUsdtVes = document.getElementById('input-tasa-usdt-ves');
+        if (inputTasaUsdtVes && (!inputTasaUsdtVes.value || parseFloat(inputTasaUsdtVes.value) <= 1)) {
+            inputTasaUsdtVes.value = tasaParalelo.toFixed(2);
+            calcularEquivalenteUsdtVes();
+        }
+
         const setVariacionHome = (id, dataObj) => {
             const el = document.getElementById(id);
             const diffAbs = dataObj.valor - dataObj.previo;
@@ -3289,17 +3353,35 @@ function agregarTransaccion() {
         montoTotalOperacion += montoComisionVES;
     }
 
+    const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     let montoUSD = montoTotalOperacion;
-    if (monedaInput === 'VES') {
-        montoUSD = montoTotalOperacion / tasaBCV;
-    } else if (monedaInput === 'EUR') {
-        montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
+    let detalleTasaUsdt = '';
+
+    if (cuentaActiva && cuentaActiva.moneda === 'USDT') {
+        if (monedaInput === 'USDT') {
+            montoUSD = montoTotalOperacion;
+        } else if (monedaInput === 'VES') {
+            const inputTasaUsdt = document.getElementById('input-tasa-usdt-ves');
+            const tasaUsdtAplicada = parseFloat(inputTasaUsdt && inputTasaUsdt.value) || tasaParalelo || tasaBCV || 1;
+            if (tasaUsdtAplicada <= 0) return alert("Ingresa una tasa USDT válida.");
+            montoUSD = montoTotalOperacion / tasaUsdtAplicada;
+            detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtAplicada.toFixed(2)}`;
+        }
+    } else {
+        if (monedaInput === 'VES') {
+            montoUSD = montoTotalOperacion / tasaBCV;
+        } else if (monedaInput === 'EUR') {
+            montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
+        }
     }
 
     let notaFinal = nota;
     if (montoComisionVES > 0) {
         const detalle = `Comisión: Bs ${montoComisionVES.toFixed(2)}`;
         notaFinal = notaFinal ? `${notaFinal} (${detalle})` : detalle;
+    }
+    if (detalleTasaUsdt) {
+        notaFinal = notaFinal ? `${notaFinal} (${detalleTasaUsdt})` : detalleTasaUsdt;
     }
 
     const transaccion = {
@@ -3322,9 +3404,12 @@ function agregarTransaccion() {
     document.getElementById('monto').value = ''; document.getElementById('val-categoria').value = ''; document.getElementById('val-nota').value = '';
     document.getElementById('val-fecha').value = getLocalYYYYMMDD();
     
-    // Reiniciar selector de comisiones
+    // Reiniciar selector de comisiones y vista previa de tasa USDT
     const selComision = document.getElementById('sel-tipo-comision');
     if(selComision) { selComision.value = 'tarjeta'; toggleComisionManual(); }
+    const inputTasaUsdt = document.getElementById('input-tasa-usdt-ves');
+    if (inputTasaUsdt) inputTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
+    calcularEquivalenteUsdtVes();
 }
 
 // Lógica de "Deslizar para Borrar" (Swipe to Delete)
