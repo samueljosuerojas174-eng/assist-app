@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <!-- Pantalla de Bloqueo PIN Interactiva y Animada -->
+    <!-- Pantalla de Bloqueo PIN Interactiva con Teclado Numérico Integrado estilo iOS Lock Screen -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div class="pin-box-card" id="pin-box-card">
             <div class="pin-logo-wrap">
@@ -69,11 +69,11 @@
                 <span class="pin-lock-badge">🔒</span>
             </div>
             <h2 class="pin-title">Ingresa tu PIN</h2>
-            <p class="pin-subtitle" id="pin-status-text">Toca los círculos para abrir el teclado numérico</p>
+            <p class="pin-subtitle" id="pin-status-text">Marca tu código de seguridad de 4 dígitos</p>
 
-            <!-- Área interactiva de 4 dígitos con input nativo superpuesto -->
-            <div class="pin-interactive-area" id="pin-interactive-area" onclick="enfocarInputPIN(event)">
-                <input type="password" inputmode="numeric" pattern="[0-9]*" id="input-pin" maxlength="4" autocomplete="off" aria-label="PIN de 4 dígitos">
+            <!-- Área de los 4 círculos indicadores (Sin teclado nativo del sistema) -->
+            <div class="pin-interactive-area" id="pin-interactive-area">
+                <input type="hidden" id="input-pin" maxlength="4" value="">
                 <div class="pin-dots-row" id="pin-dots-row">
                     <div class="pin-dot-ind"></div>
                     <div class="pin-dot-ind"></div>
@@ -84,7 +84,62 @@
 
             <p id="pin-error-feedback" class="pin-error-feedback oculto"></p>
 
-            <button type="button" class="btn-forgot-pin" onclick="resetearPIN(event)">¿Olvidaste tu PIN?</button>
+            <!-- Teclado Numérico Circular Estático Integrado (Estilo iPhone) -->
+            <div class="pin-keypad-grid" id="pin-keypad-grid">
+                <!-- Fila 1 -->
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('1')">
+                    <span class="pin-key-num">1</span>
+                    <small class="pin-key-let">&nbsp;</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('2')">
+                    <span class="pin-key-num">2</span>
+                    <small class="pin-key-let">ABC</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('3')">
+                    <span class="pin-key-num">3</span>
+                    <small class="pin-key-let">DEF</small>
+                </button>
+
+                <!-- Fila 2 -->
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('4')">
+                    <span class="pin-key-num">4</span>
+                    <small class="pin-key-let">GHI</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('5')">
+                    <span class="pin-key-num">5</span>
+                    <small class="pin-key-let">JKL</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('6')">
+                    <span class="pin-key-num">6</span>
+                    <small class="pin-key-let">MNO</small>
+                </button>
+
+                <!-- Fila 3 -->
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('7')">
+                    <span class="pin-key-num">7</span>
+                    <small class="pin-key-let">PQRS</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('8')">
+                    <span class="pin-key-num">8</span>
+                    <small class="pin-key-let">TUV</small>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('9')">
+                    <span class="pin-key-num">9</span>
+                    <small class="pin-key-let">WXYZ</small>
+                </button>
+
+                <!-- Fila 4: ¿Olvidaste? | 0 | Borrar (⌫) -->
+                <button type="button" class="pin-key-btn pin-key-action btn-forgot-pin" onclick="resetearPIN(event)">
+                    <span>¿Olvidaste?</span>
+                </button>
+                <button type="button" class="pin-key-btn" onclick="presionarDigitoPIN('0')">
+                    <span class="pin-key-num">0</span>
+                    <small class="pin-key-let">+</small>
+                </button>
+                <button type="button" class="pin-key-btn pin-key-backspace" onclick="borrarDigitoPIN()" aria-label="Borrar dígito">
+                    <span class="pin-key-del-icon">⌫</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -119,6 +174,9 @@
                 <div class="slider-cuentas" id="slider-cuentas"></div>
                 <div class="slider-dots" id="slider-dots"></div>
             </div>
+
+            <!-- Banner Compacto y No Invasivo de Recordatorios de Agenda -->
+            <div id="banner-recordatorio-agenda" class="agenda-home-banner oculto" style="display: none;"></div>
 
             <!-- Tasas en Vivo -->
             <div class="tasas-header">
@@ -254,6 +312,58 @@
                 </div>
                 <div id="askbot-messages" class="askbot-messages oculto-chat"></div>
             </section>
+        </div>
+
+        <!-- ================= APARTADO: AGENDA DE PAGOS, DEUDAS Y SUSCRIPCIONES ================= -->
+        <div id="tab-agenda" class="vista-oculta">
+            <div class="header-title">
+                <div>
+                    <h1>Agenda</h1>
+                    <p>Pagos, Deudas y Suscripciones</p>
+                </div>
+                <button onclick="abrirModalNuevaAgenda()" class="btn-add-circle" title="Agendar nuevo pago">+</button>
+            </div>
+
+            <!-- Tarjetas de Resumen Rápido de Compromisos -->
+            <div class="agenda-summary-row">
+                <div class="agenda-stat-card">
+                    <span class="agenda-stat-label">Pendientes</span>
+                    <strong id="agenda-stat-pendientes">0</strong>
+                    <small id="agenda-stat-monto-usd">≈ $0.00</small>
+                </div>
+                <div class="agenda-stat-card alerta">
+                    <span class="agenda-stat-label">Por Vencer / Hoy</span>
+                    <strong id="agenda-stat-urgentes">0</strong>
+                    <small id="agenda-stat-prox-texto">Al día</small>
+                </div>
+            </div>
+
+            <!-- Selector de Vista: Pendientes / Calendario / Pagados -->
+            <div class="ios-segmented-control" style="margin-bottom: 14px;">
+                <div class="segment activo" id="seg-agenda-pendientes" onclick="cambiarVistaAgenda('pendientes')">Pendientes</div>
+                <div class="segment" id="seg-agenda-calendario" onclick="cambiarVistaAgenda('calendario')">📅 Calendario</div>
+                <div class="segment" id="seg-agenda-pagados" onclick="cambiarVistaAgenda('pagados')">Pagados</div>
+            </div>
+
+            <!-- Bloque de Calendario Interactivo Mensual (Visible en modo Calendario) -->
+            <section id="agenda-calendario-wrapper" class="gestion-seccion oculto" style="display: none; padding: 14px;">
+                <div class="agenda-cal-header">
+                    <button type="button" class="btn-cal-nav" onclick="cambiarMesCalendarioAgenda(-1)">‹</button>
+                    <strong id="agenda-cal-mes-titulo">Octubre 2026</strong>
+                    <button type="button" class="btn-cal-nav" onclick="cambiarMesCalendarioAgenda(1)">›</button>
+                </div>
+                <div class="agenda-cal-weekdays">
+                    <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+                </div>
+                <div id="agenda-cal-grid" class="agenda-cal-grid"></div>
+                <div id="agenda-cal-filtro-bar" class="agenda-cal-filtro-bar oculto" style="display: none;">
+                    <span id="agenda-cal-dia-label">Día seleccionado</span>
+                    <button type="button" class="btn-link-perfil" onclick="limpiarDiaSeleccionadoAgenda()">Ver todo el mes</button>
+                </div>
+            </section>
+
+            <!-- Lista Organizada de Pagos Agendados -->
+            <div id="lista-agenda-principal" class="agenda-list-container"></div>
         </div>
 
         <!-- ================= APARTADO: CALCULADORA ================= -->
@@ -442,6 +552,151 @@
     </div>
 
     <!-- ================= VENTANAS MODALES ================= -->
+
+    <!-- Modal Agendar Nuevo Pago / Deuda / Suscripción -->
+    <div id="modal-nueva-agenda" class="glass-modal oculto" style="z-index: 100001;" onclick="cerrarModal('modal-nueva-agenda')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 14px;">
+                <h2 id="titulo-modal-agenda">Agendar Compromiso</h2>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-nueva-agenda')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="modal-list" style="max-height: 68vh; padding-right: 2px;">
+                <input type="hidden" id="in-agenda-edit-id" value="">
+
+                <!-- Concepto / Nota Principal -->
+                <div style="margin-bottom: 10px;">
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">📝 CONCEPTO O PAGO</label>
+                    <input type="text" id="in-agenda-nota" placeholder="Ej: Pagar luz/agua, Netflix, Cuota..." maxlength="60" style="width: 100%;">
+                </div>
+
+                <!-- Monto y Moneda (VES, USD, USDT, EUR) -->
+                <label class="pin-config-label" style="display:block; margin-bottom:5px;">💰 MONTO Y MONEDA</label>
+                <div class="input-wrapper" style="padding: 5px; padding-left: 0; margin-bottom: 12px;">
+                    <input type="number" id="in-agenda-monto" placeholder="0.00" step="0.01" inputmode="decimal" style="flex: 1; margin-left: 10px;">
+                    <select id="in-agenda-moneda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
+                        <option value="USD">USD</option>
+                        <option value="USDT">USDT</option>
+                        <option value="VES">VES</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                </div>
+
+                <!-- Fecha de Vencimiento y Frecuencia -->
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <label class="pin-config-label">📅 FECHA DE PAGO</label>
+                        <input type="date" id="in-agenda-fecha" style="width: 100%; font-size: 14px; padding: 12px 10px;">
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <label class="pin-config-label">🔄 FRECUENCIA</label>
+                        <select id="in-agenda-frecuencia" class="custom-select-btn" style="width: 100%;">
+                            <option value="unico">Pago Único</option>
+                            <option value="mensual">Mensual (Repetir)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Categoría + Acceso Directo a Crear Categoría Rápida -->
+                <div style="margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label class="pin-config-label">🏷️ CATEGORÍA</label>
+                        <button type="button" class="btn-link-perfil" onclick="toggleCrearCategoriaRapidaAgenda()" style="font-size: 11.5px; color: var(--accent); text-decoration: none; font-weight: 700;">+ Crear categoría rápida</button>
+                    </div>
+                    <select id="in-agenda-categoria" class="custom-select-btn" style="width: 100%;"></select>
+                </div>
+
+                <!-- Mini Creador Rápido de Categoría sin salir del Modal -->
+                <div id="box-cat-rapida-agenda" class="cat-new-box oculto" style="display: none; margin-bottom: 12px; flex-direction: column; gap: 8px;">
+                    <small style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Nueva categoría al instante:</small>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="color" id="in-cat-rapida-color" value="#0A84FF" style="width: 38px; height: 38px; border-radius: 10px; border: none; background: transparent; cursor: pointer; flex-shrink: 0;">
+                        <input type="text" id="in-cat-rapida-nombre" placeholder="Nombre (Ej: Servicios)" maxlength="35" style="flex: 1; padding: 10px 12px;">
+                        <button type="button" class="btn-guardar-nombre" onclick="guardarCategoriaRapidaAgenda()" style="height: 38px; padding: 0 12px;">Crear</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primario" onclick="guardarCompromisoAgenda()" style="margin-top: 6px;">📅 Guardar en Agenda</button>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar y Ejecutar Pago de la Agenda Conectado a Cuentas e Historial -->
+    <div id="modal-pagar-agenda" class="glass-modal oculto" style="z-index: 100004;" onclick="cerrarModal('modal-pagar-agenda')">
+        <div class="glass-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 10px;">
+                <h2>Registrar Pago</h2>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-pagar-agenda')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="modal-list" style="max-height: 70vh; padding-right: 2px;">
+                <p id="desc-pagar-agenda" style="color: var(--text-secondary); font-size: 12.5px; margin-bottom: 12px; line-height: 1.4;">
+                    Confirma los datos para descontar el saldo de tu cuenta y registrarlo en el historial.
+                </p>
+
+                <!-- Cuenta de donde se descontará -->
+                <div style="margin-bottom: 10px;">
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">💳 ¿DE QUÉ CUENTA SE DESCONTARÁ?</label>
+                    <select id="sel-cuenta-pagar-agenda" class="custom-select-btn" style="width: 100%;" onchange="actualizarUIModalPagarAgenda()"></select>
+                </div>
+
+                <!-- Monto y Moneda del Pago -->
+                <label class="pin-config-label" style="display:block; margin-bottom:5px;">💰 MONTO A PAGAR</label>
+                <div class="input-wrapper" style="padding: 5px; padding-left: 0; margin-bottom: 10px;">
+                    <input type="number" id="monto-pagar-agenda" placeholder="0.00" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="flex: 1; margin-left: 10px;">
+                    <select id="moneda-pagar-agenda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;" onchange="actualizarUIModalPagarAgenda()">
+                        <option value="USD">USD</option>
+                        <option value="USDT">USDT</option>
+                        <option value="VES">VES</option>
+                        <option value="EUR">EUR</option>
+                    </select>
+                </div>
+
+                <!-- Selector de Comisión Bancaria si el pago se ejecuta en Bolívares (VES) -->
+                <div id="box-comision-agenda-ves" class="input-group oculto" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                    <label style="font-size: 12px; color: var(--text-secondary); padding-left: 4px; font-weight: 600;">Método de Pago (Bolívares)</label>
+                    <select id="sel-comision-agenda" class="custom-select-btn" onchange="toggleComisionManualAgenda(); calcularPreviewModalPagarAgenda();">
+                        <option value="tarjeta" selected>💳 Tarjeta de Débito / POS (0 Bs)</option>
+                        <option value="p2p">📱 Pago Móvil P2P (0,30% - mín Bs 14)</option>
+                        <option value="p2c">🏪 Pago Móvil Comercio (1,50% - mín Bs 14)</option>
+                        <option value="manual">✍️ Comisión Manual</option>
+                    </select>
+                    <input type="number" id="input-comision-agenda-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="width: 100%;">
+                </div>
+
+                <!-- Tasa USDT personalizada si la cuenta o moneda involucra USDT y VES -->
+                <div id="box-tasa-agenda-usdt" class="oculto" style="display: none; flex-direction: column; gap: 6px; margin-bottom: 10px; background: var(--input-bg); padding: 10px 14px; border-radius: 16px; border: 1px solid var(--border-light);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">🪙 Tasa USDT aplicada (Bs):</label>
+                        <input type="number" id="input-tasa-agenda-usdt" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="max-width: 125px; padding: 7px 10px; border-radius: 10px; text-align: right; font-weight: 700;">
+                    </div>
+                </div>
+
+                <!-- Vista previa de cuánto se descontará de la cuenta elegida -->
+                <div class="agenda-pay-preview-box">
+                    <span>Se descontará de la cuenta:</span>
+                    <strong id="lbl-descuento-agenda-preview">$0.00</strong>
+                </div>
+
+                <!-- Categoría y Fecha/Nota -->
+                <div style="margin-bottom: 10px; margin-top: 10px;">
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">🏷️ CATEGORÍA</label>
+                    <select id="cat-pagar-agenda" class="custom-select-btn" style="width: 100%;"></select>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 6px;">
+                    <input type="date" id="fecha-pagar-agenda" style="width: 42%; font-size: 14px; padding: 12px 10px;">
+                    <input type="text" id="nota-pagar-agenda" placeholder="Nota del pago" style="width: 58%;">
+                </div>
+            </div>
+
+            <button class="btn-primario" onclick="confirmarPagoAgenda()" style="margin-top: 8px;">✅ Confirmar y Descontar</button>
+        </div>
+    </div>
 
     <!-- Modal Configurar PIN y 3 Preguntas de Seguridad Personalizadas -->
     <div id="modal-config-pin" class="glass-modal oculto" style="z-index: 100002;" onclick="cerrarModal('modal-config-pin')">
@@ -785,7 +1040,7 @@
             <!-- Cuerpo del Paso -->
             <div class="tut-slide" id="tut-slide-body">
                 <div id="tut-icono" class="tut-icon-box">🚀</div>
-                <h2 id="tut-titulo" style="font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST</h2>
+                <h2 id="tut-titulo" style="font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST 3.0</h2>
                 <p id="tut-desc" style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;"></p>
                 <div id="tut-detalle" class="tut-tip-box"></div>
             </div>
@@ -801,25 +1056,32 @@
         </div>
     </div>
 
-    <!-- Barra Inferior Clásica (5 Pestañas con AskBot integrado) -->
+    <!-- Barra Inferior Clásica (6 Pestañas Armónicas con Agenda ubicada entre AskBot y Conversión) -->
     <nav class="bottom-nav" id="bottom-nav-bar">
-        <div class="nav-item activo" onclick="cambiarPestana('tab-inicio', this)">
+        <div class="nav-item activo" id="nav-item-inicio" onclick="cambiarPestana('tab-inicio', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>
             <span class="nav-text">A$$IST</span>
         </div>
-        <div class="nav-item" onclick="cambiarPestana('tab-askbot', this)">
+        <div class="nav-item" id="nav-item-askbot" onclick="cambiarPestana('tab-askbot', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg>
             <span class="nav-text">AskBot</span>
         </div>
-        <div class="nav-item" onclick="cambiarPestana('tab-calculadora', this)">
+        <div class="nav-item" id="nav-item-agenda" onclick="cambiarPestana('tab-agenda', this)">
+            <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path></svg>
+                <span id="nav-agenda-badge" class="nav-badge-dot oculto"></span>
+            </div>
+            <span class="nav-text">Agenda</span>
+        </div>
+        <div class="nav-item" id="nav-item-calculadora" onclick="cambiarPestana('tab-calculadora', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
             <span class="nav-text">Conversión</span>
         </div>
-        <div class="nav-item" onclick="cambiarPestana('tab-metas', this)">
+        <div class="nav-item" id="nav-item-metas" onclick="cambiarPestana('tab-metas', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             <span class="nav-text">Metas</span>
         </div>
-        <div class="nav-item" onclick="cambiarPestana('tab-categorias', this)">
+        <div class="nav-item" id="nav-item-categorias" onclick="cambiarPestana('tab-categorias', this)">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             <span class="nav-text">Ajustes</span>
         </div>

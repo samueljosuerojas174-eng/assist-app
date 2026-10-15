@@ -12,6 +12,7 @@ let transacciones = JSON.parse(localStorage.getItem('transacciones')) || [];
 let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
 let cuentas = JSON.parse(localStorage.getItem('cuentas')) || [];
 let metas = JSON.parse(localStorage.getItem('metas')) || [];
+let agendaPagos = JSON.parse(localStorage.getItem('assist_agenda_pagos')) || [];
 let appPin = localStorage.getItem('app_pin') || null;
 let pinQuestions = JSON.parse(localStorage.getItem('assist_pin_questions')) || [];
 
@@ -253,61 +254,61 @@ function eliminarFotoPerfil() {
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
-// ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING) =================
+// ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING V3.0) =================
 const PASOS_TUTORIAL = [
     {
         icono: "🚀",
-        titulo: "Bienvenido a A$$IST",
-        desc: "Tu centro de control financiero personal. Diseñado para ser ultrarrápido, funcionar con o sin internet y adaptarse a la economía real.",
-        tip: "✨ <b>Arquitectura Local-First:</b> Todo lo que hagas se guarda al instante en tu teléfono y se respalda silenciosamente en la nube cuando tienes conexión."
+        titulo: "Bienvenido a A$$IST 3.0",
+        desc: "Tu centro de control financiero personal. Diseñado para ser ultrarrápido, funcionar 100% offline en la calle y adaptarse a la economía real.",
+        tip: "✨ <b>Filosofía Local-First + Nube:</b> Todo se guarda al instante en tu teléfono, se sincroniza silenciosamente en la nube y puedes personalizar tu perfil con nombre y foto desde el avatar superior."
     },
     {
         icono: "💳",
-        titulo: "1. Crea tus Cuentas",
-        desc: "El primer paso es registrar dónde tienes tu dinero: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b>.",
-        tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En el Inicio, desliza la tarjeta principal hacia los lados para cambiar de cuenta activa."
+        titulo: "1. Cuentas Multidivisa",
+        desc: "Registra dónde tienes tu dinero: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b>.",
+        tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En Inicio, desliza la tarjeta principal hacia los lados para cambiar de cuenta activa."
     },
     {
         icono: "🏷️",
-        titulo: "2. Categorías Inteligentes",
-        desc: "Organiza en qué se va tu dinero creando tus propias categorías personalizadas (Ej: Comida, Transporte, Suscripciones, Ocio).",
-        tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente en qué moneda pagaste por última vez cada categoría para ahorrarte toques."
+        titulo: "2. Categorías con Color y Memoria",
+        desc: "Crea tus categorías personalizadas y asígnales un <b>color propio</b> desde la paleta o el selector libre para identificarlas al instante.",
+        tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente con qué moneda pagaste por última vez cada categoría y conserva sus colores en todo tu historial."
     },
     {
         icono: "⚡",
-        titulo: "3. Gastos, Ingresos y Comisiones",
-        desc: "Registra cualquier movimiento en segundos. La app bloquea monedas incompatibles según la cuenta que tengas activa en pantalla.",
-        tip: "🇻🇪 <b>Pagos en Bolívares:</b> Al registrar un gasto en VES, puedes elegir si pagaste con <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
+        titulo: "3. Registro, Tasa USDT y Comisiones",
+        desc: "El formulario bloquea monedas incompatibles según la cuenta activa y, si operas en <b>Bs desde una cuenta USDT</b>, te permite editar la tasa USDT exacta.",
+        tip: "🇻🇪 <b>Comisiones Bancarias VE:</b> Al registrar un gasto en VES, elige entre <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
     },
     {
         icono: "🔄",
-        titulo: "4. Transferencias y Cambios P2P",
-        desc: "¿Cambiaste USDT a Bolívares en Binance o viceversa? Elige la opción <b>Transferir</b> en el panel de registro.",
-        tip: "⚡ En un solo paso, A$$IST descuenta el saldo de la cuenta de origen y suma el monto convertido en la cuenta de destino usando la tasa que indiques."
+        titulo: "4. Transferencias P2P en 1 Clic",
+        desc: "¿Cambiaste USDT a Bolívares o viceversa? Selecciona <b>Transferir</b> en el panel de registro principal.",
+        tip: "⚡ En un solo paso, A$$IST descuenta el saldo de la cuenta de origen y suma el monto convertido en la cuenta destino usando la tasa que indiques."
     },
     {
-        icono: "🤖",
-        titulo: "5. AskBot: Copiloto IA",
-        desc: "En la barra inferior tienes a <b>AskBot</b>, tu asesor financiero con Inteligencia Artificial conectado en vivo a tus datos reales.",
-        tip: "✨ <b>Contexto automático:</b> Pregúntale si es viable hacer una compra hoy, en qué categoría estás gastando de más o cómo aprovechar la brecha entre BCV y USDT."
-    },
-    {
-        icono: "💱",
-        titulo: "6. Calculadora en Tiempo Real",
-        desc: "En la pestaña <b>Conversión</b> tienes las tasas del día (BCV, USDT y Euro) actualizadas automáticamente junto con su variación porcentual.",
-        tip: "🧮 Escribe arriba en divisas o abajo en Bolívares para convertir en ambas direcciones al instante, o usa el modo <b>Propia</b> para calcular con una tasa libre."
+        icono: "📅",
+        titulo: "5. Nueva Agenda de Pagos",
+        desc: "Organiza tus deudas, recibos y suscripciones en la pestaña <b>Agenda</b> con vistas de <b>Pendientes</b>, <b>📅 Calendario mensual</b> y <b>Pagados</b>.",
+        tip: "🔔 Recibe avisos no invasivos en Inicio cuando un pago vence en <b>≤ 3 días</b>, págalo en 1 clic descontando de tu cuenta (si es mensual avanza al próximo mes) o reviértelo si lo borras del historial."
     },
     {
         icono: "📊",
-        titulo: "7. Historial, Filtros y Metas",
-        desc: "Toca <b>Ver Historial y Gráficos</b> para analizar tus gastos por categoría, buscar por palabra clave o filtrar los movimientos de un día exacto.",
-        tip: "🗑️ <b>Desliza hacia la izquierda (Swipe)</b> cualquier movimiento del historial para eliminarlo. Y en la pestaña <b>Metas</b>, crea ahorros visuales con foto y barra de progreso."
+        titulo: "6. Historial Pro y Metas Visuales",
+        desc: "Analiza tus gastos con el nuevo <b>gráfico de dona interactivo</b> con leyenda lateral de colores y porcentajes, o filtra con el botón <b>Total</b> (por Mes/Año) y <b>📅 Día</b>.",
+        tip: "🗑️ <b>Swipe to Delete:</b> Desliza hacia la izquierda cualquier movimiento para borrarlo. Y en <b>Metas</b>, disfruta de tarjetas ampliadas con foto y barra de progreso."
     },
     {
         icono: "🔒",
-        titulo: "8. Modo Pánico, PIN y Temas",
-        desc: "Tu privacidad y estilo están blindados. Personaliza la app en <b>Ajustes</b> con el modo Oscuro, Claro o <b>Liquid Glass</b> y más de 20 colores de acento.",
-        tip: "🕵️‍♂️ <b>Truco Pro:</b> Da <b>doble toque rápido</b> sobre la tarjeta de tu balance (o toca el icono del ojo) para activar el <b>Modo Pánico</b> y ocultar todos tus montos con asteriscos."
+        titulo: "7. PIN 2.0, Modo Pánico y Temas",
+        desc: "Protege tu app con el nuevo <b>teclado numérico integrado en pantalla</b> y <b>3 preguntas de seguridad personalizadas</b> con tolerancia inteligente y pistas sutiles.",
+        tip: "🕵️‍♂️ Da <b>doble toque rápido</b> en tu balance para activar el <b>Modo Pánico</b> (********) y personaliza A$$IST con los temas <b>Oscuro</b>, <b>Claro</b> o <b>Liquid Glass</b> y 20 colores de acento."
+    },
+    {
+        icono: "🛠️",
+        titulo: "8. AskBot y Calculadora en Vivo",
+        desc: "<b>AskBot</b> se encuentra temporalmente en mantenimiento programado mientras reconstruimos su motor de IA desde cero para próximas actualizaciones.",
+        tip: "💱 Mientras tanto, la <b>Calculadora Bidireccional</b> (BCV, USDT, EUR y tasa Propia) y todas tus herramientas financieras están <b>100% operativas</b> en tiempo real."
     }
 ];
 
@@ -444,7 +445,7 @@ function continuarSinCuenta() {
 }
 
 function tieneDatosLocales() {
-    return (cuentas.length > 0 || transacciones.length > 0 || metas.length > 0 || categorias.length > 0);
+    return (cuentas.length > 0 || transacciones.length > 0 || metas.length > 0 || categorias.length > 0 || agendaPagos.length > 0);
 }
 
 function actualizarUIEstadoNube() {
@@ -570,7 +571,7 @@ async function sincronizarHaciaNube() {
         const uid = usuarioActual.id;
         const ahora = new Date().toISOString();
 
-        // 1. Guardar Perfil, Preferencias, Preguntas PIN y Colores de Categorías (con fallback seguro en cascada)
+        // 1. Guardar Perfil, Preferencias, Preguntas PIN, Colores de Categorías y Agenda de Pagos (con fallback seguro en cascada)
         const basePerfil = {
             user_id: uid,
             email: usuarioActual.email,
@@ -586,25 +587,35 @@ async function sincronizarHaciaNube() {
             user_name: userNombre || null,
             avatar_url: userAvatar || null,
             pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null,
-            categorias_colores: Object.keys(categoriasColores).length > 0 ? JSON.stringify(categoriasColores) : null
+            categorias_colores: Object.keys(categoriasColores).length > 0 ? JSON.stringify(categoriasColores) : null,
+            agenda_pagos: JSON.stringify(agendaPagos)
         });
 
         if (errPerfil) {
-            let retryPin = await supabaseClient.from('perfiles').upsert({
+            let retryColores = await supabaseClient.from('perfiles').upsert({
                 ...basePerfil,
                 user_name: userNombre || null,
                 avatar_url: userAvatar || null,
-                pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null
+                pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null,
+                categorias_colores: Object.keys(categoriasColores).length > 0 ? JSON.stringify(categoriasColores) : null
             });
-            if (retryPin.error) {
-                let retry1 = await supabaseClient.from('perfiles').upsert({
+            if (retryColores.error) {
+                let retryPin = await supabaseClient.from('perfiles').upsert({
                     ...basePerfil,
                     user_name: userNombre || null,
-                    avatar_url: userAvatar || null
+                    avatar_url: userAvatar || null,
+                    pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null
                 });
-                if (retry1.error) {
-                    const retry2 = await supabaseClient.from('perfiles').upsert(basePerfil);
-                    if (retry2.error) throw retry2.error;
+                if (retryPin.error) {
+                    let retry1 = await supabaseClient.from('perfiles').upsert({
+                        ...basePerfil,
+                        user_name: userNombre || null,
+                        avatar_url: userAvatar || null
+                    });
+                    if (retry1.error) {
+                        const retry2 = await supabaseClient.from('perfiles').upsert(basePerfil);
+                        if (retry2.error) throw retry2.error;
+                    }
                 }
             }
         }
@@ -756,6 +767,17 @@ async function descargarDesdeNube() {
                     }
                 } catch (e) { console.error(e); }
             }
+            if (resPerfil.data.agenda_pagos !== undefined && resPerfil.data.agenda_pagos !== null) {
+                try {
+                    const parsedAgenda = typeof resPerfil.data.agenda_pagos === 'string'
+                        ? JSON.parse(resPerfil.data.agenda_pagos)
+                        : resPerfil.data.agenda_pagos;
+                    if (Array.isArray(parsedAgenda)) {
+                        agendaPagos = parsedAgenda;
+                        localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
+                    }
+                } catch (e) { console.error(e); }
+            }
             if (typeof resPerfil.data.censurado === 'boolean') {
                 censurado = resPerfil.data.censurado;
                 localStorage.setItem('censurado', censurado);
@@ -816,6 +838,7 @@ async function descargarDesdeNube() {
         localStorage.setItem('categorias', JSON.stringify(categorias));
         localStorage.setItem('transacciones', JSON.stringify(transacciones));
         localStorage.setItem('metas', JSON.stringify(metas));
+        localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
 
         if (necesitaSubirTransLocales) {
             await sincronizarHaciaNube();
@@ -856,6 +879,7 @@ async function cerrarSesionNube() {
     categoriasColores = {};
     cuentas = [];
     metas = [];
+    agendaPagos = [];
     appPin = null;
     pinQuestions = [];
     cuentaActivaId = null;
@@ -865,6 +889,7 @@ async function cerrarSesionNube() {
     localStorage.removeItem('assist_categorias_colores');
     localStorage.removeItem('cuentas');
     localStorage.removeItem('metas');
+    localStorage.removeItem('assist_agenda_pagos');
     localStorage.removeItem('app_pin');
     localStorage.removeItem('assist_pin_questions');
     localStorage.removeItem('assist_skip_auth');
@@ -888,15 +913,14 @@ window.addEventListener('offline', () => {
     actualizarUIEstadoNube();
 });
 
-// ================= SEGURIDAD PIN 2.0, PREGUNTAS PERSONALIZADAS Y PANTALLA DE CARGA =================
+// ================= SEGURIDAD PIN 2.0 (TECLADO NUMÉRICO INTEGRADO EN PANTALLA), PREGUNTAS Y CARGA =================
 let nivelPistaRecuperacion = 0;
 let preguntaRecuperacionIdx = 0;
 let verificandoPinEnCurso = false;
 
 function enfocarInputPIN(event) {
+    // Desactivado deliberadamente para jamás invocar el teclado nativo del sistema en #pin-screen
     if (event && event.target && event.target.closest('.btn-forgot-pin')) return;
-    const pinInput = document.getElementById('input-pin');
-    if (pinInput) pinInput.focus();
 }
 
 function actualizarIndicadoresPIN(estado = '') {
@@ -939,10 +963,40 @@ function mostrarPantallaPINInteractiva(enfocar = true) {
         void pinCard.offsetWidth;
         pinCard.classList.add('pin-enter-active');
     }
+}
 
-    if (enfocar && pinInput) {
-        setTimeout(() => pinInput.focus(), 60);
+function presionarDigitoPIN(digito) {
+    if (verificandoPinEnCurso) return;
+    const pinInput = document.getElementById('input-pin');
+    if (!pinInput) return;
+
+    const errEl = document.getElementById('pin-error-feedback');
+    if (errEl && !errEl.classList.contains('oculto')) {
+        errEl.classList.add('oculto');
     }
+
+    const actual = (pinInput.value || '').replace(/\D/g, '');
+    if (actual.length >= 4) return;
+
+    pinInput.value = actual + String(digito).replace(/\D/g, '').slice(0, 1);
+    actualizarIndicadoresPIN();
+
+    if (pinInput.value.length === 4) {
+        verificarPIN();
+    }
+}
+
+function borrarDigitoPIN() {
+    if (verificandoPinEnCurso) return;
+    const pinInput = document.getElementById('input-pin');
+    if (!pinInput || !pinInput.value) return;
+
+    pinInput.value = pinInput.value.slice(0, -1);
+    const errEl = document.getElementById('pin-error-feedback');
+    if (errEl && !errEl.classList.contains('oculto')) {
+        errEl.classList.add('oculto');
+    }
+    actualizarIndicadoresPIN();
 }
 
 window.addEventListener('load', () => {
@@ -984,10 +1038,20 @@ window.addEventListener('load', () => {
     }, 1200); 
 });
 
-// Forzar autofocus al tocar cualquier parte de la tarjeta de bloqueo PIN (salvo el botón de olvidar PIN)
-document.getElementById('pin-screen').addEventListener('click', (e) => {
-    if (e.target.closest('.btn-forgot-pin')) return;
-    enfocarInputPIN(e);
+// Soporte opcional para teclado físico en escritorio sin abrir nunca el teclado virtual en iPhone
+window.addEventListener('keydown', (e) => {
+    const pinScreen = document.getElementById('pin-screen');
+    const modalRec = document.getElementById('modal-recuperar-pin');
+    if (!pinScreen || pinScreen.classList.contains('oculto')) return;
+    if (modalRec && !modalRec.classList.contains('oculto')) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault();
+        presionarDigitoPIN(e.key);
+    } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        borrarDigitoPIN();
+    }
 });
 
 // Temas
@@ -1030,7 +1094,7 @@ document.getElementById('slider-cuentas-wrapper').addEventListener('touchstart',
     lastTap = currentTime;
 });
 
-// Teclado PIN Automático Inmediato con iluminación de los 4 círculos
+// Listener de respaldo por si #input-pin recibe entrada directa
 document.getElementById('input-pin').addEventListener('input', function() {
     if (verificandoPinEnCurso) return;
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
@@ -1051,7 +1115,6 @@ function verificarPIN() {
     if (input.value === appPin) {
         verificandoPinEnCurso = true;
         actualizarIndicadoresPIN('exito');
-        input.blur(); // Desvanece el teclado numérico en el milisegundo 0
         
         const screen = document.getElementById('pin-screen');
         const container = document.getElementById('app-main-container');
@@ -1338,8 +1401,6 @@ function cambiarPreguntaRecuperacionPIN() {
 
 function resetearPIN(event) {
     if (event) event.stopPropagation();
-    const pinInput = document.getElementById('input-pin');
-    if (pinInput) pinInput.blur();
 
     nivelPistaRecuperacion = 0;
     const tienePreguntas = Array.isArray(pinQuestions) && pinQuestions.length === 3 && pinQuestions.every(q => q.q && q.a);
@@ -1490,7 +1551,9 @@ const MODALES_IDS = [
     'modal-nueva-meta',
     'modal-tutorial',
     'modal-config-pin',
-    'modal-recuperar-pin'
+    'modal-recuperar-pin',
+    'modal-nueva-agenda',
+    'modal-pagar-agenda'
 ];
 
 let scrollGuardadoModal = 0;
@@ -1518,10 +1581,10 @@ function desbloquearScrollFondo() {
     }
 }
 
-// Interceptor táctil en iOS Safari para impedir que deslizar sobre el fondo del modal o de AskBot mueva el body
+// Interceptor táctil en iOS Safari para impedir que deslizar sobre el fondo del modal o de AskBot mueva el body, permitiendo scroll fluido en #lista-transacciones
 document.addEventListener('touchmove', function(e) {
     if (document.body.classList.contains('modal-open')) {
-        const scrollableEl = e.target.closest('.modal-list, .tut-slide, .palette-container, .chart-custom-legend');
+        const scrollableEl = e.target.closest('.modal-list, #lista-transacciones, #lista-historial-meta, .historial-full-list, .tut-slide, .palette-container, .chart-custom-legend');
         if (!scrollableEl) {
             e.preventDefault();
             return;
@@ -1866,17 +1929,17 @@ function renderizarMetas() {
             <div class="meta-card-top">
                 <div class="meta-bg-overlay" style="${bgStyle}"></div>
                 <div class="meta-top-content">
-                    <strong style="font-size:18px; text-shadow: 0 2px 8px rgba(0,0,0,0.9);">${m.nombre}</strong>
-                    <span style="font-size:14px; font-weight:bold; text-shadow: 0 2px 8px rgba(0,0,0,0.9);">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
+                    <strong style="font-size:20px; text-shadow: 0 2px 10px rgba(0,0,0,0.9);">${m.nombre}</strong>
+                    <span style="font-size:15.5px; font-weight:800; text-shadow: 0 2px 10px rgba(0,0,0,0.9);">${m.moneda} ${formatearMontoCensurado(m.acumulado.toFixed(2))}</span>
                 </div>
             </div>
             <div class="meta-card-bottom">
-                <div class="progress-bg" style="height: 10px; margin-bottom: 6px;">
+                <div class="progress-bg" style="height: 11px; margin-bottom: 8px;">
                     <div class="progress-fill" style="width: ${pct}%;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <small style="color:var(--text-secondary); font-size:12px; font-weight:600;">Progreso</small>
-                    <small style="color:var(--text-primary); font-size:12px; font-weight:700;">${pct.toFixed(1)}% de ${m.objetivo.toFixed(2)}</small>
+                    <small style="color:var(--text-secondary); font-size:12.5px; font-weight:600;">Progreso</small>
+                    <small style="color:var(--text-primary); font-size:13px; font-weight:800;">${pct.toFixed(1)}% de ${m.objetivo.toFixed(2)}</small>
                 </div>
             </div>
         </div>`;
@@ -2025,6 +2088,938 @@ function eliminarMeta(index) {
     }
 }
 
+// ================= AGENDA DE PAGOS, DEUDAS Y SUSCRIPCIONES =================
+let agendaVistaActual = 'pendientes'; // 'pendientes' | 'calendario' | 'pagados'
+let agendaCalAnio = new Date().getFullYear();
+let agendaCalMes = new Date().getMonth(); // 0 - 11
+let agendaDiaSeleccionado = null; // 'YYYY-MM-DD' o null
+let agendaPagoEnCursoId = null;
+
+function convertirMontoAgendaAUSD(monto, moneda) {
+    const val = Number(monto) || 0;
+    if (val <= 0) return 0;
+    if (moneda === 'VES') return val / (tasaBCV || 1);
+    if (moneda === 'EUR') return (val * (tasaEUR || 1)) / (tasaBCV || 1);
+    return val; // USD o USDT
+}
+
+function formatearMontoMonedaAgenda(monto, moneda) {
+    const val = (Number(monto) || 0).toFixed(2);
+    if (moneda === 'VES') return `Bs ${val}`;
+    if (moneda === 'USDT') return `USDT ${val}`;
+    if (moneda === 'EUR') return `€${val}`;
+    return `$${val}`;
+}
+
+function calcularDiasRestantesAgenda(fechaIso) {
+    const hoyIso = getLocalYYYYMMDD();
+    const dHoy = new Date(hoyIso + "T00:00:00");
+    const dMeta = new Date((fechaIso || hoyIso) + "T00:00:00");
+    if (isNaN(dMeta.getTime())) return 0;
+    return Math.round((dMeta.getTime() - dHoy.getTime()) / 86400000);
+}
+
+function obtenerInfoEstadoAgenda(item) {
+    if (item.estado === 'pagado') {
+        return {
+            claseCard: 'pagado',
+            claseBadge: 'pagado',
+            textoBadge: '✅ Pagado',
+            dias: 9999
+        };
+    }
+
+    const dias = calcularDiasRestantesAgenda(item.fecha);
+    if (dias < 0) {
+        const abs = Math.abs(dias);
+        return {
+            claseCard: 'vencido',
+            claseBadge: 'vencido',
+            textoBadge: abs === 1 ? '🚨 Venció ayer' : `🚨 Vencido hace ${abs} días`,
+            dias
+        };
+    }
+    if (dias === 0) {
+        return {
+            claseCard: 'hoy',
+            claseBadge: 'hoy',
+            textoBadge: '⚡ Vence HOY',
+            dias
+        };
+    }
+    if (dias <= 3) {
+        return {
+            claseCard: 'proximo',
+            claseBadge: 'proximo',
+            textoBadge: dias === 1 ? '⏳ Vence mañana' : `⏳ En ${dias} días`,
+            dias
+        };
+    }
+    return {
+        claseCard: '',
+        claseBadge: 'normal',
+        textoBadge: `🗓️ En ${dias} días`,
+        dias
+    };
+}
+
+function avanzarUnMesFechaISO(fechaIso) {
+    const partes = (fechaIso || getLocalYYYYMMDD()).split('-');
+    let anio = parseInt(partes[0], 10) || new Date().getFullYear();
+    let mes = (parseInt(partes[1], 10) || 1) - 1;
+    const diaOriginal = parseInt(partes[2], 10) || 1;
+
+    mes += 1;
+    if (mes > 11) {
+        mes = 0;
+        anio += 1;
+    }
+
+    const maxDiasMesNuevo = new Date(anio, mes + 1, 0).getDate();
+    const diaFinal = Math.min(diaOriginal, maxDiasMesNuevo);
+
+    const mm = String(mes + 1).padStart(2, '0');
+    const dd = String(diaFinal).padStart(2, '0');
+    return `${anio}-${mm}-${dd}`;
+}
+
+function poblarSelectCategoriasAgenda(selectEl, valorSeleccionado = '') {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+
+    const listaBase = categorias.length > 0 ? [...categorias] : ['Servicios', 'Suscripciones', 'Deudas', 'Varios'];
+    if (valorSeleccionado && !listaBase.includes(valorSeleccionado)) {
+        listaBase.push(valorSeleccionado);
+    }
+
+    listaBase.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.innerText = cat;
+        selectEl.appendChild(opt);
+    });
+
+    if (valorSeleccionado && listaBase.includes(valorSeleccionado)) {
+        selectEl.value = valorSeleccionado;
+    } else if (listaBase.length > 0) {
+        selectEl.value = listaBase[0];
+    }
+}
+
+function abrirModalNuevaAgenda(idEditar = null, fechaPreseleccionada = null) {
+    const inputEditId = document.getElementById('in-agenda-edit-id');
+    const inputNota = document.getElementById('in-agenda-nota');
+    const inputMonto = document.getElementById('in-agenda-monto');
+    const selectMoneda = document.getElementById('in-agenda-moneda');
+    const inputFecha = document.getElementById('in-agenda-fecha');
+    const selectFrec = document.getElementById('in-agenda-frecuencia');
+    const selectCat = document.getElementById('in-agenda-categoria');
+    const tituloModal = document.getElementById('titulo-modal-agenda');
+    const boxRapida = document.getElementById('box-cat-rapida-agenda');
+
+    if (boxRapida) {
+        boxRapida.classList.add('oculto');
+        boxRapida.style.display = 'none';
+    }
+
+    if (idEditar !== null && idEditar !== undefined) {
+        const comp = agendaPagos.find(a => String(a.id) === String(idEditar));
+        if (!comp) return;
+
+        if (tituloModal) tituloModal.innerText = 'Editar Compromiso';
+        if (inputEditId) inputEditId.value = String(comp.id);
+        if (inputNota) inputNota.value = comp.nota || '';
+        if (inputMonto) inputMonto.value = comp.monto || '';
+        if (selectMoneda) selectMoneda.value = comp.moneda || 'USD';
+        if (inputFecha) inputFecha.value = comp.fecha || getLocalYYYYMMDD();
+        if (selectFrec) selectFrec.value = comp.frecuencia || 'unico';
+        poblarSelectCategoriasAgenda(selectCat, comp.categoria);
+    } else {
+        if (tituloModal) tituloModal.innerText = 'Agendar Compromiso';
+        if (inputEditId) inputEditId.value = '';
+        if (inputNota) inputNota.value = '';
+        if (inputMonto) inputMonto.value = '';
+        if (selectMoneda) selectMoneda.value = 'USD';
+        if (inputFecha) inputFecha.value = fechaPreseleccionada || agendaDiaSeleccionado || getLocalYYYYMMDD();
+        if (selectFrec) selectFrec.value = 'unico';
+        poblarSelectCategoriasAgenda(selectCat, categorias[0] || '');
+    }
+
+    abrirModal('modal-nueva-agenda');
+}
+
+function toggleCrearCategoriaRapidaAgenda() {
+    const box = document.getElementById('box-cat-rapida-agenda');
+    if (!box) return;
+    const estaOculto = box.classList.contains('oculto') || box.style.display === 'none';
+
+    if (estaOculto) {
+        box.classList.remove('oculto');
+        box.style.display = 'flex';
+        const inColor = document.getElementById('in-cat-rapida-color');
+        const inNombre = document.getElementById('in-cat-rapida-nombre');
+        if (inColor) {
+            inColor.value = PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
+        }
+        if (inNombre) {
+            inNombre.value = '';
+            setTimeout(() => inNombre.focus(), 50);
+        }
+    } else {
+        box.classList.add('oculto');
+        box.style.display = 'none';
+    }
+}
+
+function guardarCategoriaRapidaAgenda() {
+    const inNombre = document.getElementById('in-cat-rapida-nombre');
+    const inColor = document.getElementById('in-cat-rapida-color');
+    const selectCatAgenda = document.getElementById('in-agenda-categoria');
+    const box = document.getElementById('box-cat-rapida-agenda');
+
+    const nuevaCat = inNombre ? inNombre.value.trim() : '';
+    if (!nuevaCat) return alert("Escribe un nombre para la nueva categoría.");
+
+    const colorElegido = (inColor && inColor.value) ? inColor.value : PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
+
+    if (!categorias.includes(nuevaCat)) {
+        categorias.push(nuevaCat);
+    }
+    categoriasColores[nuevaCat] = colorElegido;
+
+    localStorage.setItem('categorias', JSON.stringify(categorias));
+    localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
+
+    cargarSelects();
+    renderizarListasGestion();
+    poblarSelectCategoriasAgenda(selectCatAgenda, nuevaCat);
+
+    if (inNombre) inNombre.value = '';
+    if (box) {
+        box.classList.add('oculto');
+        box.style.display = 'none';
+    }
+
+    if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+}
+
+function guardarCompromisoAgenda() {
+    const editId = document.getElementById('in-agenda-edit-id')?.value || '';
+    const nota = (document.getElementById('in-agenda-nota')?.value || '').trim();
+    const monto = parseFloat(document.getElementById('in-agenda-monto')?.value);
+    const moneda = document.getElementById('in-agenda-moneda')?.value || 'USD';
+    const fecha = document.getElementById('in-agenda-fecha')?.value || getLocalYYYYMMDD();
+    const frecuencia = document.getElementById('in-agenda-frecuencia')?.value || 'unico';
+    const categoria = document.getElementById('in-agenda-categoria')?.value || 'Varios';
+
+    if (!nota) return alert("Por favor, escribe el concepto o nombre del compromiso.");
+    if (isNaN(monto) || monto <= 0) return alert("Ingresa un monto válido mayor a 0.");
+    if (!fecha) return alert("Selecciona la fecha de pago.");
+
+    // Si la categoría provino de la lista por defecto y el usuario aún no tenía categorías, la registramos
+    if (categoria && !categorias.includes(categoria)) {
+        categorias.push(categoria);
+        asegurarColoresCategorias();
+    }
+
+    if (editId) {
+        const idx = agendaPagos.findIndex(a => String(a.id) === String(editId));
+        if (idx !== -1) {
+            agendaPagos[idx] = {
+                ...agendaPagos[idx],
+                nota,
+                monto,
+                moneda,
+                fecha,
+                frecuencia,
+                categoria
+            };
+        }
+    } else {
+        agendaPagos.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            nota,
+            monto,
+            moneda,
+            fecha,
+            frecuencia,
+            categoria,
+            estado: 'pendiente',
+            ultimaFechaPagada: null,
+            ultimaTransaccionId: null
+        });
+    }
+
+    guardarYActualizarGestion();
+    cerrarModal('modal-nueva-agenda');
+}
+
+function eliminarCompromisoAgenda(id) {
+    if (!confirm("¿Eliminar este compromiso de la Agenda?")) return;
+    agendaPagos = agendaPagos.filter(a => String(a.id) !== String(id));
+    guardarYActualizarGestion();
+}
+
+function reactivarCompromisoAgenda(id) {
+    const comp = agendaPagos.find(a => String(a.id) === String(id));
+    if (!comp) return;
+    comp.estado = 'pendiente';
+    guardarYActualizarGestion();
+}
+
+function cambiarVistaAgenda(vista) {
+    agendaVistaActual = vista;
+    const segPend = document.getElementById('seg-agenda-pendientes');
+    const segCal = document.getElementById('seg-agenda-calendario');
+    const segPag = document.getElementById('seg-agenda-pagados');
+    const calWrapper = document.getElementById('agenda-calendario-wrapper');
+
+    if (segPend) segPend.classList.toggle('activo', vista === 'pendientes');
+    if (segCal) segCal.classList.toggle('activo', vista === 'calendario');
+    if (segPag) segPag.classList.toggle('activo', vista === 'pagados');
+
+    if (calWrapper) {
+        if (vista === 'calendario') {
+            calWrapper.classList.remove('oculto');
+            calWrapper.style.display = 'block';
+        } else {
+            calWrapper.classList.add('oculto');
+            calWrapper.style.display = 'none';
+        }
+    }
+
+    renderizarAgenda();
+}
+
+function cambiarMesCalendarioAgenda(direccion) {
+    agendaCalMes += direccion;
+    if (agendaCalMes < 0) {
+        agendaCalMes = 11;
+        agendaCalAnio -= 1;
+    } else if (agendaCalMes > 11) {
+        agendaCalMes = 0;
+        agendaCalAnio += 1;
+    }
+    agendaDiaSeleccionado = null;
+    renderizarAgenda();
+}
+
+function seleccionarDiaCalendarioAgenda(fechaIso) {
+    if (agendaDiaSeleccionado === fechaIso) {
+        agendaDiaSeleccionado = null;
+    } else {
+        agendaDiaSeleccionado = fechaIso;
+    }
+    renderizarAgenda();
+}
+
+function limpiarDiaSeleccionadoAgenda() {
+    agendaDiaSeleccionado = null;
+    renderizarAgenda();
+}
+
+function renderizarCalendarioAgenda() {
+    const tituloMes = document.getElementById('agenda-cal-mes-titulo');
+    const grid = document.getElementById('agenda-cal-grid');
+    const filtroBar = document.getElementById('agenda-cal-filtro-bar');
+    const diaLabel = document.getElementById('agenda-cal-dia-label');
+    if (!grid || !tituloMes) return;
+
+    const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    tituloMes.innerText = `${mesesNombres[agendaCalMes]} ${agendaCalAnio}`;
+
+    const primerDiaSemana = new Date(agendaCalAnio, agendaCalMes, 1).getDay();
+    const totalDiasMes = new Date(agendaCalAnio, agendaCalMes + 1, 0).getDate();
+    const hoyIso = getLocalYYYYMMDD();
+
+    let html = '';
+    for (let i = 0; i < primerDiaSemana; i++) {
+        html += `<div class="agenda-cal-day vacio"></div>`;
+    }
+
+    for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const mm = String(agendaCalMes + 1).padStart(2, '0');
+        const dd = String(dia).padStart(2, '0');
+        const isoDia = `${agendaCalAnio}-${mm}-${dd}`;
+
+        const esHoy = isoDia === hoyIso;
+        const esSeleccionado = isoDia === agendaDiaSeleccionado;
+
+        const itemsDia = agendaPagos.filter(a => a.fecha === isoDia);
+        let dotsHtml = '';
+        if (itemsDia.length > 0) {
+            const dots = itemsDia.slice(0, 3).map(item => {
+                let colorDot = obtenerColorCategoria(item.categoria);
+                if (item.estado === 'pagado') colorDot = '#32D74B';
+                else {
+                    const d = calcularDiasRestantesAgenda(item.fecha);
+                    if (d < 0) colorDot = '#FF453A';
+                    else if (d === 0) colorDot = '#FF9F0A';
+                }
+                return `<span class="cal-dot-item" style="background:${colorDot};"></span>`;
+            }).join('');
+            dotsHtml = `<div class="cal-day-dots">${dots}</div>`;
+        }
+
+        html += `
+            <div class="agenda-cal-day ${esHoy ? 'hoy' : ''} ${esSeleccionado ? 'seleccionado' : ''}" onclick="seleccionarDiaCalendarioAgenda('${isoDia}')">
+                <span>${dia}</span>
+                ${dotsHtml}
+            </div>
+        `;
+    }
+
+    grid.innerHTML = html;
+
+    if (filtroBar && diaLabel) {
+        if (agendaDiaSeleccionado) {
+            filtroBar.classList.remove('oculto');
+            filtroBar.style.display = 'flex';
+            diaLabel.innerText = `📅 ${obtenerEtiquetaDiaCompleta(agendaDiaSeleccionado)}`;
+        } else {
+            filtroBar.classList.add('oculto');
+            filtroBar.style.display = 'none';
+        }
+    }
+}
+
+function construirTarjetaItemAgendaHTML(item) {
+    const infoEstado = obtenerInfoEstadoAgenda(item);
+    const colorCat = obtenerColorCategoria(item.categoria);
+    const montoPrincipal = formatearMontoCensurado(formatearMontoMonedaAgenda(item.monto, item.moneda), false);
+    const eqUSD = convertirMontoAgendaAUSD(item.monto, item.moneda);
+    const mostrarEq = item.moneda !== 'USD';
+    const textoEq = mostrarEq ? `<span class="agenda-item-eq">≈ ${formatearMontoCensurado('$' + eqUSD.toFixed(2), false)}</span>` : '';
+    const etiquetaFrec = item.frecuencia === 'mensual' ? '🔄 Mensual' : '📌 Único';
+    const fechaLegible = obtenerEtiquetaDiaCompleta(item.fecha);
+
+    const btnAccionPrincipal = item.estado === 'pagado'
+        ? `<button type="button" class="btn-secundario" style="width:auto; padding:6px 12px; font-size:11.5px; border-radius:11px;" onclick="reactivarCompromisoAgenda('${item.id}')">↩️ Reabrir</button>`
+        : `<button type="button" class="btn-pagar-agenda-item" onclick="abrirModalPagarAgenda('${item.id}')">💳 Pagar</button>`;
+
+    return `
+        <div class="agenda-item-card ${infoEstado.claseCard}">
+            <div class="agenda-item-top">
+                <div class="agenda-item-info">
+                    <div class="agenda-item-title-row">
+                        <span class="trans-cat-dot" style="background:${colorCat}; --cat-color:${colorCat};"></span>
+                        <span class="agenda-item-title">${item.nota}</span>
+                    </div>
+                    <div class="agenda-item-meta">
+                        <span>${item.categoria}</span>
+                        <span>•</span>
+                        <span>${fechaLegible}</span>
+                        <span>•</span>
+                        <span>${etiquetaFrec}</span>
+                    </div>
+                </div>
+                <div class="agenda-item-amount-col">
+                    <strong class="agenda-item-amount">${montoPrincipal}</strong>
+                    ${textoEq}
+                </div>
+            </div>
+            <div class="agenda-item-bottom">
+                <span class="agenda-badge-status ${infoEstado.claseBadge}">${infoEstado.textoBadge}</span>
+                <div class="agenda-item-actions">
+                    <button type="button" class="btn-editar" style="width:30px; height:30px; border-radius:9px;" onclick="abrirModalNuevaAgenda('${item.id}')" title="Editar">✏️</button>
+                    <button type="button" class="btn-eliminar" style="width:30px; height:30px; border-radius:9px;" onclick="eliminarCompromisoAgenda('${item.id}')" title="Eliminar">🗑️</button>
+                    ${btnAccionPrincipal}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function irAAgendaDesdeBanner() {
+    const navAgenda = document.getElementById('nav-item-agenda');
+    if (navAgenda) {
+        cambiarPestana('tab-agenda', navAgenda);
+        cambiarVistaAgenda('pendientes');
+    }
+}
+
+function actualizarRecordatoriosAgenda() {
+    const badgeNav = document.getElementById('nav-agenda-badge');
+    const bannerHome = document.getElementById('banner-recordatorio-agenda');
+
+    const pendientes = agendaPagos
+        .filter(a => a.estado !== 'pagado')
+        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+
+    const urgentes = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) <= 3);
+
+    // 1. Actualizar punto/badge en la barra de navegación inferior
+    if (badgeNav) {
+        if (urgentes.length > 0) {
+            badgeNav.innerText = urgentes.length > 9 ? '9+' : String(urgentes.length);
+            badgeNav.classList.remove('oculto');
+            badgeNav.style.display = 'flex';
+        } else {
+            badgeNav.classList.add('oculto');
+            badgeNav.style.display = 'none';
+        }
+    }
+
+    // 2. Actualizar banner compacto no invasivo en la pestaña de Inicio
+    if (bannerHome) {
+        if (urgentes.length === 0) {
+            bannerHome.classList.add('oculto');
+            bannerHome.style.display = 'none';
+            bannerHome.innerHTML = '';
+        } else {
+            const primero = urgentes[0];
+            const dias = calcularDiasRestantesAgenda(primero.fecha);
+            const esCritico = dias <= 0;
+
+            let tagTexto = '⏳ PRÓXIMO PAGO AGENDADO';
+            if (dias < 0) tagTexto = '🚨 PAGO VENCIDO EN AGENDA';
+            else if (dias === 0) tagTexto = '⚡ PAGO AGENDADO PARA HOY';
+            else if (dias === 1) tagTexto = '⏳ VENCE MAÑANA';
+
+            const montoStr = formatearMontoCensurado(formatearMontoMonedaAgenda(primero.monto, primero.moneda), false);
+            const extraConteo = urgentes.length > 1 ? ` (+${urgentes.length - 1} más)` : '';
+
+            bannerHome.className = `agenda-home-banner ${esCritico ? 'urgente' : ''}`;
+            bannerHome.style.display = 'flex';
+            bannerHome.innerHTML = `
+                <div class="agenda-banner-info" onclick="irAAgendaDesdeBanner()" style="cursor:pointer;">
+                    <span class="agenda-banner-tag">${tagTexto}${extraConteo}</span>
+                    <strong class="agenda-banner-title">${primero.nota} · ${montoStr}</strong>
+                    <span class="agenda-banner-sub">${primero.categoria} • ${obtenerEtiquetaDiaCompleta(primero.fecha)}</span>
+                </div>
+                <div class="agenda-banner-actions">
+                    <button type="button" class="btn-banner-pay" onclick="abrirModalPagarAgenda('${primero.id}')">Pagar</button>
+                    <button type="button" class="btn-banner-ver" onclick="irAAgendaDesdeBanner()">Agenda</button>
+                </div>
+            `;
+        }
+    }
+}
+
+function renderizarAgenda() {
+    actualizarRecordatoriosAgenda();
+
+    const statPendientes = document.getElementById('agenda-stat-pendientes');
+    const statMontoUSD = document.getElementById('agenda-stat-monto-usd');
+    const statUrgentes = document.getElementById('agenda-stat-urgentes');
+    const statProxTexto = document.getElementById('agenda-stat-prox-texto');
+    const contenedorLista = document.getElementById('lista-agenda-principal');
+
+    const pendientes = agendaPagos
+        .filter(a => a.estado !== 'pagado')
+        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+
+    const pagados = agendaPagos
+        .filter(a => a.estado === 'pagado')
+        .sort((a, b) => (b.ultimaFechaPagada || b.fecha || '').localeCompare(a.ultimaFechaPagada || a.fecha || ''));
+
+    const totalPendienteUSD = pendientes.reduce((acc, item) => acc + convertirMontoAgendaAUSD(item.monto, item.moneda), 0);
+    const urgentes = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) <= 3);
+    const vencidosCount = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) < 0).length;
+    const hoyCount = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) === 0).length;
+
+    if (statPendientes) statPendientes.innerText = String(pendientes.length);
+    if (statMontoUSD) statMontoUSD.innerText = `≈ ${formatearMontoCensurado('$' + totalPendienteUSD.toFixed(2), false)}`;
+    if (statUrgentes) statUrgentes.innerText = String(urgentes.length);
+
+    if (statProxTexto) {
+        if (vencidosCount > 0) {
+            statProxTexto.innerText = `${vencidosCount} ${vencidosCount === 1 ? 'vencido' : 'vencidos'}`;
+            statProxTexto.style.color = '#FF453A';
+        } else if (hoyCount > 0) {
+            statProxTexto.innerText = `${hoyCount} ${hoyCount === 1 ? 'vence hoy' : 'vencen hoy'}`;
+            statProxTexto.style.color = '#FF9F0A';
+        } else if (urgentes.length > 0) {
+            const dProx = calcularDiasRestantesAgenda(urgentes[0].fecha);
+            statProxTexto.innerText = dProx === 1 ? 'Vence mañana' : `En ${dProx} días`;
+            statProxTexto.style.color = '#FFD60A';
+        } else if (pendientes.length > 0) {
+            const dProx = calcularDiasRestantesAgenda(pendientes[0].fecha);
+            statProxTexto.innerText = `Próx. en ${dProx} días`;
+            statProxTexto.style.color = 'var(--text-secondary)';
+        } else {
+            statProxTexto.innerText = 'Al día ✨';
+            statProxTexto.style.color = '#32D74B';
+        }
+    }
+
+    if (!contenedorLista) return;
+
+    if (agendaVistaActual === 'calendario') {
+        renderizarCalendarioAgenda();
+        const claveMesActual = `${agendaCalAnio}-${String(agendaCalMes + 1).padStart(2, '0')}`;
+        const itemsFiltradosCal = agendaPagos
+            .filter(a => agendaDiaSeleccionado ? a.fecha === agendaDiaSeleccionado : (a.fecha && a.fecha.startsWith(claveMesActual)))
+            .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+
+        if (itemsFiltradosCal.length === 0) {
+            const textoVacioCal = agendaDiaSeleccionado
+                ? `No hay pagos agendados para el ${obtenerEtiquetaDiaCompleta(agendaDiaSeleccionado)}.`
+                : `No hay compromisos registrados en este mes.`;
+            contenedorLista.innerHTML = `
+                <div style="text-align:center; padding: 24px 16px; color: var(--text-secondary); font-size: 13.5px;">
+                    <p style="margin-bottom: 10px;">${textoVacioCal}</p>
+                    <button type="button" class="btn-secundario" style="width:auto; margin:0 auto; padding:8px 16px; font-size:13px;" onclick="abrirModalNuevaAgenda(null, '${agendaDiaSeleccionado || getLocalYYYYMMDD()}')">+ Agendar en esta fecha</button>
+                </div>
+            `;
+        } else {
+            contenedorLista.innerHTML = itemsFiltradosCal.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+        }
+        return;
+    }
+
+    if (agendaVistaActual === 'pagados') {
+        if (pagados.length === 0) {
+            contenedorLista.innerHTML = `<p style="text-align:center; padding: 28px 16px; color: var(--text-secondary); font-size: 13.5px;">Aún no tienes compromisos completados.</p>`;
+        } else {
+            contenedorLista.innerHTML = pagados.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+        }
+        return;
+    }
+
+    // Vista por defecto: 'pendientes' agrupados por urgencia
+    if (pendientes.length === 0) {
+        contenedorLista.innerHTML = `
+            <div style="text-align:center; padding: 30px 16px; color: var(--text-secondary); font-size: 13.5px;">
+                <p style="margin-bottom: 12px;">No tienes pagos ni suscripciones pendientes. ¡Todo al día!</p>
+                <button type="button" class="btn-secundario" style="width:auto; margin:0 auto; padding:9px 18px; font-size:13px;" onclick="abrirModalNuevaAgenda()">+ Agendar mi primer pago</button>
+            </div>
+        `;
+        return;
+    }
+
+    const grupoVencidos = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) < 0);
+    const grupoHoy = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) === 0);
+    const grupoProximos3 = pendientes.filter(a => {
+        const d = calcularDiasRestantesAgenda(a.fecha);
+        return d >= 1 && d <= 3;
+    });
+    const grupoFuturos = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) > 3);
+
+    let htmlPend = '';
+    if (grupoVencidos.length > 0) {
+        htmlPend += `<div class="agenda-group-title" style="color:#FF453A;">🚨 Vencidos (${grupoVencidos.length})</div>`;
+        htmlPend += grupoVencidos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    }
+    if (grupoHoy.length > 0) {
+        htmlPend += `<div class="agenda-group-title" style="color:#FF9F0A;">⚡ Para Hoy (${grupoHoy.length})</div>`;
+        htmlPend += grupoHoy.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    }
+    if (grupoProximos3.length > 0) {
+        htmlPend += `<div class="agenda-group-title" style="color:#FFD60A;">⏳ Próximos a Vencer (${grupoProximos3.length})</div>`;
+        htmlPend += grupoProximos3.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    }
+    if (grupoFuturos.length > 0) {
+        htmlPend += `<div class="agenda-group-title">🗓️ Más Adelante (${grupoFuturos.length})</div>`;
+        htmlPend += grupoFuturos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    }
+
+    contenedorLista.innerHTML = htmlPend;
+}
+
+// ================= EJECUCIÓN DEL PAGO DE AGENDA CONECTADO A CUENTAS E HISTORIAL =================
+function abrirModalPagarAgenda(idCompromiso) {
+    if (cuentas.length === 0) {
+        return alert("Primero debes crear al menos una cuenta en Ajustes > Gestionar Cuentas.");
+    }
+
+    const comp = agendaPagos.find(a => String(a.id) === String(idCompromiso));
+    if (!comp) return;
+
+    agendaPagoEnCursoId = comp.id;
+
+    const selCuenta = document.getElementById('sel-cuenta-pagar-agenda');
+    if (selCuenta) {
+        selCuenta.innerHTML = '';
+        cuentas.forEach(c => {
+            selCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
+        });
+
+        // Pre-seleccionar cuenta compatible con la moneda del compromiso o la cuenta activa
+        const cuentaMismaMoneda = cuentas.find(c => c.moneda === comp.moneda);
+        if (cuentaMismaMoneda) {
+            selCuenta.value = cuentaMismaMoneda.id;
+        } else if (cuentaActivaId && cuentas.find(c => c.id == cuentaActivaId)) {
+            selCuenta.value = cuentaActivaId;
+        } else {
+            selCuenta.value = cuentas[0].id;
+        }
+    }
+
+    const inMonto = document.getElementById('monto-pagar-agenda');
+    const selMoneda = document.getElementById('moneda-pagar-agenda');
+    const selCat = document.getElementById('cat-pagar-agenda');
+    const inFecha = document.getElementById('fecha-pagar-agenda');
+    const inNota = document.getElementById('nota-pagar-agenda');
+    const selComision = document.getElementById('sel-comision-agenda');
+    const inComManual = document.getElementById('input-comision-agenda-manual');
+    const inTasaUsdt = document.getElementById('input-tasa-agenda-usdt');
+    const descEl = document.getElementById('desc-pagar-agenda');
+
+    if (descEl) {
+        descEl.innerHTML = `Vas a registrar el pago de <strong>"${comp.nota}"</strong>. Confirma de qué cuenta se descontará:`;
+    }
+    if (inMonto) inMonto.value = comp.monto;
+    if (selMoneda) selMoneda.value = comp.moneda || 'USD';
+    poblarSelectCategoriasAgenda(selCat, comp.categoria);
+    if (inFecha) inFecha.value = getLocalYYYYMMDD();
+    if (inNota) inNota.value = comp.nota || '';
+    if (selComision) selComision.value = 'tarjeta';
+    if (inComManual) {
+        inComManual.classList.add('oculto');
+        inComManual.value = '';
+    }
+    if (inTasaUsdt) {
+        inTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
+    }
+
+    actualizarUIModalPagarAgenda();
+    abrirModal('modal-pagar-agenda');
+}
+
+function toggleComisionManualAgenda() {
+    const selComision = document.getElementById('sel-comision-agenda');
+    const inManual = document.getElementById('input-comision-agenda-manual');
+    if (!selComision || !inManual) return;
+
+    if (selComision.value === 'manual') {
+        inManual.classList.remove('oculto');
+        inManual.focus();
+    } else {
+        inManual.classList.add('oculto');
+        inManual.value = '';
+    }
+}
+
+function actualizarUIModalPagarAgenda() {
+    const idCuenta = document.getElementById('sel-cuenta-pagar-agenda')?.value;
+    const cuenta = cuentas.find(c => c.id == idCuenta);
+    const monedaPago = document.getElementById('moneda-pagar-agenda')?.value || 'USD';
+
+    const boxComision = document.getElementById('box-comision-agenda-ves');
+    const boxTasaUsdt = document.getElementById('box-tasa-agenda-usdt');
+    const inTasaUsdt = document.getElementById('input-tasa-agenda-usdt');
+
+    if (boxComision) {
+        if (monedaPago === 'VES') {
+            boxComision.classList.remove('oculto');
+            boxComision.style.display = 'flex';
+        } else {
+            boxComision.classList.add('oculto');
+            boxComision.style.display = 'none';
+            const selCom = document.getElementById('sel-comision-agenda');
+            if (selCom) selCom.value = 'tarjeta';
+            toggleComisionManualAgenda();
+        }
+    }
+
+    const requiereTasaUsdt = Boolean(
+        cuenta && (
+            (cuenta.moneda === 'USDT' && monedaPago === 'VES') ||
+            (cuenta.moneda === 'VES' && monedaPago === 'USDT')
+        )
+    );
+
+    if (boxTasaUsdt) {
+        if (requiereTasaUsdt) {
+            boxTasaUsdt.classList.remove('oculto');
+            boxTasaUsdt.style.display = 'flex';
+            if (inTasaUsdt && (!inTasaUsdt.value || parseFloat(inTasaUsdt.value) <= 0)) {
+                inTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
+            }
+        } else {
+            boxTasaUsdt.classList.add('oculto');
+            boxTasaUsdt.style.display = 'none';
+        }
+    }
+
+    calcularPreviewModalPagarAgenda();
+}
+
+function calcularDatosConversionPagoAgenda() {
+    const idCuenta = document.getElementById('sel-cuenta-pagar-agenda')?.value;
+    const cuenta = cuentas.find(c => c.id == idCuenta);
+    const montoBase = parseFloat(document.getElementById('monto-pagar-agenda')?.value) || 0;
+    const monedaPago = document.getElementById('moneda-pagar-agenda')?.value || 'USD';
+
+    let comisionBs = 0;
+    if (monedaPago === 'VES') {
+        const tipoCom = document.getElementById('sel-comision-agenda')?.value || 'tarjeta';
+        if (tipoCom === 'p2p' && montoBase > 0) {
+            comisionBs = Math.max(14.00, montoBase * 0.003);
+        } else if (tipoCom === 'p2c' && montoBase > 0) {
+            comisionBs = Math.max(14.00, montoBase * 0.015);
+        } else if (tipoCom === 'manual') {
+            comisionBs = parseFloat(document.getElementById('input-comision-agenda-manual')?.value) || 0;
+        }
+    }
+
+    const montoTotalOperacion = montoBase + comisionBs;
+    const tasaUsdtInput = parseFloat(document.getElementById('input-tasa-agenda-usdt')?.value) || tasaParalelo || tasaBCV || 1;
+
+    let montoUSD = montoTotalOperacion;
+    let detalleTasaUsdt = '';
+
+    if (cuenta && cuenta.moneda === 'USDT') {
+        if (monedaPago === 'USDT' || monedaPago === 'USD') {
+            montoUSD = montoTotalOperacion;
+        } else if (monedaPago === 'VES') {
+            montoUSD = tasaUsdtInput > 0 ? (montoTotalOperacion / tasaUsdtInput) : 0;
+            detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
+        } else if (monedaPago === 'EUR') {
+            const enBs = montoTotalOperacion * (tasaEUR || 1);
+            montoUSD = tasaUsdtInput > 0 ? (enBs / tasaUsdtInput) : 0;
+        }
+    } else {
+        if (monedaPago === 'VES') {
+            montoUSD = montoTotalOperacion / (tasaBCV || 1);
+        } else if (monedaPago === 'EUR') {
+            montoUSD = (montoTotalOperacion * (tasaEUR || 1)) / (tasaBCV || 1);
+        } else if (monedaPago === 'USDT' && cuenta && cuenta.moneda === 'VES') {
+            const enBs = montoTotalOperacion * tasaUsdtInput;
+            montoUSD = enBs / (tasaBCV || 1);
+            detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
+        } else {
+            montoUSD = montoTotalOperacion;
+        }
+    }
+
+    return {
+        cuenta,
+        montoBase,
+        monedaPago,
+        comisionBs,
+        montoTotalOperacion,
+        montoUSD,
+        detalleTasaUsdt
+    };
+}
+
+function calcularPreviewModalPagarAgenda() {
+    const lblPreview = document.getElementById('lbl-descuento-agenda-preview');
+    if (!lblPreview) return;
+
+    const datos = calcularDatosConversionPagoAgenda();
+    if (!datos.cuenta) {
+        lblPreview.innerText = '$0.00';
+        return;
+    }
+
+    if (datos.cuenta.moneda === 'VES') {
+        const totalBsCuenta = datos.montoUSD * (tasaBCV || 1);
+        lblPreview.innerText = `-Bs ${totalBsCuenta.toFixed(2)} ($${datos.montoUSD.toFixed(2)})`;
+    } else if (datos.cuenta.moneda === 'USDT') {
+        lblPreview.innerText = `-${datos.montoUSD.toFixed(2)} USDT`;
+    } else {
+        lblPreview.innerText = `-$${datos.montoUSD.toFixed(2)}`;
+    }
+}
+
+function confirmarPagoAgenda() {
+    const comp = agendaPagos.find(a => String(a.id) === String(agendaPagoEnCursoId));
+    if (!comp) return alert("No se encontró el compromiso en la agenda.");
+
+    const datos = calcularDatosConversionPagoAgenda();
+    if (!datos.cuenta) return alert("Selecciona una cuenta válida.");
+    if (isNaN(datos.montoBase) || datos.montoBase <= 0) return alert("Ingresa un monto válido mayor a 0.");
+
+    const categoriaElegida = document.getElementById('cat-pagar-agenda')?.value || comp.categoria || 'Varios';
+    const valFecha = document.getElementById('fecha-pagar-agenda')?.value;
+    const notaUsuario = (document.getElementById('nota-pagar-agenda')?.value || comp.nota || '').trim();
+
+    if (categoriaElegida && !categorias.includes(categoriaElegida)) {
+        categorias.push(categoriaElegida);
+        asegurarColoresCategorias();
+    }
+
+    const dateObj = valFecha ? new Date(valFecha + "T00:00:00") : new Date();
+    const isoLocal = getLocalYYYYMMDD(dateObj);
+    const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+    let notaFinal = notaUsuario ? `📅 ${notaUsuario}` : `📅 Pago Agenda: ${comp.nota}`;
+    if (datos.comisionBs > 0) {
+        notaFinal += ` (Comisión: Bs ${datos.comisionBs.toFixed(2)})`;
+    }
+    if (datos.detalleTasaUsdt) {
+        notaFinal += ` (${datos.detalleTasaUsdt})`;
+    }
+
+    const fechaPreviaCompromiso = comp.fecha;
+    const nuevoIdTrans = dateObj.getTime() + Math.random();
+
+    const transaccion = {
+        id: nuevoIdTrans,
+        cuentaId: datos.cuenta.id,
+        montoUSD: datos.montoUSD,
+        tipo: 'gasto',
+        categoria: categoriaElegida,
+        nota: notaFinal,
+        monedaInputOriginal: datos.monedaPago,
+        fechaFormateada: fechaFormateada,
+        fecha: dateObj,
+        fechaIsoLocal: isoLocal,
+        agendaId: comp.id,
+        agendaFrecuencia: comp.frecuencia || 'unico',
+        agendaFechaPrevia: fechaPreviaCompromiso
+    };
+
+    transacciones.push(transaccion);
+    transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+
+    // Actualizar estado del compromiso en la Agenda
+    if (comp.frecuencia === 'mensual') {
+        comp.ultimaFechaPagada = fechaPreviaCompromiso;
+        comp.fecha = avanzarUnMesFechaISO(comp.fecha);
+        comp.estado = 'pendiente';
+        comp.ultimaTransaccionId = nuevoIdTrans;
+    } else {
+        comp.estado = 'pagado';
+        comp.ultimaFechaPagada = isoLocal;
+        comp.ultimaTransaccionId = nuevoIdTrans;
+    }
+
+    cuentaActivaId = datos.cuenta.id;
+    agendaPagoEnCursoId = null;
+
+    guardarYActualizarGestion();
+    cerrarModal('modal-pagar-agenda');
+}
+
+// Radiografía Financiera Integral (incluye Agenda de Pagos para AskBot y diagnósticos)
+function obtenerRadiografiaFinanciera() {
+    const balancesPorCuenta = cuentas.map(c => {
+        let balUSD = 0;
+        transacciones.forEach(t => {
+            if (t.cuentaId == c.id) {
+                balUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
+            }
+        });
+        return { ...c, balanceUSD: balUSD };
+    });
+
+    const patrimonioTotalUSD = balancesPorCuenta.reduce((acc, c) => acc + c.balanceUSD, 0);
+    const compromisosPendientes = agendaPagos
+        .filter(a => a.estado !== 'pagado')
+        .map(a => ({
+            ...a,
+            montoEquivalenteUSD: convertirMontoAgendaAUSD(a.monto, a.moneda),
+            diasRestantes: calcularDiasRestantesAgenda(a.fecha)
+        }))
+        .sort((a, b) => a.diasRestantes - b.diasRestantes);
+
+    const totalCompromisosPendientesUSD = compromisosPendientes.reduce((acc, a) => acc + a.montoEquivalenteUSD, 0);
+
+    return {
+        cuentas: balancesPorCuenta,
+        patrimonioTotalUSD,
+        metas,
+        agendaPendientes: compromisosPendientes,
+        totalAgendaPendienteUSD: totalCompromisosPendientesUSD,
+        tasas: { BCV: tasaBCV, USDT: tasaParalelo, EUR: tasaEUR }
+    };
+}
+
 // ================= CALCULADORA =================
 let calcModoTasa = 'BCV'; 
 let calcUltimaEdicion = 'USD'; 
@@ -2125,6 +3120,10 @@ function cambiarPestana(idPestana, elementoNav) {
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
+
+    if (idPestana === 'tab-agenda') {
+        renderizarAgenda();
+    }
 
     if (idPestana === 'tab-askbot') {
         document.body.classList.add('askbot-tab-open');
@@ -2298,6 +3297,7 @@ function renderizarSliderCuentas() {
 function actualizarInterfaz() {
     renderizarSliderCuentas();
     renderizarMetas();
+    renderizarAgenda();
     actualizarUIPerfil();
     if (!document.getElementById('modal-historial').classList.contains('oculto')) actualizarListaTransacciones();
 }
@@ -2636,9 +3636,10 @@ function eliminarTransaccion(id) {
     if (tIndex === -1) return;
     const t = transacciones[tIndex];
 
+    // 1. Reversión bidireccional si era un Abono / Retiro de Meta de Ahorro
     if (t.categoria === 'Ahorro') {
         metas.forEach(m => {
-            if (t.nota.includes(m.nombre)) {
+            if (t.nota && t.nota.includes(m.nombre)) {
                 if (t.tipo === 'gasto') {
                     m.acumulado -= t.montoUSD;
                     if (m.acumulado < 0) m.acumulado = 0;
@@ -2647,6 +3648,19 @@ function eliminarTransaccion(id) {
                 }
             }
         });
+    }
+
+    // 2. Reversión bidireccional si era un Pago de la Agenda
+    const compAgenda = agendaPagos.find(a =>
+        (t.agendaId !== undefined && t.agendaId !== null && String(a.id) === String(t.agendaId)) ||
+        (a.ultimaTransaccionId !== undefined && a.ultimaTransaccionId !== null && String(a.ultimaTransaccionId) === String(t.id))
+    );
+    if (compAgenda) {
+        if (compAgenda.frecuencia === 'mensual' && (t.agendaFechaPrevia || compAgenda.ultimaFechaPagada)) {
+            compAgenda.fecha = t.agendaFechaPrevia || compAgenda.ultimaFechaPagada || compAgenda.fecha;
+        }
+        compAgenda.estado = 'pendiente';
+        compAgenda.ultimaTransaccionId = null;
     }
     
     transacciones.splice(tIndex, 1);
@@ -2754,13 +3768,26 @@ function renderizarGrafico(transFiltered) {
 function cargarSelects() {
     asegurarColoresCategorias();
     const valCategoria = document.getElementById('val-categoria');
-    if(!valCategoria) return;
-    valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
-    if (categorias.length > 0) {
-        categorias.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat; option.innerText = cat; valCategoria.appendChild(option);
-        });
+    if (valCategoria) {
+        const prevVal = valCategoria.value;
+        valCategoria.innerHTML = '<option value="" disabled selected>Categoría...</option>'; 
+        if (categorias.length > 0) {
+            categorias.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat; option.innerText = cat; valCategoria.appendChild(option);
+            });
+            if (prevVal && categorias.includes(prevVal)) valCategoria.value = prevVal;
+        }
+    }
+
+    const selAgendaCat = document.getElementById('in-agenda-categoria');
+    if (selAgendaCat) {
+        poblarSelectCategoriasAgenda(selAgendaCat, selAgendaCat.value);
+    }
+
+    const selPagarAgendaCat = document.getElementById('cat-pagar-agenda');
+    if (selPagarAgendaCat) {
+        poblarSelectCategoriasAgenda(selPagarAgendaCat, selPagarAgendaCat.value);
     }
 }
 
@@ -2847,9 +3874,12 @@ function editarCategoria(i) {
             categoriasColores[nombreNuevo] = categoriasColores[nombreViejo];
         }
         categorias[i] = nombreNuevo;
-        // Actualizar también las transacciones que tenían el nombre anterior para que no pierdan su color
+        // Actualizar también las transacciones y compromisos de agenda que tenían el nombre anterior
         transacciones.forEach(t => {
             if (t.categoria === nombreViejo) t.categoria = nombreNuevo;
+        });
+        agendaPagos.forEach(a => {
+            if (a.categoria === nombreViejo) a.categoria = nombreNuevo;
         });
         localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
         guardarYActualizarGestion();
@@ -2864,6 +3894,7 @@ function guardarYActualizarGestion() {
     localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     localStorage.setItem('metas', JSON.stringify(metas));
+    localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
@@ -2876,6 +3907,7 @@ function exportarDatos() {
         categoriasColores,
         cuentas,
         metas,
+        agendaPagos,
         userNombre,
         userAvatar,
         pinQuestions
@@ -2900,6 +3932,9 @@ function importarDatos(e) {
                 categorias = data.categorias || []; 
                 cuentas = data.cuentas; 
                 metas = data.metas || [];
+                if (Array.isArray(data.agendaPagos)) {
+                    agendaPagos = data.agendaPagos;
+                }
 
                 if (data.categoriasColores && typeof data.categoriasColores === 'object') {
                     categoriasColores = data.categoriasColores;
@@ -2932,6 +3967,7 @@ function importarDatos(e) {
                 
                 localStorage.setItem('transacciones', JSON.stringify(transacciones));
                 localStorage.setItem('metas', JSON.stringify(metas));
+                localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
                 localStorage.setItem('cuentas', JSON.stringify(cuentas));
                 localStorage.setItem('categorias', JSON.stringify(categorias));
                 
