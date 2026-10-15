@@ -4,7 +4,7 @@ const SUPABASE_KEY = 'sb_publishable_TrvXyss9fBLXQ4BKRAzMYg_S7yOlAP-';
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let usuarioActual = null;
-let authModoActual = 'login'; // 'login' o 'registro'
+let authModoActual = 'login';
 let sincronizandoNube = false;
 
 // Base de Datos Local
@@ -30,10 +30,10 @@ let categoriaEditandoColorIndex = null;
 let userNombre = localStorage.getItem('assist_user_name') || '';
 let userAvatar = localStorage.getItem('assist_user_avatar') || null;
 
-// Variables Globales
+// Variables Globales de Tasas e Historial Real
 let tasaBCV = 1;
-let tasaParalelo = 1; 
-let tasaEUR = 1; 
+let tasaParalelo = 1;
+let tasaEUR = 1;
 let cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
 let chartInstancia = null;
 
@@ -44,11 +44,34 @@ let tasasData = {
     Custom: { valor: 1, previo: 1, fecha: new Date().toISOString() }
 };
 
-// Convierte una fecha a YYYY-MM-DD estricto en la zona local
+let tasasHistoricas = {
+    BCV: JSON.parse(localStorage.getItem('assist_hist_serie_BCV')) || [],
+    EUR: JSON.parse(localStorage.getItem('assist_hist_serie_EUR')) || [],
+    USDT: JSON.parse(localStorage.getItem('assist_hist_serie_USDT')) || []
+};
+
+let tasasVigentesHoy = {
+    BCV: { valor: 1, previo: 1, fecha: null },
+    EUR: { valor: 1, previo: 1, fecha: null },
+    USDT: { valor: 1, previo: 1, fecha: null }
+};
+let tasasFechaPosterior = { BCV: null, EUR: null, USDT: null };
+let hayFechaPosteriorBCV = false;
+let usandoFechaPosterior = false;
+let fechaHistoricaCalcSeleccionada = null;
+
 function getLocalYYYYMMDD(d = new Date()) {
     const fechaSegura = (d instanceof Date && !isNaN(d.getTime())) ? d : new Date();
     const tzOffset = fechaSegura.getTimezoneOffset() * 60000;
     return new Date(fechaSegura.getTime() - tzOffset).toISOString().split('T')[0];
+}
+
+function parsearFechaSeguraLocal(fechaStr) {
+    if (!fechaStr) return new Date();
+    const str = String(fechaStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + 'T00:00:00');
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date() : d;
 }
 
 // ================= GESTIÓN DE COLORES DE CATEGORÍAS =================
@@ -60,9 +83,7 @@ function asegurarColoresCategorias() {
             modificado = true;
         }
     });
-    if (modificado) {
-        localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
-    }
+    if (modificado) localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
 }
 
 function obtenerColorCategoria(nombreCat) {
@@ -72,11 +93,8 @@ function obtenerColorCategoria(nombreCat) {
     if (nombreCat === 'Transferencia / P2P') return '#64D2FF';
     if (categoriasColores[nombreCat]) return categoriasColores[nombreCat];
 
-    // Si es una categoría que no tenía color guardado, le asigna uno consistente
     let hash = 0;
-    for (let i = 0; i < nombreCat.length; i++) {
-        hash = nombreCat.charCodeAt(i) + ((hash << 5) - hash);
-    }
+    for (let i = 0; i < nombreCat.length; i++) hash = nombreCat.charCodeAt(i) + ((hash << 5) - hash);
     const colorAuto = PALETA_COLORES_CATEGORIAS[Math.abs(hash) % PALETA_COLORES_CATEGORIAS.length];
     categoriasColores[nombreCat] = colorAuto;
     localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
@@ -87,22 +105,14 @@ function renderizarPaletaColorNuevaCat() {
     const contenedor = document.getElementById('paleta-color-nueva-cat');
     if (!contenedor) return;
     contenedor.innerHTML = '';
-
     PALETA_COLORES_CATEGORIAS.forEach(color => {
         const esActivo = color.toLowerCase() === (colorNuevaCategoriaSeleccionado || '').toLowerCase();
-        contenedor.innerHTML += `
-            <div class="cat-color-dot-pick ${esActivo ? 'activo' : ''}" 
-                 style="background: ${color};" 
-                 onclick="seleccionarColorNuevaCat('${color}')"></div>
-        `;
+        contenedor.innerHTML += `<div class="cat-color-dot-pick ${esActivo ? 'activo' : ''}" style="background: ${color};" onclick="seleccionarColorNuevaCat('${color}')"></div>`;
     });
-
     const previewBtn = document.getElementById('preview-nueva-cat-color');
     const inputColor = document.getElementById('nueva-categoria-color');
     if (previewBtn) previewBtn.style.background = colorNuevaCategoriaSeleccionado;
-    if (inputColor && inputColor.value.toLowerCase() !== colorNuevaCategoriaSeleccionado.toLowerCase()) {
-        inputColor.value = colorNuevaCategoriaSeleccionado;
-    }
+    if (inputColor && inputColor.value.toLowerCase() !== colorNuevaCategoriaSeleccionado.toLowerCase()) inputColor.value = colorNuevaCategoriaSeleccionado;
 }
 
 function seleccionarColorNuevaCat(color) {
@@ -115,25 +125,53 @@ function abrirSelectorColorCategoria(index) {
     if (index < 0 || index >= categorias.length) return;
     categoriaEditandoColorIndex = index;
     const catNombre = categorias[index];
-    const inputGlobalColor = document.getElementById('in-editar-color-cat');
-    if (inputGlobalColor) {
-        inputGlobalColor.value = obtenerColorCategoria(catNombre);
-        inputGlobalColor.click();
+    const colorActual = obtenerColorCategoria(catNombre);
+
+    const boxEditar = document.getElementById('box-editar-color-existente');
+    const lblNombre = document.getElementById('lbl-editar-color-cat-nombre');
+    const previewColor = document.getElementById('preview-editar-cat-color');
+    const inputColorLibre = document.getElementById('input-color-libre-cat-existente');
+    const paletaContenedor = document.getElementById('paleta-editar-cat-existente');
+
+    if (lblNombre) lblNombre.innerText = `Cambiar color: ${catNombre}`;
+    if (previewColor) previewColor.style.background = colorActual;
+    if (inputColorLibre) inputColorLibre.value = colorActual;
+    if (paletaContenedor) {
+        paletaContenedor.innerHTML = PALETA_COLORES_CATEGORIAS.map(color => {
+            const esActivo = color.toLowerCase() === (colorActual || '').toLowerCase();
+            return `<div class="cat-color-dot-pick ${esActivo ? 'activo' : ''}" style="background: ${color};" onclick="seleccionarColorCategoriaExistente('${color}')"></div>`;
+        }).join('');
+    }
+    if (boxEditar) {
+        boxEditar.classList.remove('oculto');
+        boxEditar.style.display = 'block';
     }
 }
 
-function aplicarCambioColorCategoriaExistente(event) {
-    const nuevoColor = event.target.value;
+function seleccionarColorCategoriaExistente(nuevoColor) {
     if (!nuevoColor || categoriaEditandoColorIndex === null || categoriaEditandoColorIndex < 0 || categoriaEditandoColorIndex >= categorias.length) return;
-
     const catNombre = categorias[categoriaEditandoColorIndex];
     categoriasColores[catNombre] = nuevoColor;
     localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
-    categoriaEditandoColorIndex = null;
 
+    abrirSelectorColorCategoria(categoriaEditandoColorIndex);
     renderizarListasGestion();
     actualizarInterfaz();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+}
+
+function cerrarSelectorColorCategoriaExistente() {
+    const boxEditar = document.getElementById('box-editar-color-existente');
+    if (boxEditar) {
+        boxEditar.classList.add('oculto');
+        boxEditar.style.display = 'none';
+    }
+    categoriaEditandoColorIndex = null;
+}
+
+function aplicarCambioColorCategoriaExistente(event) {
+    const nuevoColor = event && event.target ? event.target.value : null;
+    if (nuevoColor) seleccionarColorCategoriaExistente(nuevoColor);
 }
 
 // ================= PERFIL DE USUARIO Y AVATAR =================
@@ -144,24 +182,17 @@ function actualizarUIPerfil() {
     const headerAvatar = document.getElementById('header-user-avatar');
     const settingsAvatar = document.getElementById('settings-user-avatar');
     const modalAvatar = document.getElementById('modal-user-avatar');
-
     if (headerAvatar) headerAvatar.src = avatarSrc;
     if (settingsAvatar) settingsAvatar.src = avatarSrc;
     if (modalAvatar) modalAvatar.src = avatarSrc;
 
     const inNombreSettings = document.getElementById('in-perfil-nombre');
     const inNombreModal = document.getElementById('in-modal-perfil-nombre');
-    if (inNombreSettings && document.activeElement !== inNombreSettings) {
-        inNombreSettings.value = userNombre;
-    }
-    if (inNombreModal && document.activeElement !== inNombreModal) {
-        inNombreModal.value = userNombre;
-    }
+    if (inNombreSettings && document.activeElement !== inNombreSettings) inNombreSettings.value = userNombre;
+    if (inNombreModal && document.activeElement !== inNombreModal) inNombreModal.value = userNombre;
 
     const subGreeting = document.getElementById('header-greeting-sub');
-    if (subGreeting) {
-        subGreeting.innerText = userNombre ? `Hola, ${userNombre}` : 'Control de Capital';
-    }
+    if (subGreeting) subGreeting.innerText = userNombre ? `Hola, ${userNombre}` : 'Control de Capital';
 
     const btnQuitarSettings = document.getElementById('btn-quitar-foto-settings');
     const btnQuitarModal = document.getElementById('btn-quitar-foto-modal');
@@ -185,20 +216,14 @@ function sincronizarInputsNombre(valor) {
 function guardarPerfilUsuario() {
     const inSettings = document.getElementById('in-perfil-nombre');
     const inModal = document.getElementById('in-modal-perfil-nombre');
-    const nuevoNombre = (inModal && document.activeElement === inModal)
-        ? inModal.value.trim()
-        : (inSettings ? inSettings.value.trim() : '');
+    const nuevoNombre = (inModal && document.activeElement === inModal) ? inModal.value.trim() : (inSettings ? inSettings.value.trim() : '');
 
     userNombre = nuevoNombre;
-    if (userNombre) {
-        localStorage.setItem('assist_user_name', userNombre);
-    } else {
-        localStorage.removeItem('assist_user_name');
-    }
+    if (userNombre) localStorage.setItem('assist_user_name', userNombre);
+    else localStorage.removeItem('assist_user_name');
 
     if (inSettings) inSettings.blur();
     if (inModal) inModal.blur();
-
     actualizarUIPerfil();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
@@ -218,12 +243,9 @@ function redimensionarAvatarPerfil(file, callback) {
             const size = 300;
             canvas.width = size;
             canvas.height = size;
-
-            // Recorte cuadrado centrado (aspect-fill) para que el avatar quede perfecto
             const minSide = Math.min(img.width, img.height);
             const sx = (img.width - minSide) / 2;
             const sy = (img.height - minSide) / 2;
-
             ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
             callback(canvas.toDataURL('image/jpeg', 0.85));
         };
@@ -235,14 +257,12 @@ function redimensionarAvatarPerfil(file, callback) {
 function procesarFotoPerfil(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
-
     redimensionarAvatarPerfil(file, (base64) => {
         userAvatar = base64;
         localStorage.setItem('assist_user_avatar', userAvatar);
         actualizarUIPerfil();
         if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
     });
-
     event.target.value = '';
 }
 
@@ -272,7 +292,7 @@ const PASOS_TUTORIAL = [
         icono: "🏷️",
         titulo: "2. Categorías con Color y Memoria",
         desc: "Crea tus categorías personalizadas y asígnales un <b>color propio</b> desde la paleta o el selector libre para identificarlas al instante.",
-        tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente con qué moneda pagaste por última vez cada categoría y conserva sus colores en todo tu historial."
+        tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente con qué moneda pagaste por última vez cada categoría y puedes cambiar el color de cualquier categoría existente tocando su círculo."
     },
     {
         icono: "⚡",
@@ -296,7 +316,7 @@ const PASOS_TUTORIAL = [
         icono: "📊",
         titulo: "6. Historial Pro y Metas Visuales",
         desc: "Analiza tus gastos con el nuevo <b>gráfico de dona interactivo</b> con leyenda lateral de colores y porcentajes, o filtra con el botón <b>Total</b> (por Mes/Año) y <b>📅 Día</b>.",
-        tip: "🗑️ <b>Swipe to Delete:</b> Desliza hacia la izquierda cualquier movimiento para borrarlo. Y en <b>Metas</b>, disfruta de tarjetas ampliadas con foto y barra de progreso."
+        tip: "🗑️ <b>Swipe to Delete y Reembolso:</b> Desliza hacia la izquierda cualquier movimiento para borrarlo. Y si eliminas una <b>Meta</b> con dinero ahorrado, se reembolsa automáticamente a tu cuenta."
     },
     {
         icono: "🔒",
@@ -308,7 +328,7 @@ const PASOS_TUTORIAL = [
         icono: "🛠️",
         titulo: "8. AskBot y Calculadora en Vivo",
         desc: "<b>AskBot</b> se encuentra temporalmente en mantenimiento programado mientras reconstruimos su motor de IA desde cero para próximas actualizaciones.",
-        tip: "💱 Mientras tanto, la <b>Calculadora Bidireccional</b> (BCV, USDT, EUR y tasa Propia) y todas tus herramientas financieras están <b>100% operativas</b> en tiempo real."
+        tip: "💱 Mientras tanto, la <b>Calculadora Bidireccional</b> con <b>Brecha Cambiaria</b>, <b>Fecha Valor BCV</b> y <b>Calendario Histórico</b> está <b>100% operativa</b> en tiempo real."
     }
 ];
 
@@ -319,13 +339,8 @@ function actualizarHeaderTutorial() {
     const btn = document.getElementById('btn-tutorial-header');
     if (!btn) return;
     const visto = localStorage.getItem('assist_tutorial_visto') === 'true';
-    if (!visto) {
-        btn.classList.remove('oculto');
-        btn.style.display = 'inline-flex';
-    } else {
-        btn.classList.add('oculto');
-        btn.style.display = 'none';
-    }
+    btn.classList.toggle('oculto', visto);
+    btn.style.display = visto ? 'none' : 'inline-flex';
 }
 
 function iniciarTutorial() {
@@ -337,14 +352,12 @@ function iniciarTutorial() {
 function renderizarPasoTutorial() {
     const paso = PASOS_TUTORIAL[pasoTutorialActual];
     if (!paso) return;
-
     const slideBody = document.getElementById('tut-slide-body');
     if (slideBody) {
         slideBody.style.animation = 'none';
         void slideBody.offsetWidth;
         slideBody.style.animation = 'scaleFadeIn 0.35s var(--ios-spring) forwards';
     }
-
     document.getElementById('tut-icono').innerText = paso.icono;
     document.getElementById('tut-titulo').innerText = paso.titulo;
     document.getElementById('tut-desc').innerHTML = paso.desc;
@@ -358,28 +371,19 @@ function renderizarPasoTutorial() {
             dotsContainer.innerHTML += `<div class="tut-dot ${idx === pasoTutorialActual ? 'activo' : ''}"></div>`;
         });
     }
-
     const btnPrev = document.getElementById('btn-tut-prev');
     const btnNext = document.getElementById('btn-tut-next');
     if (btnPrev) {
         btnPrev.disabled = (pasoTutorialActual === 0);
         btnPrev.style.opacity = (pasoTutorialActual === 0) ? '0.35' : '1';
     }
-    if (btnNext) {
-        btnNext.innerText = (pasoTutorialActual === PASOS_TUTORIAL.length - 1) ? "¡Empezar!" : "Siguiente";
-    }
+    if (btnNext) btnNext.innerText = (pasoTutorialActual === PASOS_TUTORIAL.length - 1) ? "¡Empezar!" : "Siguiente";
 }
 
 function moverPasoTutorial(direccion) {
     pasoTutorialActual += direccion;
-    if (pasoTutorialActual < 0) {
-        pasoTutorialActual = 0;
-        return;
-    }
-    if (pasoTutorialActual >= PASOS_TUTORIAL.length) {
-        completarTutorial();
-        return;
-    }
+    if (pasoTutorialActual < 0) { pasoTutorialActual = 0; return; }
+    if (pasoTutorialActual >= PASOS_TUTORIAL.length) { completarTutorial(); return; }
     renderizarPasoTutorial();
 }
 
@@ -389,14 +393,8 @@ function completarTutorial() {
     actualizarHeaderTutorial();
 }
 
-function omitirTutorial() {
-    completarTutorial();
-}
-
-function tutTouchStart(e) {
-    tutTouchStartX = e.changedTouches[0].screenX;
-}
-
+function omitirTutorial() { completarTutorial(); }
+function tutTouchStart(e) { tutTouchStartX = e.changedTouches[0].screenX; }
 function tutTouchEnd(e) {
     const diff = e.changedTouches[0].screenX - tutTouchStartX;
     if (diff < -45) moverPasoTutorial(1);
@@ -433,12 +431,9 @@ function continuarSinCuenta() {
     const authScreen = document.getElementById('auth-screen');
     const appContainer = document.getElementById('app-main-container');
     if (authScreen) authScreen.classList.add('oculto');
-    if (!appPin && appContainer) {
-        appContainer.classList.add('app-unlocked');
-    }
+    if (!appPin && appContainer) appContainer.classList.add('app-unlocked');
     actualizarUIEstadoNube();
     actualizarHeaderTutorial();
-
     if (localStorage.getItem('assist_tutorial_visto') !== 'true' && !tieneDatosLocales()) {
         setTimeout(() => iniciarTutorial(), 350);
     }
@@ -458,14 +453,12 @@ function actualizarUIEstadoNube() {
     const modalBoxOut = document.getElementById('modal-cloud-logged-out-box');
     const modalBoxIn = document.getElementById('modal-cloud-logged-in-box');
     const modalEmailEl = document.getElementById('modal-cloud-user-email');
-
     const headerDot = document.getElementById('header-avatar-dot');
 
     if (usuarioActual) {
         if (boxOut) { boxOut.classList.add('oculto'); boxOut.style.display = 'none'; }
         if (boxIn) { boxIn.classList.remove('oculto'); boxIn.style.display = 'flex'; }
         if (emailEl) emailEl.innerText = usuarioActual.email;
-
         if (modalBoxOut) { modalBoxOut.classList.add('oculto'); modalBoxOut.style.display = 'none'; }
         if (modalBoxIn) { modalBoxIn.classList.remove('oculto'); modalBoxIn.style.display = 'flex'; }
         if (modalEmailEl) modalEmailEl.innerText = usuarioActual.email;
@@ -484,11 +477,9 @@ function actualizarUIEstadoNube() {
         if (boxOut) { boxOut.classList.remove('oculto'); boxOut.style.display = 'block'; }
         if (boxIn) { boxIn.classList.add('oculto'); boxIn.style.display = 'none'; }
         if (badge) { badge.innerText = 'Solo Local'; badge.className = 'cloud-badge desconectado'; }
-
         if (modalBoxOut) { modalBoxOut.classList.remove('oculto'); modalBoxOut.style.display = 'block'; }
         if (modalBoxIn) { modalBoxIn.classList.add('oculto'); modalBoxIn.style.display = 'none'; }
         if (modalBadge) { modalBadge.innerText = 'Solo Local'; modalBadge.className = 'cloud-badge desconectado'; }
-
         if (headerDot) headerDot.className = 'avatar-online-dot desconectado';
     }
     actualizarUIPerfil();
@@ -508,7 +499,6 @@ async function procesarAuth() {
     btn.disabled = true;
     const textoOriginal = btn.innerText;
     btn.innerText = "Conectando...";
-
     const eraUsuarioNuevoSinDatos = !tieneDatosLocales();
 
     try {
@@ -516,22 +506,15 @@ async function procesarAuth() {
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) throw error;
             usuarioActual = data.user;
-
-            if (usuarioActual && tieneDatosLocales()) {
-                await sincronizarHaciaNube();
-            } else if (usuarioActual) {
-                await descargarDesdeNube();
-            }
+            if (usuarioActual && tieneDatosLocales()) await sincronizarHaciaNube();
+            else if (usuarioActual) await descargarDesdeNube();
         } else {
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             if (error) throw error;
             usuarioActual = data.user;
-
             if (usuarioActual) {
                 const descargado = await descargarDesdeNube();
-                if (!descargado && tieneDatosLocales()) {
-                    await sincronizarHaciaNube();
-                }
+                if (!descargado && tieneDatosLocales()) await sincronizarHaciaNube();
             }
         }
 
@@ -571,7 +554,6 @@ async function sincronizarHaciaNube() {
         const uid = usuarioActual.id;
         const ahora = new Date().toISOString();
 
-        // 1. Guardar Perfil, Preferencias, Preguntas PIN, Colores de Categorías y Agenda de Pagos (con fallback seguro en cascada)
         const basePerfil = {
             user_id: uid,
             email: usuarioActual.email,
@@ -620,53 +602,35 @@ async function sincronizarHaciaNube() {
             }
         }
 
-        // 2. Sincronizar Cuentas (respetando orden de las flechitas)
         await supabaseClient.from('cuentas').delete().eq('user_id', uid);
         if (cuentas.length > 0) {
             const filasCuentas = cuentas.map((c, idx) => ({
-                user_id: uid,
-                id: String(c.id),
-                nombre: c.nombre,
-                moneda: c.moneda,
-                orden: idx,
-                updated_at: ahora
+                user_id: uid, id: String(c.id), nombre: c.nombre, moneda: c.moneda, orden: idx, updated_at: ahora
             }));
             const { error: errCuentas } = await supabaseClient.from('cuentas').upsert(filasCuentas);
             if (errCuentas) throw errCuentas;
         }
 
-        // 3. Sincronizar Categorías (100% compatible con la tabla actual)
         await supabaseClient.from('categorias').delete().eq('user_id', uid);
         if (categorias.length > 0) {
             const categoriasUnicas = [...new Set(categorias)];
             const filasCat = categoriasUnicas.map((cat, idx) => ({
-                user_id: uid,
-                nombre: String(cat),
-                orden: idx
+                user_id: uid, nombre: String(cat), orden: idx
             }));
             const { error: errCat } = await supabaseClient.from('categorias').upsert(filasCat);
             if (errCat) throw errCat;
         }
 
-        // 4. Sincronizar Metas
         await supabaseClient.from('metas').delete().eq('user_id', uid);
         if (metas.length > 0) {
             const filasMetas = metas.map((m, idx) => ({
-                user_id: uid,
-                id: String(m.id),
-                nombre: m.nombre,
-                acumulado: Number(m.acumulado) || 0,
-                objetivo: Number(m.objetivo) || 0,
-                moneda: m.moneda || 'USD',
-                imagen: m.imagen || null,
-                orden: idx,
-                updated_at: ahora
+                user_id: uid, id: String(m.id), nombre: m.nombre, acumulado: Number(m.acumulado) || 0,
+                objetivo: Number(m.objetivo) || 0, moneda: m.moneda || 'USD', imagen: m.imagen || null, orden: idx, updated_at: ahora
             }));
             const { error: errMetas } = await supabaseClient.from('metas').upsert(filasMetas);
             if (errMetas) throw errMetas;
         }
 
-        // 5. Sincronizar Transacciones
         await supabaseClient.from('transacciones').delete().eq('user_id', uid);
         if (transacciones.length > 0) {
             const filasTrans = transacciones.map((t, idx) => {
@@ -678,7 +642,6 @@ async function sincronizarHaciaNube() {
                     const parsedId = new Date(Number(t.id));
                     if (!isNaN(parsedId.getTime())) fechaValida = parsedId;
                 }
-
                 return {
                     user_id: uid,
                     id: t.id !== undefined && t.id !== null ? String(t.id) : `${Date.now()}_${idx}`,
@@ -694,7 +657,6 @@ async function sincronizarHaciaNube() {
                     updated_at: ahora
                 };
             });
-
             const { error: errTrans } = await supabaseClient.from('transacciones').upsert(filasTrans);
             if (errTrans) throw errTrans;
         }
@@ -715,7 +677,6 @@ async function descargarDesdeNube() {
     if (!supabaseClient || !usuarioActual || !navigator.onLine) return false;
     try {
         const uid = usuarioActual.id;
-
         const [resPerfil, resCuentas, resCat, resMetas, resTrans] = await Promise.all([
             supabaseClient.from('perfiles').select('*').eq('user_id', uid).maybeSingle(),
             supabaseClient.from('cuentas').select('*').eq('user_id', uid).order('orden', { ascending: true }),
@@ -730,10 +691,7 @@ async function descargarDesdeNube() {
             (resMetas.data && resMetas.data.length > 0) ||
             (resCat.data && resCat.data.length > 0)
         );
-
-        if (!hayDatosEnNube && !resPerfil.data) {
-            return false;
-        }
+        if (!hayDatosEnNube && !resPerfil.data) return false;
 
         const necesitaSubirTransLocales = (!resTrans.data || resTrans.data.length === 0) && transacciones.length > 0;
 
@@ -747,9 +705,7 @@ async function descargarDesdeNube() {
             }
             if (resPerfil.data.pin_questions) {
                 try {
-                    const parsedQ = typeof resPerfil.data.pin_questions === 'string'
-                        ? JSON.parse(resPerfil.data.pin_questions)
-                        : resPerfil.data.pin_questions;
+                    const parsedQ = typeof resPerfil.data.pin_questions === 'string' ? JSON.parse(resPerfil.data.pin_questions) : resPerfil.data.pin_questions;
                     if (Array.isArray(parsedQ) && parsedQ.length === 3) {
                         pinQuestions = parsedQ;
                         localStorage.setItem('assist_pin_questions', JSON.stringify(pinQuestions));
@@ -758,9 +714,7 @@ async function descargarDesdeNube() {
             }
             if (resPerfil.data.categorias_colores) {
                 try {
-                    const parsedCol = typeof resPerfil.data.categorias_colores === 'string'
-                        ? JSON.parse(resPerfil.data.categorias_colores)
-                        : resPerfil.data.categorias_colores;
+                    const parsedCol = typeof resPerfil.data.categorias_colores === 'string' ? JSON.parse(resPerfil.data.categorias_colores) : resPerfil.data.categorias_colores;
                     if (parsedCol && typeof parsedCol === 'object') {
                         categoriasColores = { ...categoriasColores, ...parsedCol };
                         localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
@@ -769,9 +723,7 @@ async function descargarDesdeNube() {
             }
             if (resPerfil.data.agenda_pagos !== undefined && resPerfil.data.agenda_pagos !== null) {
                 try {
-                    const parsedAgenda = typeof resPerfil.data.agenda_pagos === 'string'
-                        ? JSON.parse(resPerfil.data.agenda_pagos)
-                        : resPerfil.data.agenda_pagos;
+                    const parsedAgenda = typeof resPerfil.data.agenda_pagos === 'string' ? JSON.parse(resPerfil.data.agenda_pagos) : resPerfil.data.agenda_pagos;
                     if (Array.isArray(parsedAgenda)) {
                         agendaPagos = parsedAgenda;
                         localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
@@ -793,29 +745,19 @@ async function descargarDesdeNube() {
         }
 
         if (resCuentas.data && resCuentas.data.length > 0) {
-            cuentas = resCuentas.data.map(c => ({
-                id: isNaN(Number(c.id)) ? c.id : Number(c.id),
-                nombre: c.nombre,
-                moneda: c.moneda
-            }));
+            cuentas = resCuentas.data.map(c => ({ id: isNaN(Number(c.id)) ? c.id : Number(c.id), nombre: c.nombre, moneda: c.moneda }));
         }
-
         if (resCat.data && resCat.data.length > 0) {
             categorias = resCat.data.map(c => c.nombre);
             asegurarColoresCategorias();
         }
-
         if (resMetas.data && resMetas.data.length > 0) {
             metas = resMetas.data.map(m => ({
-                id: isNaN(Number(m.id)) ? m.id : Number(m.id),
-                nombre: m.nombre,
-                acumulado: Number(m.acumulado) || 0,
-                objetivo: Number(m.objetivo) || 0,
-                moneda: m.moneda || 'USD',
-                imagen: m.imagen || null
+                id: isNaN(Number(m.id)) ? m.id : Number(m.id), nombre: m.nombre,
+                acumulado: Number(m.acumulado) || 0, objetivo: Number(m.objetivo) || 0,
+                moneda: m.moneda || 'USD', imagen: m.imagen || null
             }));
         }
-
         if (resTrans.data && resTrans.data.length > 0) {
             transacciones = resTrans.data.map(t => ({
                 id: isNaN(Number(t.id)) ? t.id : Number(t.id),
@@ -833,18 +775,14 @@ async function descargarDesdeNube() {
         }
 
         cuentaActivaId = cuentas.length > 0 ? cuentas[0].id : null;
-
         localStorage.setItem('cuentas', JSON.stringify(cuentas));
         localStorage.setItem('categorias', JSON.stringify(categorias));
         localStorage.setItem('transacciones', JSON.stringify(transacciones));
         localStorage.setItem('metas', JSON.stringify(metas));
         localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
 
-        if (necesitaSubirTransLocales) {
-            await sincronizarHaciaNube();
-        } else {
-            localStorage.removeItem('assist_pending_sync');
-        }
+        if (necesitaSubirTransLocales) await sincronizarHaciaNube();
+        else localStorage.removeItem('assist_pending_sync');
 
         cargarSelects();
         renderizarListasGestion();
@@ -902,24 +840,20 @@ async function cerrarSesionNube() {
     abrirPantallaAuth();
 }
 
-// Detectar reconexión automática a internet (WiFi / Datos)
 window.addEventListener('online', () => {
     actualizarUIEstadoNube();
     if (usuarioActual && localStorage.getItem('assist_pending_sync') === 'true') {
         sincronizarHaciaNube().catch(e => console.error(e));
     }
 });
-window.addEventListener('offline', () => {
-    actualizarUIEstadoNube();
-});
+window.addEventListener('offline', () => actualizarUIEstadoNube());
 
-// ================= SEGURIDAD PIN 2.0 (TECLADO NUMÉRICO INTEGRADO EN PANTALLA), PREGUNTAS Y CARGA =================
+// ================= SEGURIDAD PIN 2.0 (TECLADO NUMÉRICO EN PANTALLA), PREGUNTAS Y CARGA =================
 let nivelPistaRecuperacion = 0;
 let preguntaRecuperacionIdx = 0;
 let verificandoPinEnCurso = false;
 
 function enfocarInputPIN(event) {
-    // Desactivado deliberadamente para jamás invocar el teclado nativo del sistema en #pin-screen
     if (event && event.target && event.target.closest('.btn-forgot-pin')) return;
 }
 
@@ -930,13 +864,9 @@ function actualizarIndicadoresPIN(estado = '') {
 
     dots.forEach((dot, idx) => {
         dot.classList.remove('activo', 'error', 'exito');
-        if (estado === 'error') {
-            dot.classList.add('error');
-        } else if (estado === 'exito') {
-            dot.classList.add('exito');
-        } else if (idx < len) {
-            dot.classList.add('activo');
-        }
+        if (estado === 'error') dot.classList.add('error');
+        else if (estado === 'exito') dot.classList.add('exito');
+        else if (idx < len) dot.classList.add('activo');
     });
 }
 
@@ -954,7 +884,6 @@ function mostrarPantallaPINInteractiva(enfocar = true) {
         errEl.innerText = '';
         errEl.classList.add('oculto');
     }
-
     pinScreen.classList.remove('oculto');
     pinScreen.style.opacity = '1';
 
@@ -971,9 +900,7 @@ function presionarDigitoPIN(digito) {
     if (!pinInput) return;
 
     const errEl = document.getElementById('pin-error-feedback');
-    if (errEl && !errEl.classList.contains('oculto')) {
-        errEl.classList.add('oculto');
-    }
+    if (errEl && !errEl.classList.contains('oculto')) errEl.classList.add('oculto');
 
     const actual = (pinInput.value || '').replace(/\D/g, '');
     if (actual.length >= 4) return;
@@ -981,9 +908,7 @@ function presionarDigitoPIN(digito) {
     pinInput.value = actual + String(digito).replace(/\D/g, '').slice(0, 1);
     actualizarIndicadoresPIN();
 
-    if (pinInput.value.length === 4) {
-        verificarPIN();
-    }
+    if (pinInput.value.length === 4) verificarPIN();
 }
 
 function borrarDigitoPIN() {
@@ -993,9 +918,7 @@ function borrarDigitoPIN() {
 
     pinInput.value = pinInput.value.slice(0, -1);
     const errEl = document.getElementById('pin-error-feedback');
-    if (errEl && !errEl.classList.contains('oculto')) {
-        errEl.classList.add('oculto');
-    }
+    if (errEl && !errEl.classList.contains('oculto')) errEl.classList.add('oculto');
     actualizarIndicadoresPIN();
 }
 
@@ -1022,23 +945,18 @@ window.addEventListener('load', () => {
         splash.style.opacity = '0';
         setTimeout(() => {
             splash.style.display = 'none';
-            
             if (appPin) {
                 pinScreen.style.zIndex = '100000'; 
                 mostrarPantallaPINInteractiva(true);
             } else {
                 const skipAuth = localStorage.getItem('assist_skip_auth') === 'true';
-                if (!usuarioActual && !tieneDatosLocales() && !skipAuth) {
-                    abrirPantallaAuth();
-                } else {
-                    appContainer.classList.add('app-unlocked');
-                }
+                if (!usuarioActual && !tieneDatosLocales() && !skipAuth) abrirPantallaAuth();
+                else appContainer.classList.add('app-unlocked');
             }
         }, 500); 
     }, 1200); 
 });
 
-// Soporte opcional para teclado físico en escritorio sin abrir nunca el teclado virtual en iPhone
 window.addEventListener('keydown', (e) => {
     const pinScreen = document.getElementById('pin-screen');
     const modalRec = document.getElementById('modal-recuperar-pin');
@@ -1054,12 +972,12 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// Temas
 function cambiarColorAcento(color, omitirSync = false) {
     document.documentElement.style.setProperty('--accent', color);
     localStorage.setItem('app_theme_color', color);
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
+
 function cambiarModo(modo, omitirSync = false) {
     document.documentElement.setAttribute('data-theme', modo);
     document.body.setAttribute('data-theme', modo);
@@ -1067,7 +985,6 @@ function cambiarModo(modo, omitirSync = false) {
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
-// Auto-Bloqueo tras 3 minutos de inactividad
 let timeoutBloqueo;
 function reiniciarInactividad() {
     clearTimeout(timeoutBloqueo);
@@ -1081,7 +998,6 @@ function reiniciarInactividad() {
 window.addEventListener('touchstart', reiniciarInactividad);
 window.addEventListener('click', reiniciarInactividad);
 
-// Modo Pánico (doble toque en balance)
 let lastTap = 0;
 document.getElementById('slider-cuentas-wrapper').addEventListener('touchstart', (e) => {
     if(e.target.closest('button')) return; 
@@ -1094,18 +1010,13 @@ document.getElementById('slider-cuentas-wrapper').addEventListener('touchstart',
     lastTap = currentTime;
 });
 
-// Listener de respaldo por si #input-pin recibe entrada directa
 document.getElementById('input-pin').addEventListener('input', function() {
     if (verificandoPinEnCurso) return;
     this.value = this.value.replace(/\D/g, '').slice(0, 4);
     const errEl = document.getElementById('pin-error-feedback');
-    if (errEl && !errEl.classList.contains('oculto')) {
-        errEl.classList.add('oculto');
-    }
+    if (errEl && !errEl.classList.contains('oculto')) errEl.classList.add('oculto');
     actualizarIndicadoresPIN();
-    if (this.value.length === 4) {
-        verificarPIN();
-    }
+    if (this.value.length === 4) verificarPIN();
 });
 
 function verificarPIN() {
@@ -1115,7 +1026,6 @@ function verificarPIN() {
     if (input.value === appPin) {
         verificandoPinEnCurso = true;
         actualizarIndicadoresPIN('exito');
-        
         const screen = document.getElementById('pin-screen');
         const container = document.getElementById('app-main-container');
 
@@ -1130,7 +1040,6 @@ function verificarPIN() {
                 verificandoPinEnCurso = false;
             }, 240);
         }, 120);
-
         reiniciarInactividad();
     } else {
         verificandoPinEnCurso = true;
@@ -1147,7 +1056,6 @@ function verificarPIN() {
             void area.offsetWidth;
             area.classList.add('pin-shake');
         }
-
         setTimeout(() => {
             input.value = '';
             actualizarIndicadoresPIN();
@@ -1156,7 +1064,6 @@ function verificarPIN() {
     }
 }
 
-// Abrir modal nativo para configurar PIN y las 3 preguntas personalizadas
 function configurarPIN() {
     const inPin = document.getElementById('in-new-pin');
     const badge = document.getElementById('badge-estado-pin');
@@ -1164,7 +1071,6 @@ function configurarPIN() {
     const msgEl = document.getElementById('config-pin-msg');
 
     if (inPin) inPin.value = appPin || '';
-
     for (let i = 0; i < 3; i++) {
         const qInput = document.getElementById(`in-pin-q${i + 1}`);
         const aInput = document.getElementById(`in-pin-a${i + 1}`);
@@ -1174,25 +1080,14 @@ function configurarPIN() {
     }
 
     if (badge) {
-        if (appPin) {
-            badge.innerText = 'Activo 🔒';
-            badge.className = 'cloud-badge conectado';
-        } else {
-            badge.innerText = 'Inactivo';
-            badge.className = 'cloud-badge desconectado';
-        }
+        if (appPin) { badge.innerText = 'Activo 🔒'; badge.className = 'cloud-badge conectado'; }
+        else { badge.innerText = 'Inactivo'; badge.className = 'cloud-badge desconectado'; }
     }
-
     if (btnDesactivar) {
         btnDesactivar.classList.toggle('oculto', !appPin);
         btnDesactivar.style.display = appPin ? 'flex' : 'none';
     }
-
-    if (msgEl) {
-        msgEl.innerText = '';
-        msgEl.classList.add('oculto');
-    }
-
+    if (msgEl) { msgEl.innerText = ''; msgEl.classList.add('oculto'); }
     abrirModal('modal-config-pin');
 }
 
@@ -1207,18 +1102,13 @@ function mostrarMensajeConfigPIN(texto, esExito = false) {
 function guardarConfiguracionPIN() {
     const inPin = document.getElementById('in-new-pin');
     const nuevoPin = inPin ? inPin.value.replace(/\D/g, '').trim() : '';
-
-    if (nuevoPin.length !== 4) {
-        return mostrarMensajeConfigPIN('⚠️ El PIN debe tener exactamente 4 dígitos numéricos.');
-    }
+    if (nuevoPin.length !== 4) return mostrarMensajeConfigPIN('⚠️ El PIN debe tener exactamente 4 dígitos numéricos.');
 
     const nuevasPreguntas = [];
     for (let i = 1; i <= 3; i++) {
         const q = (document.getElementById(`in-pin-q${i}`)?.value || '').trim();
         const a = (document.getElementById(`in-pin-a${i}`)?.value || '').trim();
-        if (!q || !a) {
-            return mostrarMensajeConfigPIN(`⚠️ Completa la Pregunta ${i} y su respuesta corta para proteger tu PIN.`);
-        }
+        if (!q || !a) return mostrarMensajeConfigPIN(`⚠️ Completa la Pregunta ${i} y su respuesta corta para proteger tu PIN.`);
         nuevasPreguntas.push({ q, a });
     }
 
@@ -1231,9 +1121,7 @@ function guardarConfiguracionPIN() {
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 
     mostrarMensajeConfigPIN('✅ ¡PIN y preguntas de seguridad guardados!', true);
-    setTimeout(() => {
-        cerrarModal('modal-config-pin');
-    }, 550);
+    setTimeout(() => cerrarModal('modal-config-pin'), 550);
 }
 
 function desactivarPINActual() {
@@ -1248,19 +1136,11 @@ function desactivarPINActual() {
 // ================= MOTOR INTELIGENTE DE 1 PREGUNTA ALEATORIA, TOLERANCIA Y PISTAS =================
 function normalizarRespuestaSeguridad(str) {
     if (!str) return '';
-    return String(str)
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9\s]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-// Distancia Damerau-Levenshtein (tolera errores mínimos de tipeo y letras invertidas como "maracya" -> "maracay")
 function distanciaEdicionDamerau(a, b) {
-    const lenA = a.length;
-    const lenB = b.length;
+    const lenA = a.length, lenB = b.length;
     if (lenA === 0) return lenB;
     if (lenB === 0) return lenA;
 
@@ -1271,12 +1151,7 @@ function distanciaEdicionDamerau(a, b) {
     for (let i = 1; i <= lenA; i++) {
         for (let j = 1; j <= lenB; j++) {
             const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-                dp[i - 1][j] + 1,       // eliminación
-                dp[i][j - 1] + 1,       // inserción
-                dp[i - 1][j - 1] + cost // sustitución
-            );
-            // Transposición de caracteres adyacentes (ej. "ya" <-> "ay")
+            dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
             if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
                 dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
             }
@@ -1288,22 +1163,18 @@ function distanciaEdicionDamerau(a, b) {
 function palabrasCoincidenConTolerancia(palabraUser, palabraMeta) {
     if (!palabraUser || !palabraMeta) return false;
     if (palabraUser === palabraMeta) return true;
-
     if (palabraMeta.length >= 4 && palabraUser.includes(palabraMeta)) return true;
 
     if (palabraUser.length === palabraMeta.length && palabraMeta.length >= 4) {
         const sortU = palabraUser.split('').sort().join('');
         const sortM = palabraMeta.split('').sort().join('');
-        if (sortU === sortM && distanciaEdicionDamerau(palabraUser, palabraMeta) <= 2) {
-            return true;
-        }
+        if (sortU === sortM && distanciaEdicionDamerau(palabraUser, palabraMeta) <= 2) return true;
     }
 
     if (Math.abs(palabraUser.length - palabraMeta.length) > 2) return false;
     const dist = distanciaEdicionDamerau(palabraUser, palabraMeta);
     if (palabraMeta.length >= 6 && palabraUser[0] === palabraMeta[0] && dist <= 2) return true;
     if (palabraMeta.length >= 4 && dist <= 1) return true;
-
     return false;
 }
 
@@ -1318,12 +1189,9 @@ function esRespuestaSeguridadValida(inputUsuario, respuestaGuardada) {
     const palabrasIgnorar = new Set(['el', 'la', 'los', 'las', 'un', 'una', 'es', 'mi', 'mis', 'de', 'del', 'en', 'por', 'claro', 'obvio', 'creo', 'que', 'si', 'fue', 'era']);
     const targetWords = normTarget.split(' ').filter(w => !palabrasIgnorar.has(w));
     const clavesMeta = targetWords.length > 0 ? targetWords : normTarget.split(' ').filter(Boolean);
-
     if (clavesMeta.length === 0) return false;
 
-    return clavesMeta.every(metaWord =>
-        userWords.some(uWord => palabrasCoincidenConTolerancia(uWord, metaWord))
-    );
+    return clavesMeta.every(metaWord => userWords.some(uWord => palabrasCoincidenConTolerancia(uWord, metaWord)));
 }
 
 function generarTextoPistaSutil(respuestaRaw, nivel = 1) {
@@ -1337,14 +1205,11 @@ function generarTextoPistaSutil(respuestaRaw, nivel = 1) {
         const mascara = primera + ' ' + Array(Math.max(1, len - 1)).fill('_').join(' ');
         return `💡 Pista 1: Tiene ${len} letras y empieza con "${primera}" (${mascara})`;
     } else {
-        const revelada = limpia
-            .split('')
-            .map((ch, idx) => {
-                if (idx === 0 || idx === len - 1 || ch === ' ') return ch;
-                if (/[aeiouáéíóúAEIOUÁÉÍÓÚ]/.test(ch)) return ch.toLowerCase();
-                return '_';
-            })
-            .join(' ');
+        const revelada = limpia.split('').map((ch, idx) => {
+            if (idx === 0 || idx === len - 1 || ch === ' ') return ch;
+            if (/[aeiouáéíóúAEIOUÁÉÍÓÚ]/.test(ch)) return ch.toLowerCase();
+            return '_';
+        }).join(' ');
         return `💡 Pista 2: Empieza con "${primera}", termina en "${ultima}" → ${revelada}`;
     }
 }
@@ -1352,14 +1217,12 @@ function generarTextoPistaSutil(respuestaRaw, nivel = 1) {
 function renderizarPreguntaAleatoriaUI() {
     const boxQuestions = document.getElementById('rec-pin-questions-body');
     if (!boxQuestions || !Array.isArray(pinQuestions) || pinQuestions.length === 0) return;
-
     const item = pinQuestions[preguntaRecuperacionIdx] || pinQuestions[0];
 
     boxQuestions.innerHTML = `
         <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px;">
             Responde esta pregunta de seguridad elegida al azar para cambiar tu PIN (no importan mayúsculas, acentos ni palabras extra):
         </p>
-
         <div class="pin-question-card" id="card-rec-unica" style="margin-bottom: 10px; transition: border-color 0.25s ease;">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <span class="pin-q-badge">Pregunta de Seguridad (${preguntaRecuperacionIdx + 1} de ${pinQuestions.length})</span>
@@ -1369,14 +1232,10 @@ function renderizarPreguntaAleatoriaUI() {
             <input type="text" id="in-rec-unica" placeholder="Escribe tu respuesta aquí..." autocomplete="off" oninput="limpiarErrorRecuperacionPIN()" onkeydown="if(event.key === 'Enter') verificarRecuperacionPIN()">
             <div id="hint-rec-unica" class="pin-subtle-hint" style="display: none;"></div>
         </div>
-
         <div id="rec-pin-feedback" style="display: none; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; font-weight: 700; text-align: center; margin-top: 6px; line-height: 1.35;"></div>
     `;
-
     const btnPista = document.getElementById('btn-pedir-pista-pin');
-    if (btnPista) {
-        btnPista.innerText = '💡 No recuerdo / Dame una pista sutil';
-    }
+    if (btnPista) btnPista.innerText = '💡 No recuerdo / Dame una pista sutil';
 }
 
 function limpiarErrorRecuperacionPIN() {
@@ -1389,9 +1248,7 @@ function limpiarErrorRecuperacionPIN() {
 function cambiarPreguntaRecuperacionPIN() {
     if (!Array.isArray(pinQuestions) || pinQuestions.length <= 1) return;
     let nuevoIdx = preguntaRecuperacionIdx;
-    while (nuevoIdx === preguntaRecuperacionIdx) {
-        nuevoIdx = Math.floor(Math.random() * pinQuestions.length);
-    }
+    while (nuevoIdx === preguntaRecuperacionIdx) nuevoIdx = Math.floor(Math.random() * pinQuestions.length);
     preguntaRecuperacionIdx = nuevoIdx;
     nivelPistaRecuperacion = 0;
     renderizarPreguntaAleatoriaUI();
@@ -1401,7 +1258,6 @@ function cambiarPreguntaRecuperacionPIN() {
 
 function resetearPIN(event) {
     if (event) event.stopPropagation();
-
     nivelPistaRecuperacion = 0;
     const tienePreguntas = Array.isArray(pinQuestions) && pinQuestions.length === 3 && pinQuestions.every(q => q.q && q.a);
 
@@ -1417,7 +1273,6 @@ function resetearPIN(event) {
             btnPista.style.display = 'flex';
             btnPista.innerText = '💡 No recuerdo / Dame una pista sutil';
         }
-
         preguntaRecuperacionIdx = Math.floor(Math.random() * pinQuestions.length);
         renderizarPreguntaAleatoriaUI();
     } else {
@@ -1427,26 +1282,21 @@ function resetearPIN(event) {
         const inLegacy = document.getElementById('in-rec-legacy-word');
         if (inLegacy) inLegacy.value = '';
     }
-
     abrirModal('modal-recuperar-pin');
 }
 
 function mostrarPistasSutilesPIN() {
     if (!Array.isArray(pinQuestions) || pinQuestions.length === 0) return;
     nivelPistaRecuperacion = Math.min(2, nivelPistaRecuperacion + 1);
-
     const preguntaActual = pinQuestions[preguntaRecuperacionIdx] || pinQuestions[0];
     const hint = document.getElementById('hint-rec-unica');
     if (hint && preguntaActual) {
         hint.innerText = generarTextoPistaSutil(preguntaActual.a, nivelPistaRecuperacion);
         hint.style.display = 'block';
     }
-
     const btnPista = document.getElementById('btn-pedir-pista-pin');
     if (btnPista) {
-        btnPista.innerText = nivelPistaRecuperacion === 1
-            ? '💡 Dame una segunda pista más clara'
-            : '✨ Pistas máximas activadas';
+        btnPista.innerText = nivelPistaRecuperacion === 1 ? '💡 Dame una segunda pista más clara' : '✨ Pistas máximas activadas';
     }
 }
 
@@ -1457,17 +1307,10 @@ function mostrarFeedbackRecuperacion(mensaje, esExito = false) {
     if (feedback) {
         feedback.innerText = mensaje;
         feedback.style.display = 'block';
-        if (esExito) {
-            feedback.style.color = '#32D74B';
-            feedback.style.background = 'rgba(50, 215, 75, 0.14)';
-            feedback.style.border = '1px solid rgba(50, 215, 75, 0.35)';
-        } else {
-            feedback.style.color = '#FF453A';
-            feedback.style.background = 'rgba(255, 69, 58, 0.14)';
-            feedback.style.border = '1px solid rgba(255, 69, 58, 0.35)';
-        }
+        feedback.style.color = esExito ? '#32D74B' : '#FF453A';
+        feedback.style.background = esExito ? 'rgba(50, 215, 75, 0.14)' : 'rgba(255, 69, 58, 0.14)';
+        feedback.style.border = esExito ? '1px solid rgba(50, 215, 75, 0.35)' : '1px solid rgba(255, 69, 58, 0.35)';
     }
-
     if (card) {
         card.style.borderColor = esExito ? '#32D74B' : '#FF453A';
         if (!esExito) {
@@ -1502,16 +1345,12 @@ function verificarRecuperacionPIN() {
     const respUser = (inputEl ? inputEl.value : '').trim();
     const preguntaActual = pinQuestions[preguntaRecuperacionIdx] || pinQuestions[0];
 
-    if (!respUser) {
-        return mostrarFeedbackRecuperacion('⚠️ Escribe tu respuesta antes de verificar.', false);
-    }
+    if (!respUser) return mostrarFeedbackRecuperacion('⚠️ Escribe tu respuesta antes de verificar.', false);
 
     if (esRespuestaSeguridadValida(respUser, preguntaActual.a)) {
         mostrarFeedbackRecuperacion('✅ ¡Respuesta correcta! Desbloqueando para cambiar tu PIN...', true);
-
         localStorage.removeItem('app_pin');
         appPin = null;
-
         setTimeout(() => {
             cerrarModal('modal-recuperar-pin');
             document.getElementById('pin-screen').classList.add('oculto');
@@ -1542,18 +1381,9 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
 
 // ================= VENTANAS MODALES Y BLOQUEO TOTAL DE SCROLL EN iOS =================
 const MODALES_IDS = [
-    'modal-perfil',
-    'modal-historial',
-    'modal-detalle-meta',
-    'modal-accion-meta',
-    'modal-cuentas',
-    'modal-categorias',
-    'modal-nueva-meta',
-    'modal-tutorial',
-    'modal-config-pin',
-    'modal-recuperar-pin',
-    'modal-nueva-agenda',
-    'modal-pagar-agenda'
+    'modal-perfil', 'modal-historial', 'modal-detalle-meta', 'modal-accion-meta',
+    'modal-cuentas', 'modal-categorias', 'modal-nueva-meta', 'modal-tutorial',
+    'modal-config-pin', 'modal-recuperar-pin', 'modal-nueva-agenda', 'modal-pagar-agenda'
 ];
 
 let scrollGuardadoModal = 0;
@@ -1581,10 +1411,14 @@ function desbloquearScrollFondo() {
     }
 }
 
-// Interceptor táctil en iOS Safari para impedir que deslizar sobre el fondo del modal o de AskBot mueva el body, permitiendo scroll fluido en #lista-transacciones
+// Interceptor táctil en iOS Safari: permite scroll horizontal en paletas y vertical en contenedores de listas
 document.addEventListener('touchmove', function(e) {
     if (document.body.classList.contains('modal-open')) {
-        const scrollableEl = e.target.closest('.modal-list, #lista-transacciones, #lista-historial-meta, .historial-full-list, .tut-slide, .palette-container, .chart-custom-legend');
+        const horizontalPalette = e.target.closest('.palette-container, .cat-palette-row');
+        if (horizontalPalette && horizontalPalette.scrollWidth > horizontalPalette.clientWidth) {
+            return;
+        }
+        const scrollableEl = e.target.closest('.modal-list, #lista-transacciones, #lista-historial-meta, .historial-full-list, .tut-slide, .chart-custom-legend');
         if (!scrollableEl) {
             e.preventDefault();
             return;
@@ -1597,11 +1431,7 @@ document.addEventListener('touchmove', function(e) {
 
     if (document.body.classList.contains('askbot-tab-open') || document.body.classList.contains('askbot-kb-open')) {
         const askbotScrollable = e.target.closest('.askbot-messages, .askbot-welcome-hero');
-        if (!askbotScrollable) {
-            e.preventDefault();
-            return;
-        }
-        if (askbotScrollable.scrollHeight <= askbotScrollable.clientHeight) {
+        if (!askbotScrollable || askbotScrollable.scrollHeight <= askbotScrollable.clientHeight) {
             e.preventDefault();
         }
     }
@@ -1610,27 +1440,24 @@ document.addEventListener('touchmove', function(e) {
 function abrirModal(id) {
     const modal = document.getElementById(id);
     if (!modal) return;
-
     bloquearScrollFondo();
     modal.classList.remove('oculto');
 
-    if (id === 'modal-historial') {
-        mostrarHistorialTotalCuenta();
-    }
+    if (id === 'modal-historial') mostrarHistorialTotalCuenta();
     if (id === 'modal-cuentas' || id === 'modal-categorias') {
         renderizarListasGestion();
         if (id === 'modal-categorias') {
             renderizarPaletaColorNuevaCat();
+            cerrarSelectorColorCategoriaExistente();
         }
     }
-    if (id === 'modal-perfil') {
-        actualizarUIEstadoNube();
-    }
+    if (id === 'modal-perfil') actualizarUIEstadoNube();
 }
 
 function cerrarModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('oculto');
+    if (id === 'modal-categorias') cerrarSelectorColorCategoriaExistente();
     desbloquearScrollFondo();
 }
 
@@ -1646,12 +1473,12 @@ function toggleCategoriaSelect() {
     const valMonedaSelect = document.getElementById('val-moneda');
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     
-    // Ocultar Categoría si no es un gasto
     if (tipo === 'ingreso' || tipo === 'transferencia') { 
         selectCategoria.classList.add('oculto'); selectCategoria.value = ""; 
-    } else { selectCategoria.classList.remove('oculto'); }
+    } else {
+        selectCategoria.classList.remove('oculto');
+    }
 
-    // Activar Transferencia
     if (boxTransf) {
         if (tipo === 'transferencia') {
             boxTransf.classList.remove('oculto'); boxTransf.style.display = 'flex';
@@ -1663,7 +1490,6 @@ function toggleCategoriaSelect() {
         }
     }
 
-    // Activar Comisiones VES (Solo para Gastos normales)
     if (boxComision) {
         if (tipo === 'gasto' && moneda === 'VES') {
             boxComision.classList.remove('oculto'); boxComision.style.display = 'flex';
@@ -1674,7 +1500,6 @@ function toggleCategoriaSelect() {
         }
     }
 
-    // Activar Tasa Personalizada USDT cuando la cuenta activa es USDT y se opera en VES
     if (boxTasaUsdtVes) {
         if (cuentaActiva && cuentaActiva.moneda === 'USDT' && (tipo === 'gasto' || tipo === 'ingreso') && moneda === 'VES') {
             boxTasaUsdtVes.classList.remove('oculto');
@@ -1705,13 +1530,9 @@ function calcularEquivalenteUsdtVes() {
     const boxComision = document.getElementById('box-comision-ves');
     if (tipo === 'gasto' && moneda === 'VES' && boxComision && !boxComision.classList.contains('oculto')) {
         const tipoComision = document.getElementById('sel-tipo-comision').value;
-        if (tipoComision === 'p2p' && monto > 0) {
-            montoTotalBs += Math.max(14.00, monto * 0.003);
-        } else if (tipoComision === 'p2c' && monto > 0) {
-            montoTotalBs += Math.max(14.00, monto * 0.015);
-        } else if (tipoComision === 'manual') {
-            montoTotalBs += parseFloat(document.getElementById('input-comision-manual').value) || 0;
-        }
+        if (tipoComision === 'p2p' && monto > 0) montoTotalBs += Math.max(14.00, monto * 0.003);
+        else if (tipoComision === 'p2c' && monto > 0) montoTotalBs += Math.max(14.00, monto * 0.015);
+        else if (tipoComision === 'manual') montoTotalBs += parseFloat(document.getElementById('input-comision-manual').value) || 0;
     }
 
     const equivUsdt = tasaUsar > 0 ? (montoTotalBs / tasaUsar) : 0;
@@ -1735,10 +1556,9 @@ function toggleComisionManual() {
 function renderizarSelectsTransferencia() {
     const selOrigen = document.getElementById('sel-transf-origen');
     const selDestino = document.getElementById('sel-transf-destino');
-    const valO = selOrigen.value; const valD = selDestino.value;
+    const valO = selOrigen.value, valD = selDestino.value;
 
     selOrigen.innerHTML = ''; selDestino.innerHTML = '';
-    
     const cuentasValidas = cuentas.filter(c => c.moneda === 'USDT' || c.moneda === 'VES');
 
     cuentasValidas.forEach(c => {
@@ -1746,9 +1566,8 @@ function renderizarSelectsTransferencia() {
         selDestino.innerHTML += `<option value="${c.id}">${c.nombre}</option>`;
     });
 
-    if (valO && cuentasValidas.find(c=>c.id==valO)) selOrigen.value = valO;
-    if (valD && cuentasValidas.find(c=>c.id==valD)) selDestino.value = valD;
-    
+    if (valO && cuentasValidas.find(c => c.id == valO)) selOrigen.value = valO;
+    if (valD && cuentasValidas.find(c => c.id == valD)) selDestino.value = valD;
     actualizarUI_Transferencia(false);
 }
 
@@ -1759,35 +1578,24 @@ function actualizarUI_Transferencia(origenCambio = false) {
 
     let cOrigen = cuentas.find(c => c.id == idO);
     let cDestino = cuentas.find(c => c.id == idD);
-    
     const cuentasUSDT = cuentas.filter(c => c.moneda === 'USDT');
     const cuentasVES = cuentas.filter(c => c.moneda === 'VES');
 
     if (origenCambio && cuentasUSDT.length === 1 && cuentasVES.length === 1) {
-        if (cOrigen.moneda === 'USDT') {
-            document.getElementById('sel-transf-destino').value = cuentasVES[0].id;
-        } else if (cOrigen.moneda === 'VES') {
-            document.getElementById('sel-transf-destino').value = cuentasUSDT[0].id;
-        }
+        if (cOrigen.moneda === 'USDT') document.getElementById('sel-transf-destino').value = cuentasVES[0].id;
+        else if (cOrigen.moneda === 'VES') document.getElementById('sel-transf-destino').value = cuentasUSDT[0].id;
         cDestino = cuentas.find(c => c.id == document.getElementById('sel-transf-destino').value);
-    }
-    else if (!origenCambio && cuentasUSDT.length === 1 && cuentasVES.length === 1) {
-        if (cDestino.moneda === 'USDT') {
-            document.getElementById('sel-transf-origen').value = cuentasVES[0].id;
-        } else if (cDestino.moneda === 'VES') {
-            document.getElementById('sel-transf-origen').value = cuentasUSDT[0].id;
-        }
+    } else if (!origenCambio && cuentasUSDT.length === 1 && cuentasVES.length === 1) {
+        if (cDestino.moneda === 'USDT') document.getElementById('sel-transf-origen').value = cuentasVES[0].id;
+        else if (cDestino.moneda === 'VES') document.getElementById('sel-transf-origen').value = cuentasUSDT[0].id;
         cOrigen = cuentas.find(c => c.id == document.getElementById('sel-transf-origen').value);
     }
 
     const boxTasa = document.getElementById('box-transf-tasa');
     const inputTasa = document.getElementById('input-transf-tasa');
-    
     if (cOrigen.moneda !== cDestino.moneda) {
         boxTasa.classList.remove('oculto'); boxTasa.style.display = 'flex';
-        if (inputTasa.value === '') {
-            inputTasa.value = tasaParalelo.toFixed(2);
-        }
+        if (inputTasa.value === '') inputTasa.value = tasaParalelo.toFixed(2);
     } else {
         boxTasa.classList.add('oculto'); boxTasa.style.display = 'none';
         inputTasa.value = '1';
@@ -1809,7 +1617,6 @@ function calcularMontoTransferencia() {
     document.getElementById('lbl-transf-recibiras').innerText = `${montoRecibir.toFixed(2)}${cDestino ? cDestino.moneda : ''}`;
 }
 
-// Categorías Inteligentes y Auto-Actualización de la UI
 document.getElementById('val-categoria').addEventListener('change', (e) => {
     const catSelec = e.target.value;
     const lastTrans = [...transacciones].reverse().find(t => t.categoria === catSelec && t.tipo === 'gasto');
@@ -1818,11 +1625,8 @@ document.getElementById('val-categoria').addEventListener('change', (e) => {
         const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
         let monedaBuscada = lastTrans.monedaInputOriginal;
 
-        if (cuentaActiva && cuentaActiva.moneda === 'USDT' && monedaBuscada === 'USD') {
-            monedaBuscada = 'USDT';
-        } else if (cuentaActiva && cuentaActiva.moneda !== 'USDT' && monedaBuscada === 'USDT') {
-            monedaBuscada = 'USD';
-        }
+        if (cuentaActiva && cuentaActiva.moneda === 'USDT' && monedaBuscada === 'USD') monedaBuscada = 'USDT';
+        else if (cuentaActiva && cuentaActiva.moneda !== 'USDT' && monedaBuscada === 'USDT') monedaBuscada = 'USD';
 
         const option = Array.from(selectMoneda.options).find(o => o.value === monedaBuscada);
         if (option) selectMoneda.value = monedaBuscada;
@@ -1832,7 +1636,6 @@ document.getElementById('val-categoria').addEventListener('change', (e) => {
 
 document.getElementById('val-moneda').addEventListener('change', toggleCategoriaSelect);
 
-// Reconstrucción estricta del DOM en #val-moneda para compatibilidad 100% con iOS Safari
 function actualizarOpcionesMoneda() {
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     const selectMoneda = document.getElementById('val-moneda');
@@ -1841,28 +1644,16 @@ function actualizarOpcionesMoneda() {
     const monedaPrevia = selectMoneda.value;
     let permitidas = ['USD', 'VES', 'EUR'];
 
-    if (cuentaActiva.moneda === 'USD') {
-        permitidas = ['USD'];
-    } else if (cuentaActiva.moneda === 'USDT') {
-        permitidas = ['USDT', 'VES'];
-    } else if (cuentaActiva.moneda === 'VES') {
-        permitidas = ['USD', 'VES', 'EUR'];
-    }
+    if (cuentaActiva.moneda === 'USD') permitidas = ['USD'];
+    else if (cuentaActiva.moneda === 'USDT') permitidas = ['USDT', 'VES'];
+    else if (cuentaActiva.moneda === 'VES') permitidas = ['USD', 'VES', 'EUR'];
 
-    selectMoneda.innerHTML = permitidas
-        .map(m => `<option value="${m}">${m}</option>`)
-        .join('');
-
-    if (permitidas.includes(monedaPrevia)) {
-        selectMoneda.value = monedaPrevia;
-    } else {
-        selectMoneda.value = permitidas[0];
-    }
-
+    selectMoneda.innerHTML = permitidas.map(m => `<option value="${m}">${m}</option>`).join('');
+    selectMoneda.value = permitidas.includes(monedaPrevia) ? monedaPrevia : permitidas[0];
     toggleCategoriaSelect();
 }
 
-// ================= METAS DE AHORRO PREMIUM =================
+// ================= METAS DE AHORRO PREMIUM Y REEMBOLSO AUTOMÁTICO =================
 let metaAbonoActualIndex = null;
 let metaAccionTipo = 'abonar'; 
 
@@ -1875,19 +1666,14 @@ function redimensionarImagen(file, callback) {
             const ctx = canvas.getContext('2d');
             const maxW = 500, maxH = 500;
             let width = img.width, height = img.height;
-            if (width > height) { 
-                if (width > maxW) { height *= maxW / width; width = maxW; } 
-            } else { 
-                if (height > maxH) { width *= maxH / height; height = maxH; } 
-            }
-            canvas.width = width; 
-            canvas.height = height;
-            
+            if (width > height) { if (width > maxW) { height *= maxW / width; width = maxW; } }
+            else { if (height > maxH) { width *= maxH / height; height = maxH; } }
+            canvas.width = width; canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
             callback(canvas.toDataURL('image/png')); 
-        }
+        };
         img.src = e.target.result;
-    }
+    };
     reader.readAsDataURL(file);
 }
 
@@ -1895,7 +1681,6 @@ function guardarNuevaMeta() {
     const nombre = document.getElementById('in-meta-nombre').value;
     const objetivo = parseFloat(document.getElementById('in-meta-obj').value);
     const file = document.getElementById('in-meta-img').files[0];
-
     if (!nombre || isNaN(objetivo) || objetivo <= 0) return alert("Datos inválidos.");
 
     const crear = (imgBase64) => {
@@ -1906,8 +1691,8 @@ function guardarNuevaMeta() {
         document.getElementById('in-meta-obj').value = '';
         document.getElementById('in-meta-img').value = '';
     };
-
-    if (file) { redimensionarImagen(file, crear); } else { crear(null); }
+    if (file) redimensionarImagen(file, crear);
+    else crear(null);
 }
 
 function renderizarMetas() {
@@ -1972,8 +1757,7 @@ function abrirDetalleMeta(index) {
 function renderizarHistorialEspecíficoMeta(nombreMeta) {
     const lista = document.getElementById('lista-historial-meta');
     lista.innerHTML = '';
-    
-    let hMeta = transacciones.filter(t => t.categoria === 'Ahorro' && t.nota.includes(nombreMeta)).reverse();
+    let hMeta = transacciones.filter(t => t.categoria === 'Ahorro' && t.nota && t.nota.includes(nombreMeta)).reverse();
 
     if (hMeta.length === 0) {
         lista.innerHTML = `<p style="text-align:center; padding: 20px; color: var(--text-secondary); font-size: 13px;">No hay movimientos aún.</p>`;
@@ -1984,7 +1768,6 @@ function renderizarHistorialEspecíficoMeta(nombreMeta) {
         const esAbono = t.tipo === 'gasto'; 
         const claseColor = esAbono ? 'monto-ingreso' : 'monto-gasto';
         const signo = esAbono ? '+' : '-';
-        
         lista.innerHTML += `
             <li class="transaccion-item" style="margin-bottom: 8px;">
                 <div class="trans-izq">
@@ -2005,9 +1788,7 @@ function prepararAccionMeta(tipo) {
     const meta = metas[metaAbonoActualIndex];
 
     document.getElementById('titulo-accion-meta').innerText = tipo === 'abonar' ? `Abonar a "${meta.nombre}"` : `Retirar de "${meta.nombre}"`;
-    document.getElementById('desc-accion-meta').innerText = tipo === 'abonar' 
-        ? "Descontaremos de la cuenta que selecciones." : "El monto volverá a tu cuenta seleccionada.";
-    
+    document.getElementById('desc-accion-meta').innerText = tipo === 'abonar' ? "Descontaremos de la cuenta que selecciones." : "El monto volverá a tu cuenta seleccionada.";
     document.getElementById('monto-accion-meta').value = '';
     document.getElementById('nota-accion-meta').value = '';
     document.getElementById('fecha-accion-meta').value = getLocalYYYYMMDD();
@@ -2016,14 +1797,12 @@ function prepararAccionMeta(tipo) {
     const selectCuenta = document.getElementById('sel-cuenta-accion-meta');
     selectCuenta.innerHTML = '';
     cuentas.forEach(c => selectCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`);
-
     abrirModal('modal-accion-meta');
 }
 
 document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     const monto = parseFloat(document.getElementById('monto-accion-meta').value);
     const monedaAccion = document.getElementById('moneda-accion-meta').value;
-    
     if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
 
     const cuentaId = document.getElementById('sel-cuenta-accion-meta').value;
@@ -2031,10 +1810,8 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     if (!cuentaId) return alert("Selecciona una cuenta válida.");
 
     const meta = metas[metaAbonoActualIndex];
-
     let montoUSD = monto;
     if (monedaAccion === 'VES') montoUSD = monto / tasaBCV;
-
     if (metaAccionTipo === 'retirar' && montoUSD > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
 
     const valFecha = document.getElementById('fecha-accion-meta').value; 
@@ -2062,8 +1839,8 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     transacciones.push(transaccion);
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     
-    if (metaAccionTipo === 'abonar') { metas[metaAbonoActualIndex].acumulado += montoUSD; } 
-    else { metas[metaAbonoActualIndex].acumulado -= montoUSD; }
+    if (metaAccionTipo === 'abonar') metas[metaAbonoActualIndex].acumulado += montoUSD;
+    else metas[metaAbonoActualIndex].acumulado -= montoUSD;
 
     if (metas[metaAbonoActualIndex].acumulado >= metas[metaAbonoActualIndex].objetivo) {
         alert(`¡Felicidades! 🎉 Has completado tu meta: ${metas[metaAbonoActualIndex].nombre} 🥳\n\nEl objetivo ha sido alcanzado y se eliminará de las metas activas. (El dinero sigue descontado de tu cuenta principal, listo para usarse).`);
@@ -2081,18 +1858,61 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
 });
 
 function eliminarMeta(index) {
-    if(confirm("¿Seguro que deseas eliminar esta meta? (El dinero ahorrado NO regresará a tus cuentas automáticamente)")) {
-        metas.splice(index, 1); guardarYActualizarGestion();
-        cerrarModal('modal-detalle-meta');
-        actualizarInterfaz();
+    if (index === null || index === undefined || index < 0 || index >= metas.length) return;
+    const meta = metas[index];
+    const montoAcumulado = Number(meta.acumulado) || 0;
+
+    const mensaje = montoAcumulado > 0
+        ? `¿Seguro que deseas eliminar la meta "${meta.nombre}"?\n\n💰 Los $${montoAcumulado.toFixed(2)} ahorrados regresarán automáticamente a tu cuenta y se registrarán en el historial.`
+        : `¿Seguro que deseas eliminar la meta "${meta.nombre}"?`;
+
+    if (!confirm(mensaje)) return;
+
+    if (montoAcumulado > 0 && cuentas.length > 0) {
+        const ultimoAbono = [...transacciones].reverse().find(t =>
+            t.categoria === 'Ahorro' &&
+            t.tipo === 'gasto' &&
+            t.nota &&
+            t.nota.includes(meta.nombre) &&
+            cuentas.some(c => c.id == t.cuentaId)
+        );
+
+        let cuentaDestinoId = ultimoAbono ? ultimoAbono.cuentaId : null;
+        if (!cuentaDestinoId) {
+            cuentaDestinoId = (cuentaActivaId && cuentas.some(c => c.id == cuentaActivaId)) ? cuentaActivaId : cuentas[0].id;
+        }
+
+        const dateObj = new Date();
+        const isoLocal = getLocalYYYYMMDD(dateObj);
+        const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+        transacciones.push({
+            id: dateObj.getTime() + Math.random(),
+            cuentaId: cuentaDestinoId,
+            montoUSD: montoAcumulado,
+            tipo: 'ingreso',
+            categoria: 'Ahorro',
+            nota: "Reembolso por cierre de meta: " + meta.nombre,
+            monedaInputOriginal: 'USD',
+            fechaFormateada: fechaFormateada,
+            fecha: dateObj,
+            fechaIsoLocal: isoLocal
+        });
+        transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     }
+
+    metas.splice(index, 1);
+    guardarYActualizarGestion();
+    cerrarModal('modal-detalle-meta');
+    actualizarInterfaz();
 }
 
 // ================= AGENDA DE PAGOS, DEUDAS Y SUSCRIPCIONES =================
-let agendaVistaActual = 'pendientes'; // 'pendientes' | 'calendario' | 'pagados'
+let agendaVistaActual = 'pendientes';
 let agendaCalAnio = new Date().getFullYear();
-let agendaCalMes = new Date().getMonth(); // 0 - 11
-let agendaDiaSeleccionado = null; // 'YYYY-MM-DD' o null
+let agendaCalMes = new Date().getMonth();
+let agendaDiaSeleccionado = null;
 let agendaPagoEnCursoId = null;
 
 function convertirMontoAgendaAUSD(monto, moneda) {
@@ -2100,7 +1920,7 @@ function convertirMontoAgendaAUSD(monto, moneda) {
     if (val <= 0) return 0;
     if (moneda === 'VES') return val / (tasaBCV || 1);
     if (moneda === 'EUR') return (val * (tasaEUR || 1)) / (tasaBCV || 1);
-    return val; // USD o USDT
+    return val;
 }
 
 function formatearMontoMonedaAgenda(monto, moneda) {
@@ -2120,47 +1940,15 @@ function calcularDiasRestantesAgenda(fechaIso) {
 }
 
 function obtenerInfoEstadoAgenda(item) {
-    if (item.estado === 'pagado') {
-        return {
-            claseCard: 'pagado',
-            claseBadge: 'pagado',
-            textoBadge: '✅ Pagado',
-            dias: 9999
-        };
-    }
-
+    if (item.estado === 'pagado') return { claseCard: 'pagado', claseBadge: 'pagado', textoBadge: '✅ Pagado', dias: 9999 };
     const dias = calcularDiasRestantesAgenda(item.fecha);
     if (dias < 0) {
         const abs = Math.abs(dias);
-        return {
-            claseCard: 'vencido',
-            claseBadge: 'vencido',
-            textoBadge: abs === 1 ? '🚨 Venció ayer' : `🚨 Vencido hace ${abs} días`,
-            dias
-        };
+        return { claseCard: 'vencido', claseBadge: 'vencido', textoBadge: abs === 1 ? '🚨 Venció ayer' : `🚨 Vencido hace ${abs} días`, dias };
     }
-    if (dias === 0) {
-        return {
-            claseCard: 'hoy',
-            claseBadge: 'hoy',
-            textoBadge: '⚡ Vence HOY',
-            dias
-        };
-    }
-    if (dias <= 3) {
-        return {
-            claseCard: 'proximo',
-            claseBadge: 'proximo',
-            textoBadge: dias === 1 ? '⏳ Vence mañana' : `⏳ En ${dias} días`,
-            dias
-        };
-    }
-    return {
-        claseCard: '',
-        claseBadge: 'normal',
-        textoBadge: `🗓️ En ${dias} días`,
-        dias
-    };
+    if (dias === 0) return { claseCard: 'hoy', claseBadge: 'hoy', textoBadge: '⚡ Vence HOY', dias };
+    if (dias <= 3) return { claseCard: 'proximo', claseBadge: 'proximo', textoBadge: dias === 1 ? '⏳ Vence mañana' : `⏳ En ${dias} días`, dias };
+    return { claseCard: '', claseBadge: 'normal', textoBadge: `🗓️ En ${dias} días`, dias };
 }
 
 function avanzarUnMesFechaISO(fechaIso) {
@@ -2168,42 +1956,25 @@ function avanzarUnMesFechaISO(fechaIso) {
     let anio = parseInt(partes[0], 10) || new Date().getFullYear();
     let mes = (parseInt(partes[1], 10) || 1) - 1;
     const diaOriginal = parseInt(partes[2], 10) || 1;
-
     mes += 1;
-    if (mes > 11) {
-        mes = 0;
-        anio += 1;
-    }
-
+    if (mes > 11) { mes = 0; anio += 1; }
     const maxDiasMesNuevo = new Date(anio, mes + 1, 0).getDate();
     const diaFinal = Math.min(diaOriginal, maxDiasMesNuevo);
-
-    const mm = String(mes + 1).padStart(2, '0');
-    const dd = String(diaFinal).padStart(2, '0');
-    return `${anio}-${mm}-${dd}`;
+    return `${anio}-${String(mes + 1).padStart(2, '0')}-${String(diaFinal).padStart(2, '0')}`;
 }
 
 function poblarSelectCategoriasAgenda(selectEl, valorSeleccionado = '') {
     if (!selectEl) return;
     selectEl.innerHTML = '';
-
     const listaBase = categorias.length > 0 ? [...categorias] : ['Servicios', 'Suscripciones', 'Deudas', 'Varios'];
-    if (valorSeleccionado && !listaBase.includes(valorSeleccionado)) {
-        listaBase.push(valorSeleccionado);
-    }
-
+    if (valorSeleccionado && !listaBase.includes(valorSeleccionado)) listaBase.push(valorSeleccionado);
     listaBase.forEach(cat => {
         const opt = document.createElement('option');
-        opt.value = cat;
-        opt.innerText = cat;
+        opt.value = cat; opt.innerText = cat;
         selectEl.appendChild(opt);
     });
-
-    if (valorSeleccionado && listaBase.includes(valorSeleccionado)) {
-        selectEl.value = valorSeleccionado;
-    } else if (listaBase.length > 0) {
-        selectEl.value = listaBase[0];
-    }
+    if (valorSeleccionado && listaBase.includes(valorSeleccionado)) selectEl.value = valorSeleccionado;
+    else if (listaBase.length > 0) selectEl.value = listaBase[0];
 }
 
 function abrirModalNuevaAgenda(idEditar = null, fechaPreseleccionada = null) {
@@ -2217,15 +1988,11 @@ function abrirModalNuevaAgenda(idEditar = null, fechaPreseleccionada = null) {
     const tituloModal = document.getElementById('titulo-modal-agenda');
     const boxRapida = document.getElementById('box-cat-rapida-agenda');
 
-    if (boxRapida) {
-        boxRapida.classList.add('oculto');
-        boxRapida.style.display = 'none';
-    }
+    if (boxRapida) { boxRapida.classList.add('oculto'); boxRapida.style.display = 'none'; }
 
     if (idEditar !== null && idEditar !== undefined) {
         const comp = agendaPagos.find(a => String(a.id) === String(idEditar));
         if (!comp) return;
-
         if (tituloModal) tituloModal.innerText = 'Editar Compromiso';
         if (inputEditId) inputEditId.value = String(comp.id);
         if (inputNota) inputNota.value = comp.nota || '';
@@ -2244,7 +2011,6 @@ function abrirModalNuevaAgenda(idEditar = null, fechaPreseleccionada = null) {
         if (selectFrec) selectFrec.value = 'unico';
         poblarSelectCategoriasAgenda(selectCat, categorias[0] || '');
     }
-
     abrirModal('modal-nueva-agenda');
 }
 
@@ -2252,22 +2018,14 @@ function toggleCrearCategoriaRapidaAgenda() {
     const box = document.getElementById('box-cat-rapida-agenda');
     if (!box) return;
     const estaOculto = box.classList.contains('oculto') || box.style.display === 'none';
-
     if (estaOculto) {
-        box.classList.remove('oculto');
-        box.style.display = 'flex';
+        box.classList.remove('oculto'); box.style.display = 'flex';
         const inColor = document.getElementById('in-cat-rapida-color');
         const inNombre = document.getElementById('in-cat-rapida-nombre');
-        if (inColor) {
-            inColor.value = PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
-        }
-        if (inNombre) {
-            inNombre.value = '';
-            setTimeout(() => inNombre.focus(), 50);
-        }
+        if (inColor) inColor.value = PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
+        if (inNombre) { inNombre.value = ''; setTimeout(() => inNombre.focus(), 50); }
     } else {
-        box.classList.add('oculto');
-        box.style.display = 'none';
+        box.classList.add('oculto'); box.style.display = 'none';
     }
 }
 
@@ -2281,10 +2039,7 @@ function guardarCategoriaRapidaAgenda() {
     if (!nuevaCat) return alert("Escribe un nombre para la nueva categoría.");
 
     const colorElegido = (inColor && inColor.value) ? inColor.value : PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
-
-    if (!categorias.includes(nuevaCat)) {
-        categorias.push(nuevaCat);
-    }
+    if (!categorias.includes(nuevaCat)) categorias.push(nuevaCat);
     categoriasColores[nuevaCat] = colorElegido;
 
     localStorage.setItem('categorias', JSON.stringify(categorias));
@@ -2293,13 +2048,8 @@ function guardarCategoriaRapidaAgenda() {
     cargarSelects();
     renderizarListasGestion();
     poblarSelectCategoriasAgenda(selectCatAgenda, nuevaCat);
-
     if (inNombre) inNombre.value = '';
-    if (box) {
-        box.classList.add('oculto');
-        box.style.display = 'none';
-    }
-
+    if (box) { box.classList.add('oculto'); box.style.display = 'none'; }
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
@@ -2316,7 +2066,6 @@ function guardarCompromisoAgenda() {
     if (isNaN(monto) || monto <= 0) return alert("Ingresa un monto válido mayor a 0.");
     if (!fecha) return alert("Selecciona la fecha de pago.");
 
-    // Si la categoría provino de la lista por defecto y el usuario aún no tenía categorías, la registramos
     if (categoria && !categorias.includes(categoria)) {
         categorias.push(categoria);
         asegurarColoresCategorias();
@@ -2324,32 +2073,14 @@ function guardarCompromisoAgenda() {
 
     if (editId) {
         const idx = agendaPagos.findIndex(a => String(a.id) === String(editId));
-        if (idx !== -1) {
-            agendaPagos[idx] = {
-                ...agendaPagos[idx],
-                nota,
-                monto,
-                moneda,
-                fecha,
-                frecuencia,
-                categoria
-            };
-        }
+        if (idx !== -1) agendaPagos[idx] = { ...agendaPagos[idx], nota, monto, moneda, fecha, frecuencia, categoria };
     } else {
         agendaPagos.push({
             id: Date.now() + Math.floor(Math.random() * 1000),
-            nota,
-            monto,
-            moneda,
-            fecha,
-            frecuencia,
-            categoria,
-            estado: 'pendiente',
-            ultimaFechaPagada: null,
-            ultimaTransaccionId: null
+            nota, monto, moneda, fecha, frecuencia, categoria,
+            estado: 'pendiente', ultimaFechaPagada: null, ultimaTransaccionId: null
         });
     }
-
     guardarYActualizarGestion();
     cerrarModal('modal-nueva-agenda');
 }
@@ -2379,37 +2110,22 @@ function cambiarVistaAgenda(vista) {
     if (segPag) segPag.classList.toggle('activo', vista === 'pagados');
 
     if (calWrapper) {
-        if (vista === 'calendario') {
-            calWrapper.classList.remove('oculto');
-            calWrapper.style.display = 'block';
-        } else {
-            calWrapper.classList.add('oculto');
-            calWrapper.style.display = 'none';
-        }
+        calWrapper.classList.toggle('oculto', vista !== 'calendario');
+        calWrapper.style.display = vista === 'calendario' ? 'block' : 'none';
     }
-
     renderizarAgenda();
 }
 
 function cambiarMesCalendarioAgenda(direccion) {
     agendaCalMes += direccion;
-    if (agendaCalMes < 0) {
-        agendaCalMes = 11;
-        agendaCalAnio -= 1;
-    } else if (agendaCalMes > 11) {
-        agendaCalMes = 0;
-        agendaCalAnio += 1;
-    }
+    if (agendaCalMes < 0) { agendaCalMes = 11; agendaCalAnio -= 1; }
+    else if (agendaCalMes > 11) { agendaCalMes = 0; agendaCalAnio += 1; }
     agendaDiaSeleccionado = null;
     renderizarAgenda();
 }
 
 function seleccionarDiaCalendarioAgenda(fechaIso) {
-    if (agendaDiaSeleccionado === fechaIso) {
-        agendaDiaSeleccionado = null;
-    } else {
-        agendaDiaSeleccionado = fechaIso;
-    }
+    agendaDiaSeleccionado = (agendaDiaSeleccionado === fechaIso) ? null : fechaIso;
     renderizarAgenda();
 }
 
@@ -2433,20 +2149,15 @@ function renderizarCalendarioAgenda() {
     const hoyIso = getLocalYYYYMMDD();
 
     let html = '';
-    for (let i = 0; i < primerDiaSemana; i++) {
-        html += `<div class="agenda-cal-day vacio"></div>`;
-    }
+    for (let i = 0; i < primerDiaSemana; i++) html += `<div class="agenda-cal-day vacio"></div>`;
 
     for (let dia = 1; dia <= totalDiasMes; dia++) {
-        const mm = String(agendaCalMes + 1).padStart(2, '0');
-        const dd = String(dia).padStart(2, '0');
-        const isoDia = `${agendaCalAnio}-${mm}-${dd}`;
-
+        const isoDia = `${agendaCalAnio}-${String(agendaCalMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
         const esHoy = isoDia === hoyIso;
         const esSeleccionado = isoDia === agendaDiaSeleccionado;
-
         const itemsDia = agendaPagos.filter(a => a.fecha === isoDia);
         let dotsHtml = '';
+
         if (itemsDia.length > 0) {
             const dots = itemsDia.slice(0, 3).map(item => {
                 let colorDot = obtenerColorCategoria(item.categoria);
@@ -2460,25 +2171,16 @@ function renderizarCalendarioAgenda() {
             }).join('');
             dotsHtml = `<div class="cal-day-dots">${dots}</div>`;
         }
-
-        html += `
-            <div class="agenda-cal-day ${esHoy ? 'hoy' : ''} ${esSeleccionado ? 'seleccionado' : ''}" onclick="seleccionarDiaCalendarioAgenda('${isoDia}')">
-                <span>${dia}</span>
-                ${dotsHtml}
-            </div>
-        `;
+        html += `<div class="agenda-cal-day ${esHoy ? 'hoy' : ''} ${esSeleccionado ? 'seleccionado' : ''}" onclick="seleccionarDiaCalendarioAgenda('${isoDia}')"><span>${dia}</span>${dotsHtml}</div>`;
     }
-
     grid.innerHTML = html;
 
     if (filtroBar && diaLabel) {
         if (agendaDiaSeleccionado) {
-            filtroBar.classList.remove('oculto');
-            filtroBar.style.display = 'flex';
+            filtroBar.classList.remove('oculto'); filtroBar.style.display = 'flex';
             diaLabel.innerText = `📅 ${obtenerEtiquetaDiaCompleta(agendaDiaSeleccionado)}`;
         } else {
-            filtroBar.classList.add('oculto');
-            filtroBar.style.display = 'none';
+            filtroBar.classList.add('oculto'); filtroBar.style.display = 'none';
         }
     }
 }
@@ -2488,8 +2190,7 @@ function construirTarjetaItemAgendaHTML(item) {
     const colorCat = obtenerColorCategoria(item.categoria);
     const montoPrincipal = formatearMontoCensurado(formatearMontoMonedaAgenda(item.monto, item.moneda), false);
     const eqUSD = convertirMontoAgendaAUSD(item.monto, item.moneda);
-    const mostrarEq = item.moneda !== 'USD';
-    const textoEq = mostrarEq ? `<span class="agenda-item-eq">≈ ${formatearMontoCensurado('$' + eqUSD.toFixed(2), false)}</span>` : '';
+    const textoEq = item.moneda !== 'USD' ? `<span class="agenda-item-eq">≈ ${formatearMontoCensurado('$' + eqUSD.toFixed(2), false)}</span>` : '';
     const etiquetaFrec = item.frecuencia === 'mensual' ? '🔄 Mensual' : '📌 Único';
     const fechaLegible = obtenerEtiquetaDiaCompleta(item.fecha);
 
@@ -2506,11 +2207,7 @@ function construirTarjetaItemAgendaHTML(item) {
                         <span class="agenda-item-title">${item.nota}</span>
                     </div>
                     <div class="agenda-item-meta">
-                        <span>${item.categoria}</span>
-                        <span>•</span>
-                        <span>${fechaLegible}</span>
-                        <span>•</span>
-                        <span>${etiquetaFrec}</span>
+                        <span>${item.categoria}</span><span>•</span><span>${fechaLegible}</span><span>•</span><span>${etiquetaFrec}</span>
                     </div>
                 </div>
                 <div class="agenda-item-amount-col">
@@ -2541,36 +2238,25 @@ function irAAgendaDesdeBanner() {
 function actualizarRecordatoriosAgenda() {
     const badgeNav = document.getElementById('nav-agenda-badge');
     const bannerHome = document.getElementById('banner-recordatorio-agenda');
-
-    const pendientes = agendaPagos
-        .filter(a => a.estado !== 'pagado')
-        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
-
+    const pendientes = agendaPagos.filter(a => a.estado !== 'pagado').sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
     const urgentes = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) <= 3);
 
-    // 1. Actualizar punto/badge en la barra de navegación inferior
     if (badgeNav) {
         if (urgentes.length > 0) {
             badgeNav.innerText = urgentes.length > 9 ? '9+' : String(urgentes.length);
-            badgeNav.classList.remove('oculto');
-            badgeNav.style.display = 'flex';
+            badgeNav.classList.remove('oculto'); badgeNav.style.display = 'flex';
         } else {
-            badgeNav.classList.add('oculto');
-            badgeNav.style.display = 'none';
+            badgeNav.classList.add('oculto'); badgeNav.style.display = 'none';
         }
     }
 
-    // 2. Actualizar banner compacto no invasivo en la pestaña de Inicio
     if (bannerHome) {
         if (urgentes.length === 0) {
-            bannerHome.classList.add('oculto');
-            bannerHome.style.display = 'none';
-            bannerHome.innerHTML = '';
+            bannerHome.classList.add('oculto'); bannerHome.style.display = 'none'; bannerHome.innerHTML = '';
         } else {
             const primero = urgentes[0];
             const dias = calcularDiasRestantesAgenda(primero.fecha);
             const esCritico = dias <= 0;
-
             let tagTexto = '⏳ PRÓXIMO PAGO AGENDADO';
             if (dias < 0) tagTexto = '🚨 PAGO VENCIDO EN AGENDA';
             else if (dias === 0) tagTexto = '⚡ PAGO AGENDADO PARA HOY';
@@ -2605,13 +2291,8 @@ function renderizarAgenda() {
     const statProxTexto = document.getElementById('agenda-stat-prox-texto');
     const contenedorLista = document.getElementById('lista-agenda-principal');
 
-    const pendientes = agendaPagos
-        .filter(a => a.estado !== 'pagado')
-        .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
-
-    const pagados = agendaPagos
-        .filter(a => a.estado === 'pagado')
-        .sort((a, b) => (b.ultimaFechaPagada || b.fecha || '').localeCompare(a.ultimaFechaPagada || a.fecha || ''));
+    const pendientes = agendaPagos.filter(a => a.estado !== 'pagado').sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+    const pagados = agendaPagos.filter(a => a.estado === 'pagado').sort((a, b) => (b.ultimaFechaPagada || b.fecha || '').localeCompare(a.ultimaFechaPagada || a.fecha || ''));
 
     const totalPendienteUSD = pendientes.reduce((acc, item) => acc + convertirMontoAgendaAUSD(item.monto, item.moneda), 0);
     const urgentes = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) <= 3);
@@ -2623,13 +2304,9 @@ function renderizarAgenda() {
     if (statUrgentes) statUrgentes.innerText = String(urgentes.length);
 
     if (statProxTexto) {
-        if (vencidosCount > 0) {
-            statProxTexto.innerText = `${vencidosCount} ${vencidosCount === 1 ? 'vencido' : 'vencidos'}`;
-            statProxTexto.style.color = '#FF453A';
-        } else if (hoyCount > 0) {
-            statProxTexto.innerText = `${hoyCount} ${hoyCount === 1 ? 'vence hoy' : 'vencen hoy'}`;
-            statProxTexto.style.color = '#FF9F0A';
-        } else if (urgentes.length > 0) {
+        if (vencidosCount > 0) { statProxTexto.innerText = `${vencidosCount} ${vencidosCount === 1 ? 'vencido' : 'vencidos'}`; statProxTexto.style.color = '#FF453A'; }
+        else if (hoyCount > 0) { statProxTexto.innerText = `${hoyCount} ${hoyCount === 1 ? 'vence hoy' : 'vencen hoy'}`; statProxTexto.style.color = '#FF9F0A'; }
+        else if (urgentes.length > 0) {
             const dProx = calcularDiasRestantesAgenda(urgentes[0].fecha);
             statProxTexto.innerText = dProx === 1 ? 'Vence mañana' : `En ${dProx} días`;
             statProxTexto.style.color = '#FFD60A';
@@ -2660,8 +2337,7 @@ function renderizarAgenda() {
                 <div style="text-align:center; padding: 24px 16px; color: var(--text-secondary); font-size: 13.5px;">
                     <p style="margin-bottom: 10px;">${textoVacioCal}</p>
                     <button type="button" class="btn-secundario" style="width:auto; margin:0 auto; padding:8px 16px; font-size:13px;" onclick="abrirModalNuevaAgenda(null, '${agendaDiaSeleccionado || getLocalYYYYMMDD()}')">+ Agendar en esta fecha</button>
-                </div>
-            `;
+                </div>`;
         } else {
             contenedorLista.innerHTML = itemsFiltradosCal.map(item => construirTarjetaItemAgendaHTML(item)).join('');
         }
@@ -2669,81 +2345,49 @@ function renderizarAgenda() {
     }
 
     if (agendaVistaActual === 'pagados') {
-        if (pagados.length === 0) {
-            contenedorLista.innerHTML = `<p style="text-align:center; padding: 28px 16px; color: var(--text-secondary); font-size: 13.5px;">Aún no tienes compromisos completados.</p>`;
-        } else {
-            contenedorLista.innerHTML = pagados.map(item => construirTarjetaItemAgendaHTML(item)).join('');
-        }
+        contenedorLista.innerHTML = pagados.length === 0
+            ? `<p style="text-align:center; padding: 28px 16px; color: var(--text-secondary); font-size: 13.5px;">Aún no tienes compromisos completados.</p>`
+            : pagados.map(item => construirTarjetaItemAgendaHTML(item)).join('');
         return;
     }
 
-    // Vista por defecto: 'pendientes' agrupados por urgencia
     if (pendientes.length === 0) {
         contenedorLista.innerHTML = `
             <div style="text-align:center; padding: 30px 16px; color: var(--text-secondary); font-size: 13.5px;">
                 <p style="margin-bottom: 12px;">No tienes pagos ni suscripciones pendientes. ¡Todo al día!</p>
                 <button type="button" class="btn-secundario" style="width:auto; margin:0 auto; padding:9px 18px; font-size:13px;" onclick="abrirModalNuevaAgenda()">+ Agendar mi primer pago</button>
-            </div>
-        `;
+            </div>`;
         return;
     }
 
     const grupoVencidos = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) < 0);
     const grupoHoy = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) === 0);
-    const grupoProximos3 = pendientes.filter(a => {
-        const d = calcularDiasRestantesAgenda(a.fecha);
-        return d >= 1 && d <= 3;
-    });
+    const grupoProximos3 = pendientes.filter(a => { const d = calcularDiasRestantesAgenda(a.fecha); return d >= 1 && d <= 3; });
     const grupoFuturos = pendientes.filter(a => calcularDiasRestantesAgenda(a.fecha) > 3);
 
     let htmlPend = '';
-    if (grupoVencidos.length > 0) {
-        htmlPend += `<div class="agenda-group-title" style="color:#FF453A;">🚨 Vencidos (${grupoVencidos.length})</div>`;
-        htmlPend += grupoVencidos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
-    }
-    if (grupoHoy.length > 0) {
-        htmlPend += `<div class="agenda-group-title" style="color:#FF9F0A;">⚡ Para Hoy (${grupoHoy.length})</div>`;
-        htmlPend += grupoHoy.map(item => construirTarjetaItemAgendaHTML(item)).join('');
-    }
-    if (grupoProximos3.length > 0) {
-        htmlPend += `<div class="agenda-group-title" style="color:#FFD60A;">⏳ Próximos a Vencer (${grupoProximos3.length})</div>`;
-        htmlPend += grupoProximos3.map(item => construirTarjetaItemAgendaHTML(item)).join('');
-    }
-    if (grupoFuturos.length > 0) {
-        htmlPend += `<div class="agenda-group-title">🗓️ Más Adelante (${grupoFuturos.length})</div>`;
-        htmlPend += grupoFuturos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
-    }
-
+    if (grupoVencidos.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF453A;">🚨 Vencidos (${grupoVencidos.length})</div>` + grupoVencidos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    if (grupoHoy.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF9F0A;">⚡ Para Hoy (${grupoHoy.length})</div>` + grupoHoy.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    if (grupoProximos3.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FFD60A;">⏳ Próximos a Vencer (${grupoProximos3.length})</div>` + grupoProximos3.map(item => construirTarjetaItemAgendaHTML(item)).join('');
+    if (grupoFuturos.length > 0) htmlPend += `<div class="agenda-group-title">🗓️ Más Adelante (${grupoFuturos.length})</div>` + grupoFuturos.map(item => construirTarjetaItemAgendaHTML(item)).join('');
     contenedorLista.innerHTML = htmlPend;
 }
 
 // ================= EJECUCIÓN DEL PAGO DE AGENDA CONECTADO A CUENTAS E HISTORIAL =================
 function abrirModalPagarAgenda(idCompromiso) {
-    if (cuentas.length === 0) {
-        return alert("Primero debes crear al menos una cuenta en Ajustes > Gestionar Cuentas.");
-    }
-
+    if (cuentas.length === 0) return alert("Primero debes crear al menos una cuenta en Ajustes > Gestionar Cuentas.");
     const comp = agendaPagos.find(a => String(a.id) === String(idCompromiso));
     if (!comp) return;
 
     agendaPagoEnCursoId = comp.id;
-
     const selCuenta = document.getElementById('sel-cuenta-pagar-agenda');
     if (selCuenta) {
         selCuenta.innerHTML = '';
-        cuentas.forEach(c => {
-            selCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`;
-        });
-
-        // Pre-seleccionar cuenta compatible con la moneda del compromiso o la cuenta activa
+        cuentas.forEach(c => selCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`);
         const cuentaMismaMoneda = cuentas.find(c => c.moneda === comp.moneda);
-        if (cuentaMismaMoneda) {
-            selCuenta.value = cuentaMismaMoneda.id;
-        } else if (cuentaActivaId && cuentas.find(c => c.id == cuentaActivaId)) {
-            selCuenta.value = cuentaActivaId;
-        } else {
-            selCuenta.value = cuentas[0].id;
-        }
+        if (cuentaMismaMoneda) selCuenta.value = cuentaMismaMoneda.id;
+        else if (cuentaActivaId && cuentas.find(c => c.id == cuentaActivaId)) selCuenta.value = cuentaActivaId;
+        else selCuenta.value = cuentas[0].id;
     }
 
     const inMonto = document.getElementById('monto-pagar-agenda');
@@ -2756,22 +2400,15 @@ function abrirModalPagarAgenda(idCompromiso) {
     const inTasaUsdt = document.getElementById('input-tasa-agenda-usdt');
     const descEl = document.getElementById('desc-pagar-agenda');
 
-    if (descEl) {
-        descEl.innerHTML = `Vas a registrar el pago de <strong>"${comp.nota}"</strong>. Confirma de qué cuenta se descontará:`;
-    }
+    if (descEl) descEl.innerHTML = `Vas a registrar el pago de <strong>"${comp.nota}"</strong>. Confirma de qué cuenta se descontará:`;
     if (inMonto) inMonto.value = comp.monto;
     if (selMoneda) selMoneda.value = comp.moneda || 'USD';
     poblarSelectCategoriasAgenda(selCat, comp.categoria);
     if (inFecha) inFecha.value = getLocalYYYYMMDD();
     if (inNota) inNota.value = comp.nota || '';
     if (selComision) selComision.value = 'tarjeta';
-    if (inComManual) {
-        inComManual.classList.add('oculto');
-        inComManual.value = '';
-    }
-    if (inTasaUsdt) {
-        inTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
-    }
+    if (inComManual) { inComManual.classList.add('oculto'); inComManual.value = ''; }
+    if (inTasaUsdt) inTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
 
     actualizarUIModalPagarAgenda();
     abrirModal('modal-pagar-agenda');
@@ -2781,14 +2418,8 @@ function toggleComisionManualAgenda() {
     const selComision = document.getElementById('sel-comision-agenda');
     const inManual = document.getElementById('input-comision-agenda-manual');
     if (!selComision || !inManual) return;
-
-    if (selComision.value === 'manual') {
-        inManual.classList.remove('oculto');
-        inManual.focus();
-    } else {
-        inManual.classList.add('oculto');
-        inManual.value = '';
-    }
+    if (selComision.value === 'manual') { inManual.classList.remove('oculto'); inManual.focus(); }
+    else { inManual.classList.add('oculto'); inManual.value = ''; }
 }
 
 function actualizarUIModalPagarAgenda() {
@@ -2802,37 +2433,26 @@ function actualizarUIModalPagarAgenda() {
 
     if (boxComision) {
         if (monedaPago === 'VES') {
-            boxComision.classList.remove('oculto');
-            boxComision.style.display = 'flex';
+            boxComision.classList.remove('oculto'); boxComision.style.display = 'flex';
         } else {
-            boxComision.classList.add('oculto');
-            boxComision.style.display = 'none';
+            boxComision.classList.add('oculto'); boxComision.style.display = 'none';
             const selCom = document.getElementById('sel-comision-agenda');
             if (selCom) selCom.value = 'tarjeta';
             toggleComisionManualAgenda();
         }
     }
 
-    const requiereTasaUsdt = Boolean(
-        cuenta && (
-            (cuenta.moneda === 'USDT' && monedaPago === 'VES') ||
-            (cuenta.moneda === 'VES' && monedaPago === 'USDT')
-        )
-    );
-
+    const requiereTasaUsdt = Boolean(cuenta && ((cuenta.moneda === 'USDT' && monedaPago === 'VES') || (cuenta.moneda === 'VES' && monedaPago === 'USDT')));
     if (boxTasaUsdt) {
         if (requiereTasaUsdt) {
-            boxTasaUsdt.classList.remove('oculto');
-            boxTasaUsdt.style.display = 'flex';
+            boxTasaUsdt.classList.remove('oculto'); boxTasaUsdt.style.display = 'flex';
             if (inTasaUsdt && (!inTasaUsdt.value || parseFloat(inTasaUsdt.value) <= 0)) {
                 inTasaUsdt.value = tasaParalelo > 1 ? tasaParalelo.toFixed(2) : '';
             }
         } else {
-            boxTasaUsdt.classList.add('oculto');
-            boxTasaUsdt.style.display = 'none';
+            boxTasaUsdt.classList.add('oculto'); boxTasaUsdt.style.display = 'none';
         }
     }
-
     calcularPreviewModalPagarAgenda();
 }
 
@@ -2845,25 +2465,19 @@ function calcularDatosConversionPagoAgenda() {
     let comisionBs = 0;
     if (monedaPago === 'VES') {
         const tipoCom = document.getElementById('sel-comision-agenda')?.value || 'tarjeta';
-        if (tipoCom === 'p2p' && montoBase > 0) {
-            comisionBs = Math.max(14.00, montoBase * 0.003);
-        } else if (tipoCom === 'p2c' && montoBase > 0) {
-            comisionBs = Math.max(14.00, montoBase * 0.015);
-        } else if (tipoCom === 'manual') {
-            comisionBs = parseFloat(document.getElementById('input-comision-agenda-manual')?.value) || 0;
-        }
+        if (tipoCom === 'p2p' && montoBase > 0) comisionBs = Math.max(14.00, montoBase * 0.003);
+        else if (tipoCom === 'p2c' && montoBase > 0) comisionBs = Math.max(14.00, montoBase * 0.015);
+        else if (tipoCom === 'manual') comisionBs = parseFloat(document.getElementById('input-comision-agenda-manual')?.value) || 0;
     }
 
     const montoTotalOperacion = montoBase + comisionBs;
     const tasaUsdtInput = parseFloat(document.getElementById('input-tasa-agenda-usdt')?.value) || tasaParalelo || tasaBCV || 1;
-
     let montoUSD = montoTotalOperacion;
     let detalleTasaUsdt = '';
 
     if (cuenta && cuenta.moneda === 'USDT') {
-        if (monedaPago === 'USDT' || monedaPago === 'USD') {
-            montoUSD = montoTotalOperacion;
-        } else if (monedaPago === 'VES') {
+        if (monedaPago === 'USDT' || monedaPago === 'USD') montoUSD = montoTotalOperacion;
+        else if (monedaPago === 'VES') {
             montoUSD = tasaUsdtInput > 0 ? (montoTotalOperacion / tasaUsdtInput) : 0;
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
         } else if (monedaPago === 'EUR') {
@@ -2871,39 +2485,23 @@ function calcularDatosConversionPagoAgenda() {
             montoUSD = tasaUsdtInput > 0 ? (enBs / tasaUsdtInput) : 0;
         }
     } else {
-        if (monedaPago === 'VES') {
-            montoUSD = montoTotalOperacion / (tasaBCV || 1);
-        } else if (monedaPago === 'EUR') {
-            montoUSD = (montoTotalOperacion * (tasaEUR || 1)) / (tasaBCV || 1);
-        } else if (monedaPago === 'USDT' && cuenta && cuenta.moneda === 'VES') {
+        if (monedaPago === 'VES') montoUSD = montoTotalOperacion / (tasaBCV || 1);
+        else if (monedaPago === 'EUR') montoUSD = (montoTotalOperacion * (tasaEUR || 1)) / (tasaBCV || 1);
+        else if (monedaPago === 'USDT' && cuenta && cuenta.moneda === 'VES') {
             const enBs = montoTotalOperacion * tasaUsdtInput;
             montoUSD = enBs / (tasaBCV || 1);
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
-        } else {
-            montoUSD = montoTotalOperacion;
-        }
+        } else montoUSD = montoTotalOperacion;
     }
 
-    return {
-        cuenta,
-        montoBase,
-        monedaPago,
-        comisionBs,
-        montoTotalOperacion,
-        montoUSD,
-        detalleTasaUsdt
-    };
+    return { cuenta, montoBase, monedaPago, comisionBs, montoTotalOperacion, montoUSD, detalleTasaUsdt };
 }
 
 function calcularPreviewModalPagarAgenda() {
     const lblPreview = document.getElementById('lbl-descuento-agenda-preview');
     if (!lblPreview) return;
-
     const datos = calcularDatosConversionPagoAgenda();
-    if (!datos.cuenta) {
-        lblPreview.innerText = '$0.00';
-        return;
-    }
+    if (!datos.cuenta) { lblPreview.innerText = '$0.00'; return; }
 
     if (datos.cuenta.moneda === 'VES') {
         const totalBsCuenta = datos.montoUSD * (tasaBCV || 1);
@@ -2938,17 +2536,13 @@ function confirmarPagoAgenda() {
     const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
     let notaFinal = notaUsuario ? `📅 ${notaUsuario}` : `📅 Pago Agenda: ${comp.nota}`;
-    if (datos.comisionBs > 0) {
-        notaFinal += ` (Comisión: Bs ${datos.comisionBs.toFixed(2)})`;
-    }
-    if (datos.detalleTasaUsdt) {
-        notaFinal += ` (${datos.detalleTasaUsdt})`;
-    }
+    if (datos.comisionBs > 0) notaFinal += ` (Comisión: Bs ${datos.comisionBs.toFixed(2)})`;
+    if (datos.detalleTasaUsdt) notaFinal += ` (${datos.detalleTasaUsdt})`;
 
     const fechaPreviaCompromiso = comp.fecha;
     const nuevoIdTrans = dateObj.getTime() + Math.random();
 
-    const transaccion = {
+    transacciones.push({
         id: nuevoIdTrans,
         cuentaId: datos.cuenta.id,
         montoUSD: datos.montoUSD,
@@ -2962,12 +2556,9 @@ function confirmarPagoAgenda() {
         agendaId: comp.id,
         agendaFrecuencia: comp.frecuencia || 'unico',
         agendaFechaPrevia: fechaPreviaCompromiso
-    };
-
-    transacciones.push(transaccion);
+    });
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 
-    // Actualizar estado del compromiso en la Agenda
     if (comp.frecuencia === 'mensual') {
         comp.ultimaFechaPagada = fechaPreviaCompromiso;
         comp.fecha = avanzarUnMesFechaISO(comp.fecha);
@@ -2981,19 +2572,15 @@ function confirmarPagoAgenda() {
 
     cuentaActivaId = datos.cuenta.id;
     agendaPagoEnCursoId = null;
-
     guardarYActualizarGestion();
     cerrarModal('modal-pagar-agenda');
 }
 
-// Radiografía Financiera Integral (incluye Agenda de Pagos para AskBot y diagnósticos)
 function obtenerRadiografiaFinanciera() {
     const balancesPorCuenta = cuentas.map(c => {
         let balUSD = 0;
         transacciones.forEach(t => {
-            if (t.cuentaId == c.id) {
-                balUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
-            }
+            if (t.cuentaId == c.id) balUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
         });
         return { ...c, balanceUSD: balUSD };
     });
@@ -3001,13 +2588,8 @@ function obtenerRadiografiaFinanciera() {
     const patrimonioTotalUSD = balancesPorCuenta.reduce((acc, c) => acc + c.balanceUSD, 0);
     const compromisosPendientes = agendaPagos
         .filter(a => a.estado !== 'pagado')
-        .map(a => ({
-            ...a,
-            montoEquivalenteUSD: convertirMontoAgendaAUSD(a.monto, a.moneda),
-            diasRestantes: calcularDiasRestantesAgenda(a.fecha)
-        }))
+        .map(a => ({ ...a, montoEquivalenteUSD: convertirMontoAgendaAUSD(a.monto, a.moneda), diasRestantes: calcularDiasRestantesAgenda(a.fecha) }))
         .sort((a, b) => a.diasRestantes - b.diasRestantes);
-
     const totalCompromisosPendientesUSD = compromisosPendientes.reduce((acc, a) => acc + a.montoEquivalenteUSD, 0);
 
     return {
@@ -3020,50 +2602,151 @@ function obtenerRadiografiaFinanciera() {
     };
 }
 
-// ================= CALCULADORA =================
+// ================= CALCULADORA, BRECHA ($/USDT), FECHA VALOR Y CALENDARIO HISTÓRICO ("AL CAMBIO") =================
 let calcModoTasa = 'BCV'; 
 let calcUltimaEdicion = 'USD'; 
 
 function formatFechaCorta(isoString) {
     if(!isoString) return "Actualizando...";
-    const d = new Date(isoString);
+    const d = parsearFechaSeguraLocal(isoString);
     const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     return `${dias[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(-2)}`;
 }
 
 function esFechaFutura(isoString) {
     if(!isoString) return false;
-    const d = new Date(isoString); const today = new Date();
+    const d = parsearFechaSeguraLocal(isoString);
+    const today = new Date();
     return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() > new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+}
+
+function actualizarBrechaCambiaria() {
+    const badgeHome = document.getElementById('badge-brecha-home');
+    const badgeCalc = document.getElementById('calc-brecha-box');
+    const bcvRef = Number(tasaBCV) || 1;
+    const usdtRef = Number(tasaParalelo) || 1;
+    const brechaPct = bcvRef > 0 ? ((usdtRef - bcvRef) / bcvRef) * 100 : 0;
+    const signo = brechaPct > 0 ? '+' : '';
+
+    if (badgeHome) badgeHome.innerText = `Brecha: ${signo}${brechaPct.toFixed(2)}%`;
+    if (badgeCalc) badgeCalc.innerText = `Brecha ($/USDT): ${signo}${brechaPct.toFixed(2)}%`;
+}
+
+function obtenerTasaEnFechaHistorica(modo, fechaISO) {
+    const serie = tasasHistoricas[modo] || [];
+    if (!serie || serie.length === 0) return tasasData[modo] || { valor: 1, previo: 1, fecha: fechaISO };
+
+    let idxElegido = -1;
+    for (let i = 0; i < serie.length; i++) {
+        if (serie[i].fecha <= fechaISO) idxElegido = i;
+        else break;
+    }
+    if (idxElegido === -1) idxElegido = 0;
+
+    const itemActual = serie[idxElegido];
+    let valorPrevio = itemActual.promedio;
+    if (idxElegido > 0) {
+        valorPrevio = serie[idxElegido - 1].promedio;
+        if (Math.abs(itemActual.promedio - valorPrevio) < 0.0001) {
+            for (let k = idxElegido - 2; k >= Math.max(0, idxElegido - 5); k--) {
+                if (Math.abs(itemActual.promedio - serie[k].promedio) >= 0.0001) {
+                    valorPrevio = serie[k].promedio;
+                    break;
+                }
+            }
+        }
+    }
+    return { valor: itemActual.promedio, previo: valorPrevio, fecha: itemActual.fecha };
 }
 
 function actualizarInfoCalculadora(modo) {
     const varBox = document.getElementById('calc-variacion-box');
     const badge = document.getElementById('calc-fecha-badge');
     const banner = document.getElementById('banner-fecha-valor');
+    const bannerTexto = document.getElementById('banner-fecha-valor-texto');
+    const lblEstado = document.getElementById('calc-estado-tasa-lbl');
+    const btnSwitchCalc = document.getElementById('btn-calc-switch-fecha');
+    const icoSwitchCalc = document.getElementById('ico-calc-switch-fecha');
+    const btnSwitchHome = document.getElementById('btn-home-switch-fecha');
 
-    if(modo === 'Custom') { varBox.classList.add('oculto'); banner.classList.add('oculto'); badge.innerText = "Personalizada"; return; }
+    if (modo === 'Custom') {
+        if (varBox) varBox.classList.add('oculto');
+        if (banner) banner.classList.add('oculto');
+        if (badge) { badge.innerText = "Personalizada"; badge.classList.remove('fecha-futura-activa'); }
+        if (lblEstado) lblEstado.innerText = "Tasa definida manualmente:";
+        if (btnSwitchCalc && !fechaHistoricaCalcSeleccionada && !hayFechaPosteriorBCV) {
+            btnSwitchCalc.classList.add('oculto'); btnSwitchCalc.style.display = 'none';
+        }
+        return;
+    }
 
-    varBox.classList.remove('oculto');
-    const data = tasasData[modo];
-    if(!data) return;
+    if (varBox) varBox.classList.remove('oculto');
+    let data = fechaHistoricaCalcSeleccionada ? obtenerTasaEnFechaHistorica(modo, fechaHistoricaCalcSeleccionada) : tasasData[modo];
+    if (!data) return;
 
     const diffAbs = data.valor - data.previo;
     const diffPct = data.previo ? (diffAbs / data.previo) * 100 : 0;
 
-    if(diffAbs > 0) { varBox.innerText = `↑ +${diffAbs.toFixed(2)} Bs (${diffPct.toFixed(2)}%)`; varBox.className = 'tasa-variacion var-positiva'; } 
-    else if(diffAbs < 0) { varBox.innerText = `↓ ${diffAbs.toFixed(2)} Bs (${Math.abs(diffPct).toFixed(2)}%)`; varBox.className = 'tasa-variacion var-negativa'; } 
-    else { varBox.innerText = `− 0.00 Bs (0.00%)`; varBox.className = 'tasa-variacion var-neutra'; }
+    if (varBox) {
+        if (diffAbs > 0.0001) { varBox.innerText = `↑ +${diffAbs.toFixed(2)} Bs (+${diffPct.toFixed(2)}%)`; varBox.className = 'tasa-variacion var-positiva'; }
+        else if (diffAbs < -0.0001) { varBox.innerText = `↓ ${diffAbs.toFixed(2)} Bs (-${Math.abs(diffPct).toFixed(2)}%)`; varBox.className = 'tasa-variacion var-negativa'; }
+        else { varBox.innerText = `− 0.00 Bs (0.00%)`; varBox.className = 'tasa-variacion var-neutra'; }
+    }
 
-    if(data.fecha) {
-        badge.innerText = formatFechaCorta(data.fecha);
-        if(esFechaFutura(data.fecha)) banner.classList.remove('oculto'); else banner.classList.add('oculto');
+    if (fechaHistoricaCalcSeleccionada) {
+        const fechaMostrada = formatFechaCorta(fechaHistoricaCalcSeleccionada);
+        if (badge) { badge.innerText = `📅 Histórica: ${fechaMostrada}`; badge.classList.add('fecha-futura-activa'); }
+        if (lblEstado) lblEstado.innerText = `Variación del ${fechaMostrada}:`;
+        if (banner) {
+            banner.classList.remove('oculto');
+            if (bannerTexto) bannerTexto.innerText = `Consultando tasa histórica (${fechaMostrada}). Toca ↩ para volver a hoy.`;
+        }
+        if (btnSwitchCalc) {
+            btnSwitchCalc.classList.remove('oculto'); btnSwitchCalc.style.display = 'flex';
+            btnSwitchCalc.classList.add('destacado-ambar');
+        }
+        if (icoSwitchCalc) icoSwitchCalc.innerText = '↩';
+        return;
+    }
+
+    const viendoFutura = (usandoFechaPosterior && hayFechaPosteriorBCV && (modo === 'BCV' || modo === 'EUR')) || esFechaFutura(data.fecha);
+
+    if (badge && data.fecha) {
+        const fCorta = formatFechaCorta(data.fecha);
+        badge.innerText = viendoFutura ? `⏳ Fecha Valor: ${fCorta}` : fCorta;
+        badge.classList.toggle('fecha-futura-activa', Boolean(viendoFutura));
+    }
+    if (lblEstado) {
+        lblEstado.innerText = viendoFutura ? "Variación respecto a la tasa vigente:" : "Variación respecto al cierre previo:";
+    }
+    if (banner) {
+        if (viendoFutura) {
+            banner.classList.remove('oculto');
+            if (bannerTexto) bannerTexto.innerText = `Viendo tasa con fecha valor futura BCV (${formatFechaCorta(data.fecha)})`;
+        } else {
+            banner.classList.add('oculto');
+        }
+    }
+
+    if (hayFechaPosteriorBCV) {
+        if (btnSwitchCalc) {
+            btnSwitchCalc.classList.remove('oculto'); btnSwitchCalc.style.display = 'flex';
+            btnSwitchCalc.classList.toggle('destacado-ambar', Boolean(usandoFechaPosterior));
+        }
+        if (icoSwitchCalc) icoSwitchCalc.innerText = usandoFechaPosterior ? '↩' : '📅→';
+        if (btnSwitchHome) {
+            btnSwitchHome.classList.remove('oculto'); btnSwitchHome.style.display = 'inline-flex';
+            btnSwitchHome.innerText = usandoFechaPosterior ? '↩ Hoy' : '📅→';
+        }
+    } else {
+        if (btnSwitchCalc) { btnSwitchCalc.classList.add('oculto'); btnSwitchCalc.style.display = 'none'; btnSwitchCalc.classList.remove('destacado-ambar'); }
+        if (btnSwitchHome) { btnSwitchHome.classList.add('oculto'); btnSwitchHome.style.display = 'none'; }
     }
 }
 
 function setTasaModo(modo) {
     calcModoTasa = modo;
-    document.querySelectorAll('.segment').forEach(el => el.classList.remove('activo'));
+    document.querySelectorAll('#tab-calculadora .segment').forEach(el => el.classList.remove('activo'));
     if(modo === 'BCV') document.getElementById('seg-bcv').classList.add('activo');
     if(modo === 'USDT') document.getElementById('seg-usdt').classList.add('activo');
     if(modo === 'EUR') document.getElementById('seg-eur').classList.add('activo');
@@ -3075,20 +2758,59 @@ function setTasaModo(modo) {
     const avisoUsdt = document.getElementById('aviso-usdt-calc');
 
     if (avisoUsdt) {
-        if (modo === 'USDT') {
-            avisoUsdt.classList.remove('oculto');
-            avisoUsdt.style.display = 'block';
-        } else {
-            avisoUsdt.classList.add('oculto');
-            avisoUsdt.style.display = 'none';
-        }
+        avisoUsdt.classList.toggle('oculto', modo !== 'USDT');
+        avisoUsdt.style.display = modo === 'USDT' ? 'block' : 'none';
     }
 
-    if(modo === 'BCV') { inputTasa.value = tasasData.BCV.valor.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$'; }
-    if(modo === 'USDT') { inputTasa.value = tasasData.USDT.valor.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🪙 Tether (USDT)'; symDivisa.innerText = '₮'; }
-    if(modo === 'EUR') { inputTasa.value = tasasData.EUR.valor.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇪🇺 Euros (EUR)'; symDivisa.innerText = '€'; }
+    let valorUsar = tasasData[modo] ? tasasData[modo].valor : 1;
+    if (modo !== 'Custom' && fechaHistoricaCalcSeleccionada) {
+        const histObj = obtenerTasaEnFechaHistorica(modo, fechaHistoricaCalcSeleccionada);
+        if (histObj && histObj.valor > 0) valorUsar = histObj.valor;
+    }
+
+    if(modo === 'BCV') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$'; }
+    if(modo === 'USDT') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🪙 Tether (USDT)'; symDivisa.innerText = '₮'; }
+    if(modo === 'EUR') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇪🇺 Euros (EUR)'; symDivisa.innerText = '€'; }
     if(modo === 'Custom') { inputTasa.disabled = false; inputTasa.focus(); if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00"; lblDivisa.innerText = '💱 Divisa Base'; symDivisa.innerText = '$'; }
-    actualizarInfoCalculadora(modo); recalcularDesdeTasa();
+    actualizarInfoCalculadora(modo);
+    recalcularDesdeTasa();
+}
+
+function alternarFechaValorCalc() {
+    if (fechaHistoricaCalcSeleccionada) {
+        fechaHistoricaCalcSeleccionada = null;
+        const inCal = document.getElementById('input-calc-fecha-hist');
+        if (inCal) inCal.value = '';
+        aplicarTasasEnInterfaz();
+        return;
+    }
+    if (!hayFechaPosteriorBCV) return;
+    usandoFechaPosterior = !usandoFechaPosterior;
+    aplicarTasasEnInterfaz();
+}
+
+function seleccionarFechaHistoricaCalc(fechaISO) {
+    if (!fechaISO) {
+        fechaHistoricaCalcSeleccionada = null;
+        aplicarTasasEnInterfaz();
+        return;
+    }
+    const hoyIso = getLocalYYYYMMDD();
+    if (fechaISO === hoyIso) {
+        fechaHistoricaCalcSeleccionada = null;
+        usandoFechaPosterior = false;
+        aplicarTasasEnInterfaz();
+        return;
+    }
+    if (hayFechaPosteriorBCV && tasasFechaPosterior.BCV && fechaISO === tasasFechaPosterior.BCV.fecha) {
+        fechaHistoricaCalcSeleccionada = null;
+        usandoFechaPosterior = true;
+        aplicarTasasEnInterfaz();
+        return;
+    }
+    fechaHistoricaCalcSeleccionada = fechaISO;
+    if (calcModoTasa === 'Custom') calcModoTasa = 'BCV';
+    setTasaModo(calcModoTasa);
 }
 
 function getTasaActiva() { return parseFloat(document.getElementById('input-tasa-activa').value) || 1; }
@@ -3103,7 +2825,7 @@ function calcularDesde(origen) {
 function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
 function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
 
-// ================= NAVEGACIÓN (CLÁSICA SIN DESLIZAMIENTO) =================
+// ================= NAVEGACIÓN =================
 function resetearScrollNativoiOS() {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -3112,18 +2834,14 @@ function resetearScrollNativoiOS() {
 
 function cambiarPestana(idPestana, elementoNav) {
     const inputAskbot = document.getElementById('askbot-input');
-    if (inputAskbot && idPestana !== 'tab-askbot') {
-        inputAskbot.blur();
-    }
+    if (inputAskbot && idPestana !== 'tab-askbot') inputAskbot.blur();
 
     document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
     document.getElementById(idPestana).className = 'vista-activa';
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
     elementoNav.classList.add('activo');
 
-    if (idPestana === 'tab-agenda') {
-        renderizarAgenda();
-    }
+    if (idPestana === 'tab-agenda') renderizarAgenda();
 
     if (idPestana === 'tab-askbot') {
         document.body.classList.add('askbot-tab-open');
@@ -3146,14 +2864,8 @@ function inicializarAskBot() {
     const box = document.getElementById('askbot-messages');
     const inputBar = document.querySelector('.askbot-input-bar');
 
-    if (box) {
-        box.innerHTML = '';
-        box.classList.add('oculto-chat');
-    }
-    if (inputBar) {
-        inputBar.style.opacity = '0.45';
-        inputBar.style.pointerEvents = 'none';
-    }
+    if (box) { box.innerHTML = ''; box.classList.add('oculto-chat'); }
+    if (inputBar) { inputBar.style.opacity = '0.45'; inputBar.style.pointerEvents = 'none'; }
     if (hero) {
         hero.classList.remove('oculto-hero');
         hero.innerHTML = `
@@ -3165,20 +2877,11 @@ function inicializarAskBot() {
         `;
     }
 }
+function limpiarChatAskBot() { inicializarAskBot(); }
+function enviarSugerenciaAskBot() { inicializarAskBot(); }
+function enviarMensajeAskBot() { inicializarAskBot(); }
 
-function limpiarChatAskBot() {
-    inicializarAskBot();
-}
-
-function enviarSugerenciaAskBot() {
-    inicializarAskBot();
-}
-
-function enviarMensajeAskBot() {
-    inicializarAskBot();
-}
-
-// ================= CEREBRO INTELIGENTE DE TASAS =================
+// ================= CEREBRO INTELIGENTE DE TASAS + HISTORIAL REAL PERSISTENTE =================
 function procesarHistorial(key, currentValor, currentFecha) {
     let history = JSON.parse(localStorage.getItem(`history_${key}`));
     const hoy = new Date().toDateString();
@@ -3189,63 +2892,226 @@ function procesarHistorial(key, currentValor, currentFecha) {
     return { valor: history.last, previo: history.prev, fecha: currentFecha };
 }
 
+function normalizarSerieHistorica(listaRaw, valorActual = null, fechaActualRaw = null) {
+    const mapa = {};
+    if (Array.isArray(listaRaw)) {
+        listaRaw.forEach(item => {
+            if (!item) return;
+            const prom = Number(item.promedio ?? item.valor ?? 0);
+            const fStr = String(item.fecha || item.fechaActualizacion || '').slice(0, 10);
+            if (prom > 0 && /^\d{4}-\d{2}-\d{2}$/.test(fStr)) {
+                mapa[fStr] = { fecha: fStr, promedio: prom };
+            }
+        });
+    }
+    if (valorActual && Number(valorActual) > 0 && fechaActualRaw) {
+        const fAct = getLocalYYYYMMDD(parsearFechaSeguraLocal(fechaActualRaw));
+        mapa[fAct] = { fecha: fAct, promedio: Number(valorActual) };
+    }
+    return Object.values(mapa).sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
+function extraerVigenteYFuturaDeSerie(serie, valorLive, fechaLiveRaw, keyFallback) {
+    const hoyIso = getLocalYYYYMMDD();
+    if (!Array.isArray(serie) || serie.length === 0) {
+        const fallback = procesarHistorial(keyFallback, valorLive || 1, fechaLiveRaw || hoyIso);
+        return { vigente: fallback, futura: null };
+    }
+
+    const buscarPrevioDiferente = (idx) => {
+        if (idx <= 0) return serie[0].promedio;
+        let prev = serie[idx - 1].promedio;
+        if (Math.abs(serie[idx].promedio - prev) < 0.0001) {
+            for (let k = idx - 2; k >= Math.max(0, idx - 5); k--) {
+                if (Math.abs(serie[idx].promedio - serie[k].promedio) >= 0.0001) {
+                    prev = serie[k].promedio;
+                    break;
+                }
+            }
+        }
+        return prev;
+    };
+
+    let idxVigente = -1;
+    let idxFutura = -1;
+    for (let i = 0; i < serie.length; i++) {
+        if (serie[i].fecha <= hoyIso) idxVigente = i;
+        else if (idxFutura === -1) idxFutura = i;
+    }
+    if (idxVigente === -1) idxVigente = serie.length - 1;
+
+    const itemVig = serie[idxVigente];
+    const vigenteObj = {
+        valor: itemVig.promedio,
+        previo: buscarPrevioDiferente(idxVigente),
+        fecha: itemVig.fecha
+    };
+
+    let futuraObj = null;
+    if (idxFutura !== -1) {
+        const itemFut = serie[idxFutura];
+        futuraObj = {
+            valor: itemFut.promedio,
+            previo: itemVig.promedio,
+            fecha: itemFut.fecha
+        };
+    } else if (fechaLiveRaw) {
+        const fLiveIso = getLocalYYYYMMDD(parsearFechaSeguraLocal(fechaLiveRaw));
+        if (fLiveIso > hoyIso && Number(valorLive) > 0) {
+            futuraObj = {
+                valor: Number(valorLive),
+                previo: itemVig.promedio,
+                fecha: fLiveIso
+            };
+        }
+    }
+
+    if (!futuraObj && Number(valorLive) > 0) {
+        vigenteObj.valor = Number(valorLive);
+    }
+
+    return { vigente: vigenteObj, futura: futuraObj };
+}
+
+function aplicarTasasEnInterfaz() {
+    if (usandoFechaPosterior && hayFechaPosteriorBCV && tasasFechaPosterior.BCV) {
+        tasasData.BCV = { ...tasasFechaPosterior.BCV };
+        tasasData.EUR = tasasFechaPosterior.EUR ? { ...tasasFechaPosterior.EUR } : { ...tasasVigentesHoy.EUR };
+    } else {
+        tasasData.BCV = { ...tasasVigentesHoy.BCV };
+        tasasData.EUR = { ...tasasVigentesHoy.EUR };
+    }
+    tasasData.USDT = { ...tasasVigentesHoy.USDT };
+    tasasData.Custom.fecha = new Date().toISOString();
+
+    tasaBCV = tasasData.BCV.valor || 1;
+    tasaEUR = tasasData.EUR.valor || 1;
+    tasaParalelo = tasasData.USDT.valor || 1;
+
+    const setVariacionHome = (id, dataObj) => {
+        const el = document.getElementById(id);
+        if (!el || !dataObj) return;
+        const diffAbs = dataObj.valor - dataObj.previo;
+        const pct = dataObj.previo ? ((diffAbs / dataObj.previo) * 100).toFixed(2) : "0.00";
+        if (diffAbs > 0.0001) { el.innerText = `+${pct}%`; el.className = 'tasa-variacion var-positiva'; }
+        else if (diffAbs < -0.0001) { el.innerText = `${pct}%`; el.className = 'tasa-variacion var-negativa'; }
+        else { el.innerText = `0.00%`; el.className = 'tasa-variacion var-neutra'; }
+    };
+
+    setVariacionHome('var-bcv', tasasData.BCV);
+    setVariacionHome('var-eur', tasasData.EUR);
+    setVariacionHome('var-usdt', tasasData.USDT);
+
+    const elValBcv = document.getElementById('val-bcv');
+    const elValEur = document.getElementById('val-eur');
+    const elValUsdt = document.getElementById('val-usdt');
+    if (elValBcv) elValBcv.innerText = `Bs ${tasaBCV.toFixed(2)}`;
+    if (elValEur) elValEur.innerText = `Bs ${tasaEUR.toFixed(2)}`;
+    if (elValUsdt) elValUsdt.innerText = `Bs ${tasaParalelo.toFixed(2)}`;
+
+    const elFechaTasas = document.getElementById('fecha-tasas');
+    if (elFechaTasas && tasasData.BCV.fecha) {
+        const f = parsearFechaSeguraLocal(tasasData.BCV.fecha);
+        const prefijo = (usandoFechaPosterior && hayFechaPosteriorBCV) ? '⏳ Fecha Valor:' : '🗓️ Vigente:';
+        elFechaTasas.innerText = `${prefijo} ${f.toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+    }
+
+    actualizarBrechaCambiaria();
+
+    const inputTasaUsdtVes = document.getElementById('input-tasa-usdt-ves');
+    if (inputTasaUsdtVes && (!inputTasaUsdtVes.value || parseFloat(inputTasaUsdtVes.value) <= 1)) {
+        inputTasaUsdtVes.value = tasaParalelo.toFixed(2);
+        calcularEquivalenteUsdtVes();
+    }
+
+    actualizarInfoCalculadora(calcModoTasa);
+    if (calcModoTasa !== 'Custom') {
+        const tasaMostrarCalc = fechaHistoricaCalcSeleccionada
+            ? obtenerTasaEnFechaHistorica(calcModoTasa, fechaHistoricaCalcSeleccionada).valor
+            : tasasData[calcModoTasa].valor;
+        const inActiva = document.getElementById('input-tasa-activa');
+        if (inActiva) inActiva.value = (Number(tasaMostrarCalc) || 1).toFixed(2);
+    }
+    recalcularDesdeTasa();
+    renderizarSliderCuentas();
+    renderizarAgenda();
+}
+
 async function obtenerTasas() {
+    // 1. Si hay historial en caché local, aplicarlo de inmediato para respuesta instantánea offline
+    if (tasasHistoricas.BCV.length > 0 || tasasHistoricas.USDT.length > 0) {
+        const infoBCV = extraerVigenteYFuturaDeSerie(tasasHistoricas.BCV, null, null, 'BCV');
+        const infoEUR = extraerVigenteYFuturaDeSerie(tasasHistoricas.EUR, null, null, 'EUR');
+        const infoUSDT = extraerVigenteYFuturaDeSerie(tasasHistoricas.USDT, null, null, 'USDT');
+        tasasVigentesHoy.BCV = infoBCV.vigente;
+        tasasVigentesHoy.EUR = infoEUR.vigente;
+        tasasVigentesHoy.USDT = infoUSDT.vigente;
+        tasasFechaPosterior.BCV = infoBCV.futura;
+        tasasFechaPosterior.EUR = infoEUR.futura;
+        hayFechaPosteriorBCV = Boolean(infoBCV.futura);
+        aplicarTasasEnInterfaz();
+    }
+
     try {
-        const [resBCV, resEUR, resParalelo] = await Promise.all([
+        const [resBCV, resEUR, resParalelo, resHistBCV, resHistEUR, resHistUSDT] = await Promise.all([
             fetch('https://ve.dolarapi.com/v1/dolares/oficial'),
             fetch('https://ve.dolarapi.com/v1/euros/oficial'),
-            fetch('https://ve.dolarapi.com/v1/dolares/paralelo')
+            fetch('https://ve.dolarapi.com/v1/dolares/paralelo'),
+            fetch('https://ve.dolarapi.com/v1/historicos/dolares/oficial').catch(() => null),
+            fetch('https://ve.dolarapi.com/v1/historicos/euros/oficial').catch(() => null),
+            fetch('https://ve.dolarapi.com/v1/historicos/dolares/paralelo').catch(() => null)
         ]);
-        const [dataBCV, dataEUR, dataParalelo] = await Promise.all([ resBCV.json(), resEUR.json(), resParalelo.json() ]);
 
-        tasasData.BCV = procesarHistorial('BCV', dataBCV.promedio, dataBCV.fechaActualizacion);
-        tasasData.EUR = procesarHistorial('EUR', dataEUR.promedio, dataEUR.fechaActualizacion);
-        tasasData.USDT = procesarHistorial('USDT', dataParalelo.promedio, dataEUR.fechaActualizacion);
-        tasasData.Custom.fecha = new Date().toISOString();
+        const [dataBCV, dataEUR, dataParalelo] = await Promise.all([
+            resBCV.json(), resEUR.json(), resParalelo.json()
+        ]);
 
-        tasaBCV = tasasData.BCV.valor; tasaEUR = tasasData.EUR.valor; tasaParalelo = tasasData.USDT.valor;
+        const rawHistBCV = (resHistBCV && resHistBCV.ok) ? await resHistBCV.json() : tasasHistoricas.BCV;
+        const rawHistEUR = (resHistEUR && resHistEUR.ok) ? await resHistEUR.json() : tasasHistoricas.EUR;
+        const rawHistUSDT = (resHistUSDT && resHistUSDT.ok) ? await resHistUSDT.json() : tasasHistoricas.USDT;
 
-        const inputTasaUsdtVes = document.getElementById('input-tasa-usdt-ves');
-        if (inputTasaUsdtVes && (!inputTasaUsdtVes.value || parseFloat(inputTasaUsdtVes.value) <= 1)) {
-            inputTasaUsdtVes.value = tasaParalelo.toFixed(2);
-            calcularEquivalenteUsdtVes();
-        }
+        tasasHistoricas.BCV = normalizarSerieHistorica(rawHistBCV, dataBCV.promedio, dataBCV.fechaActualizacion);
+        tasasHistoricas.EUR = normalizarSerieHistorica(rawHistEUR, dataEUR.promedio, dataEUR.fechaActualizacion);
+        tasasHistoricas.USDT = normalizarSerieHistorica(rawHistUSDT, dataParalelo.promedio, dataParalelo.fechaActualizacion);
 
-        const setVariacionHome = (id, dataObj) => {
-            const el = document.getElementById(id);
-            const diffAbs = dataObj.valor - dataObj.previo;
-            const pct = dataObj.previo ? ((diffAbs / dataObj.previo) * 100).toFixed(2) : "0.00";
-            if (diffAbs > 0) { el.innerText = `+${pct}%`; el.className = 'tasa-variacion var-positiva'; } 
-            else if (diffAbs < 0) { el.innerText = `${pct}%`; el.className = 'tasa-variacion var-negativa'; } 
-            else { el.innerText = `0.00%`; el.className = 'tasa-variacion var-neutra'; }
-        };
+        localStorage.setItem('assist_hist_serie_BCV', JSON.stringify(tasasHistoricas.BCV.slice(-120)));
+        localStorage.setItem('assist_hist_serie_EUR', JSON.stringify(tasasHistoricas.EUR.slice(-120)));
+        localStorage.setItem('assist_hist_serie_USDT', JSON.stringify(tasasHistoricas.USDT.slice(-120)));
 
-        setVariacionHome('var-bcv', tasasData.BCV); setVariacionHome('var-eur', tasasData.EUR); setVariacionHome('var-usdt', tasasData.USDT);
-        document.getElementById('val-bcv').innerText = `Bs ${tasaBCV.toFixed(2)}`;
-        document.getElementById('val-eur').innerText = `Bs ${tasaEUR.toFixed(2)}`;
-        document.getElementById('val-usdt').innerText = `Bs ${tasaParalelo.toFixed(2)}`;
-        
-        if (dataBCV.fechaActualizacion) {
-            const f = new Date(dataBCV.fechaActualizacion);
-            document.getElementById('fecha-tasas').innerText = `🗓️ ${f.toLocaleString('es-VE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`;
-        }
+        const analisisBCV = extraerVigenteYFuturaDeSerie(tasasHistoricas.BCV, dataBCV.promedio, dataBCV.fechaActualizacion, 'BCV');
+        const analisisEUR = extraerVigenteYFuturaDeSerie(tasasHistoricas.EUR, dataEUR.promedio, dataEUR.fechaActualizacion, 'EUR');
+        const analisisUSDT = extraerVigenteYFuturaDeSerie(tasasHistoricas.USDT, dataParalelo.promedio, dataParalelo.fechaActualizacion, 'USDT');
 
-        actualizarInfoCalculadora(calcModoTasa);
-        if(calcModoTasa !== 'Custom') document.getElementById('input-tasa-activa').value = tasasData[calcModoTasa].valor.toFixed(2);
-        recalcularDesdeTasa(); 
-    } catch (error) { console.error("Error de conexión al obtener tasas", error); document.getElementById('fecha-tasas').innerText = `⚠️ Error de conexión`; }
+        tasasVigentesHoy.BCV = analisisBCV.vigente;
+        tasasVigentesHoy.EUR = analisisEUR.vigente;
+        tasasVigentesHoy.USDT = analisisUSDT.vigente;
+
+        tasasFechaPosterior.BCV = analisisBCV.futura;
+        tasasFechaPosterior.EUR = analisisEUR.futura;
+        hayFechaPosteriorBCV = Boolean(analisisBCV.futura);
+        if (!hayFechaPosteriorBCV) usandoFechaPosterior = false;
+
+        aplicarTasasEnInterfaz();
+    } catch (error) {
+        console.error("Error de conexión al obtener tasas", error);
+        const elFecha = document.getElementById('fecha-tasas');
+        if (elFecha && tasasHistoricas.BCV.length === 0) elFecha.innerText = `⚠️ Modo Offline`;
+    }
 }
 
 async function actualizarTasasManual() {
     const btn = document.getElementById('btn-refresh-tasas');
-    btn.classList.add('spin'); await obtenerTasas(); actualizarInterfaz();
-    setTimeout(() => { btn.classList.remove('spin'); }, 1000); 
+    btn.classList.add('spin');
+    await obtenerTasas();
+    actualizarInterfaz();
+    setTimeout(() => btn.classList.remove('spin'), 1000); 
 }
 
 // ================= DASHBOARD Y SLIDER =================
 function renderizarSliderCuentas() {
     const slider = document.getElementById('slider-cuentas');
     const dots = document.getElementById('slider-dots');
+    if (!slider || !dots) return;
     slider.innerHTML = ''; dots.innerHTML = '';
 
     const iconOjo = censurado 
@@ -3313,7 +3179,6 @@ function agregarTransaccion() {
     const monto = parseFloat(document.getElementById('monto').value);
     const monedaInput = document.getElementById('val-moneda').value;
     const nota = document.getElementById('val-nota').value.trim();
-    
     if (isNaN(monto) || monto <= 0) return alert("Monto inválido");
 
     const valFecha = document.getElementById('val-fecha').value; 
@@ -3322,9 +3187,6 @@ function agregarTransaccion() {
     const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
-    // ==========================================
-    // LÓGICA DE TRANSFERENCIA ↔️ P2P EN UN CLIC
-    // ==========================================
     if (tipo === 'transferencia') {
         const idO = document.getElementById('sel-transf-origen').value;
         const idD = document.getElementById('sel-transf-destino').value;
@@ -3340,9 +3202,7 @@ function agregarTransaccion() {
             else if (cDestino.moneda === 'VES') montoRecibir = monto * tasaTransf;
         }
 
-        let montoUSD_Origen = monto;
-        if (cOrigen.moneda === 'VES') montoUSD_Origen = monto / tasaBCV;
-        
+        let montoUSD_Origen = cOrigen.moneda === 'VES' ? (monto / tasaBCV) : monto;
         const notaOr = nota ? `Hacia ${cDestino.nombre} - ${nota}` : `Transferencia hacia ${cDestino.nombre}`;
         transacciones.push({
             id: dateObj.getTime() + Math.random(), 
@@ -3351,9 +3211,7 @@ function agregarTransaccion() {
             monedaInputOriginal: cOrigen.moneda, fechaFormateada: fechaFormateada, fecha: dateObj, fechaIsoLocal: isoLocal
         });
 
-        let montoUSD_Destino = montoRecibir;
-        if (cDestino.moneda === 'VES') montoUSD_Destino = montoRecibir / tasaBCV;
-
+        let montoUSD_Destino = cDestino.moneda === 'VES' ? (montoRecibir / tasaBCV) : montoRecibir;
         const notaDes = nota ? `Desde ${cOrigen.nombre} - ${nota}` : `Transferencia desde ${cOrigen.nombre}`;
         transacciones.push({
             id: dateObj.getTime() + Math.random() + 1,
@@ -3377,14 +3235,9 @@ function agregarTransaccion() {
     const boxComision = document.getElementById('box-comision-ves');
     if (tipo === 'gasto' && monedaInput === 'VES' && boxComision && !boxComision.classList.contains('oculto')) {
         const tipoComision = document.getElementById('sel-tipo-comision').value;
-        
-        if (tipoComision === 'p2p') {
-            montoComisionVES = Math.max(14.00, monto * 0.003);
-        } else if (tipoComision === 'p2c') {
-            montoComisionVES = Math.max(14.00, monto * 0.015);
-        } else if (tipoComision === 'manual') {
-            montoComisionVES = parseFloat(document.getElementById('input-comision-manual').value) || 0;
-        }
+        if (tipoComision === 'p2p') montoComisionVES = Math.max(14.00, monto * 0.003);
+        else if (tipoComision === 'p2c') montoComisionVES = Math.max(14.00, monto * 0.015);
+        else if (tipoComision === 'manual') montoComisionVES = parseFloat(document.getElementById('input-comision-manual').value) || 0;
         montoTotalOperacion += montoComisionVES;
     }
 
@@ -3393,9 +3246,8 @@ function agregarTransaccion() {
     let detalleTasaUsdt = '';
 
     if (cuentaActiva && cuentaActiva.moneda === 'USDT') {
-        if (monedaInput === 'USDT') {
-            montoUSD = montoTotalOperacion;
-        } else if (monedaInput === 'VES') {
+        if (monedaInput === 'USDT') montoUSD = montoTotalOperacion;
+        else if (monedaInput === 'VES') {
             const inputTasaUsdt = document.getElementById('input-tasa-usdt-ves');
             const tasaUsdtAplicada = parseFloat(inputTasaUsdt && inputTasaUsdt.value) || tasaParalelo || tasaBCV || 1;
             if (tasaUsdtAplicada <= 0) return alert("Ingresa una tasa USDT válida.");
@@ -3403,11 +3255,8 @@ function agregarTransaccion() {
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtAplicada.toFixed(2)}`;
         }
     } else {
-        if (monedaInput === 'VES') {
-            montoUSD = montoTotalOperacion / tasaBCV;
-        } else if (monedaInput === 'EUR') {
-            montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
-        }
+        if (monedaInput === 'VES') montoUSD = montoTotalOperacion / tasaBCV;
+        else if (monedaInput === 'EUR') montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
     }
 
     let notaFinal = nota;
@@ -3419,7 +3268,7 @@ function agregarTransaccion() {
         notaFinal = notaFinal ? `${notaFinal} (${detalleTasaUsdt})` : detalleTasaUsdt;
     }
 
-    const transaccion = {
+    transacciones.push({
         id: dateObj.getTime() + Math.random(), 
         cuentaId: cuentaActivaId,
         montoUSD: montoUSD,
@@ -3430,9 +3279,7 @@ function agregarTransaccion() {
         fechaFormateada: fechaFormateada,
         fecha: dateObj,
         fechaIsoLocal: isoLocal
-    };
-    
-    transacciones.push(transaccion);
+    });
     transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
     guardarYActualizarGestion();
     
@@ -3477,7 +3324,6 @@ function handleSwipeEnd(e, element) {
     }
 }
 
-// Botón "Total" en el Historial: limpia fecha y búsqueda para mostrar absolutamente todo de la cuenta
 function mostrarHistorialTotalCuenta() {
     const fFecha = document.getElementById('filtro-fecha');
     const fBuscar = document.getElementById('buscar-historial');
@@ -3516,9 +3362,7 @@ function actualizarListaTransacciones() {
     const btnTotal = document.getElementById('btn-hist-total');
     const btnDia = document.getElementById('btn-hist-dia');
 
-    if (tituloHist && cuentaActiva) {
-        tituloHist.innerText = `Historial · ${cuentaActiva.nombre}`;
-    }
+    if (tituloHist && cuentaActiva) tituloHist.innerText = `Historial · ${cuentaActiva.nombre}`;
 
     const query = document.getElementById('buscar-historial') ? document.getElementById('buscar-historial').value.toLowerCase().trim() : "";
     const fechaFiltro = document.getElementById('filtro-fecha') ? document.getElementById('filtro-fecha').value : "";
@@ -3529,7 +3373,6 @@ function actualizarListaTransacciones() {
     }
 
     let transCuenta = transacciones.filter(t => t.cuentaId == cuentaActivaId).slice().reverse();
-    
     transCuenta = transCuenta.filter(t => {
         const montoStr = (Number(t.montoUSD) || 0).toFixed(2);
         const matchSearch = !query ||
@@ -3537,7 +3380,6 @@ function actualizarListaTransacciones() {
             (t.nota && t.nota.toLowerCase().includes(query)) ||
             montoStr.includes(query);
         let matchDate = true;
-        
         if(fechaFiltro) {
             const fechaT = t.fecha ? new Date(t.fecha) : new Date(t.id);
             const isoLocal = t.fechaIsoLocal || getLocalYYYYMMDD(fechaT);
@@ -3547,19 +3389,14 @@ function actualizarListaTransacciones() {
     });
 
     if (subHist) {
-        if (fechaFiltro) {
-            subHist.innerText = `📅 Día seleccionado: ${obtenerEtiquetaDiaCompleta(fechaFiltro)} (${transCuenta.length})`;
-        } else if (query) {
-            subHist.innerText = `🔍 Resultados encontrados: ${transCuenta.length}`;
-        } else {
-            subHist.innerText = `Total de la cuenta: ${transCuenta.length} movimientos`;
-        }
+        if (fechaFiltro) subHist.innerText = `📅 Día seleccionado: ${obtenerEtiquetaDiaCompleta(fechaFiltro)} (${transCuenta.length})`;
+        else if (query) subHist.innerText = `🔍 Resultados encontrados: ${transCuenta.length}`;
+        else subHist.innerText = `Total de la cuenta: ${transCuenta.length} movimientos`;
     }
 
     if (transCuenta.length === 0) {
         lista.innerHTML = `<p style="text-align:center; padding: 24px 16px; color: var(--text-secondary); font-size: 14px;">No se encontraron movimientos en esta vista.</p>`;
     } else {
-        // Calculamos el resumen por mes para los separadores
         const conteoPorMes = {};
         transCuenta.forEach(t => {
             const fObj = t.fecha ? new Date(t.fecha) : new Date(t.id);
@@ -3577,7 +3414,6 @@ function actualizarListaTransacciones() {
             const iso = t.fechaIsoLocal || getLocalYYYYMMDD(fObj);
             const claveMes = iso.slice(0, 7);
 
-            // Separador de Mes y Año (cuando se ve el historial Total o multi-día)
             if (!fechaFiltro && claveMes !== ultimoMesRenderizado) {
                 ultimoMesRenderizado = claveMes;
                 const cantMovsMes = conteoPorMes[claveMes] || 0;
@@ -3585,11 +3421,9 @@ function actualizarListaTransacciones() {
                     <li class="hist-mes-header">
                         <span>🗓️ ${obtenerEtiquetaMesAnio(iso)}</span>
                         <span style="opacity: 0.75; font-size: 10.5px;">${cantMovsMes} ${cantMovsMes === 1 ? 'movimiento' : 'movimientos'}</span>
-                    </li>
-                `;
+                    </li>`;
             }
 
-            // Separador de Día exacto
             if (!fechaFiltro && iso !== ultimoDiaRenderizado) {
                 ultimoDiaRenderizado = iso;
                 htmlAcumulado += `<li class="hist-dia-header">${obtenerEtiquetaDiaCompleta(iso)}</li>`;
@@ -3599,7 +3433,6 @@ function actualizarListaTransacciones() {
             const signo = t.tipo === 'ingreso' ? '+' : '-';
             const animDelay = Math.min(index * 0.03, 0.35);
             const colorCat = obtenerColorCategoria(t.categoria);
-            
             const montoTexto = formatearMontoCensurado(`${signo}$${(Number(t.montoUSD) || 0).toFixed(2)}`, false);
             const htmlNota = t.nota ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top:3px;">📝 ${t.nota}</div>` : '';
             
@@ -3618,16 +3451,11 @@ function actualizarListaTransacciones() {
                             <span class="monto-val ${claseColor}">${montoTexto}</span>
                         </div>
                     </div>
-                    <div class="swipe-action" onclick="eliminarTransaccion(${t.id})">
-                        🗑️
-                    </div>
-                </li>
-            `;
+                    <div class="swipe-action" onclick="eliminarTransaccion(${t.id})">🗑️</div>
+                </li>`;
         });
-
         lista.innerHTML = htmlAcumulado;
     }
-    
     renderizarGrafico(transCuenta); 
 }
 
@@ -3636,7 +3464,6 @@ function eliminarTransaccion(id) {
     if (tIndex === -1) return;
     const t = transacciones[tIndex];
 
-    // 1. Reversión bidireccional si era un Abono / Retiro de Meta de Ahorro
     if (t.categoria === 'Ahorro') {
         metas.forEach(m => {
             if (t.nota && t.nota.includes(m.nombre)) {
@@ -3650,7 +3477,6 @@ function eliminarTransaccion(id) {
         });
     }
 
-    // 2. Reversión bidireccional si era un Pago de la Agenda
     const compAgenda = agendaPagos.find(a =>
         (t.agendaId !== undefined && t.agendaId !== null && String(a.id) === String(t.agendaId)) ||
         (a.ultimaTransaccionId !== undefined && a.ultimaTransaccionId !== null && String(a.ultimaTransaccionId) === String(t.id))
@@ -3685,7 +3511,6 @@ function renderizarGrafico(transFiltered) {
         totalGastosUSD += m;
     });
     
-    // Ordenar categorías de mayor a menor gasto para el gráfico y la leyenda
     const entradasOrdenadas = Object.entries(dataAgrupada).sort((a, b) => b[1] - a[1]);
     const labels = entradasOrdenadas.map(e => e[0]);
     const data = entradasOrdenadas.map(e => e[1]);
@@ -3693,19 +3518,12 @@ function renderizarGrafico(transFiltered) {
 
     if (centroBox) {
         const textoTotalCentro = formatearMontoCensurado(`$${totalGastosUSD.toFixed(2)}`, false);
-        centroBox.innerHTML = `
-            <small>GASTOS</small>
-            <strong>${textoTotalCentro}</strong>
-        `;
+        centroBox.innerHTML = `<small>GASTOS</small><strong>${textoTotalCentro}</strong>`;
     }
 
     if (leyendaBox) {
         if (entradasOrdenadas.length === 0) {
-            leyendaBox.innerHTML = `
-                <div style="text-align: center; padding: 14px 6px; color: var(--text-secondary); font-size: 12px;">
-                    Sin gastos registrados en este periodo.
-                </div>
-            `;
+            leyendaBox.innerHTML = `<div style="text-align: center; padding: 14px 6px; color: var(--text-secondary); font-size: 12px;">Sin gastos registrados en este periodo.</div>`;
         } else {
             leyendaBox.innerHTML = entradasOrdenadas.map(([cat, monto]) => {
                 const color = obtenerColorCategoria(cat);
@@ -3721,14 +3539,12 @@ function renderizarGrafico(transFiltered) {
                             <span class="legend-cat-amount">${montoCens}</span>
                             <span class="legend-cat-pct">${pct}%</span>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
         }
     }
 
     if (chartInstancia) chartInstancia.destroy(); 
-
     const modoActual = document.documentElement.getAttribute('data-theme') || 'dark';
     const colorVacio = modoActual === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
 
@@ -3781,14 +3597,10 @@ function cargarSelects() {
     }
 
     const selAgendaCat = document.getElementById('in-agenda-categoria');
-    if (selAgendaCat) {
-        poblarSelectCategoriasAgenda(selAgendaCat, selAgendaCat.value);
-    }
+    if (selAgendaCat) poblarSelectCategoriasAgenda(selAgendaCat, selAgendaCat.value);
 
     const selPagarAgendaCat = document.getElementById('cat-pagar-agenda');
-    if (selPagarAgendaCat) {
-        poblarSelectCategoriasAgenda(selPagarAgendaCat, selPagarAgendaCat.value);
-    }
+    if (selPagarAgendaCat) poblarSelectCategoriasAgenda(selPagarAgendaCat, selPagarAgendaCat.value);
 }
 
 function renderizarListasGestion() {
@@ -3842,7 +3654,8 @@ function moverCuenta(index, direccion) {
 function agregarCuenta() {
     const nombre = document.getElementById('nueva-cuenta-nombre').value;
     const moneda = document.getElementById('sel-nueva-moneda').value; 
-    if(nombre.trim() !== "") { cuentas.push({ id: Date.now(), nombre: nombre, moneda: moneda }); document.getElementById('nueva-cuenta-nombre').value = ''; guardarYActualizarGestion(); } else { alert("Ingresa un nombre."); }
+    if(nombre.trim() !== "") { cuentas.push({ id: Date.now(), nombre: nombre, moneda: moneda }); document.getElementById('nueva-cuenta-nombre').value = ''; guardarYActualizarGestion(); }
+    else { alert("Ingresa un nombre."); }
 }
 function editarCuenta(i) { const n = prompt("Nuevo nombre:", cuentas[i].nombre); if(n) { cuentas[i].nombre = n; guardarYActualizarGestion(); } }
 function eliminarCuenta(i) { if(confirm("¿Eliminar cuenta?")) { if(cuentas[i].id == cuentaActivaId) cuentaActivaId = null; cuentas.splice(i, 1); guardarYActualizarGestion(); } }
@@ -3851,14 +3664,11 @@ function agregarCategoria() {
     const inputCat = document.getElementById('nueva-categoria');
     const nueva = inputCat ? inputCat.value.trim() : '';
     if (nueva) {
-        if (!categorias.includes(nueva)) {
-            categorias.push(nueva);
-        }
+        if (!categorias.includes(nueva)) categorias.push(nueva);
         categoriasColores[nueva] = colorNuevaCategoriaSeleccionado || PALETA_COLORES_CATEGORIAS[categorias.length % PALETA_COLORES_CATEGORIAS.length];
         localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
 
         if (inputCat) inputCat.value = '';
-        // Sugerir automáticamente el siguiente color de la paleta para la próxima categoría
         const nextIdx = (PALETA_COLORES_CATEGORIAS.indexOf(colorNuevaCategoriaSeleccionado) + 1) % PALETA_COLORES_CATEGORIAS.length;
         seleccionarColorNuevaCat(PALETA_COLORES_CATEGORIAS[nextIdx]);
         guardarYActualizarGestion();
@@ -3874,19 +3684,20 @@ function editarCategoria(i) {
             categoriasColores[nombreNuevo] = categoriasColores[nombreViejo];
         }
         categorias[i] = nombreNuevo;
-        // Actualizar también las transacciones y compromisos de agenda que tenían el nombre anterior
-        transacciones.forEach(t => {
-            if (t.categoria === nombreViejo) t.categoria = nombreNuevo;
-        });
-        agendaPagos.forEach(a => {
-            if (a.categoria === nombreViejo) a.categoria = nombreNuevo;
-        });
+        transacciones.forEach(t => { if (t.categoria === nombreViejo) t.categoria = nombreNuevo; });
+        agendaPagos.forEach(a => { if (a.categoria === nombreViejo) a.categoria = nombreNuevo; });
         localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
         guardarYActualizarGestion();
     }
 }
 
-function eliminarCategoria(i) { if(confirm("¿Eliminar categoría?")) { categorias.splice(i, 1); guardarYActualizarGestion(); } }
+function eliminarCategoria(i) {
+    if(confirm("¿Eliminar categoría?")) {
+        cerrarSelectorColorCategoriaExistente();
+        categorias.splice(i, 1);
+        guardarYActualizarGestion();
+    }
+}
 
 function guardarYActualizarGestion() {
     localStorage.setItem('cuentas', JSON.stringify(cuentas));
@@ -3910,7 +3721,8 @@ function exportarDatos() {
         agendaPagos,
         userNombre,
         userAvatar,
-        pinQuestions
+        pinQuestions,
+        tasasHistoricas
     });
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -3923,24 +3735,27 @@ function importarDatos(e) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (ev) => {
         try {
-            const data = JSON.parse(e.target.result);
-            
+            const data = JSON.parse(ev.target.result);
             if(data.transacciones && data.cuentas) {
                 transacciones = data.transacciones; 
                 categorias = data.categorias || []; 
                 cuentas = data.cuentas; 
                 metas = data.metas || [];
-                if (Array.isArray(data.agendaPagos)) {
-                    agendaPagos = data.agendaPagos;
-                }
+                if (Array.isArray(data.agendaPagos)) agendaPagos = data.agendaPagos;
 
                 if (data.categoriasColores && typeof data.categoriasColores === 'object') {
                     categoriasColores = data.categoriasColores;
                     localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
                 }
                 asegurarColoresCategorias();
+
+                if (data.tasasHistoricas && typeof data.tasasHistoricas === 'object') {
+                    if (Array.isArray(data.tasasHistoricas.BCV)) localStorage.setItem('assist_hist_serie_BCV', JSON.stringify(data.tasasHistoricas.BCV));
+                    if (Array.isArray(data.tasasHistoricas.EUR)) localStorage.setItem('assist_hist_serie_EUR', JSON.stringify(data.tasasHistoricas.EUR));
+                    if (Array.isArray(data.tasasHistoricas.USDT)) localStorage.setItem('assist_hist_serie_USDT', JSON.stringify(data.tasasHistoricas.USDT));
+                }
 
                 if (data.userNombre !== undefined) {
                     userNombre = data.userNombre || '';
@@ -4012,11 +3827,8 @@ async function inicializarApp() {
                 actualizarUIEstadoNube();
 
                 if (navigator.onLine) {
-                    if (localStorage.getItem('assist_pending_sync') === 'true') {
-                        await sincronizarHaciaNube();
-                    } else {
-                        await descargarDesdeNube();
-                    }
+                    if (localStorage.getItem('assist_pending_sync') === 'true') await sincronizarHaciaNube();
+                    else await descargarDesdeNube();
                 }
             } else {
                 actualizarUIEstadoNube();

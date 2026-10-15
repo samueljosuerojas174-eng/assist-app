@@ -180,11 +180,17 @@
 
             <!-- Tasas en Vivo -->
             <div class="tasas-header">
-                <div style="display: flex; flex-direction: column;">
-                    <h3 class="section-subtitle" style="margin-bottom: 2px;">Tasas del Día</h3>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3 class="section-subtitle" style="margin-bottom: 0;">Tasas del Día</h3>
+                        <span id="badge-brecha-home" class="brecha-pill">Brecha: --%</span>
+                    </div>
                     <span id="fecha-tasas" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">🗓️ Conectando...</span>
                 </div>
-                <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh">🔄</button>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <button id="btn-home-switch-fecha" type="button" class="btn-fecha-posterior-mini oculto" style="display: none;" onclick="alternarFechaValorCalc()" title="Alternar entre tasa de hoy y fecha valor BCV">📅→</button>
+                    <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh">🔄</button>
+                </div>
             </div>
             <section class="tasas-widget">
                 <div class="tasa-item">
@@ -373,11 +379,12 @@
                     <h1>Conversión</h1>
                     <p>Calculadora en tiempo real</p>
                 </div>
+                <span id="calc-brecha-box" class="brecha-pill">Brecha ($/USDT): --%</span>
             </div>
             
             <div id="banner-fecha-valor" class="banner-alerta oculto">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                <span>Próxima fecha de valor</span>
+                <span id="banner-fecha-valor-texto">Viendo tasa con fecha valor futura BCV</span>
             </div>
 
             <section class="calc-cambio-container blur-effect">
@@ -387,10 +394,30 @@
                     <div class="segment" id="seg-eur" onclick="setTasaModo('EUR')">EUR</div>
                     <div class="segment" id="seg-custom" onclick="setTasaModo('Custom')">Propia</div>
                 </div>
-                <div class="calc-info-row">
-                    <span id="calc-fecha-badge">Cargando fecha...</span>
-                    <span id="calc-variacion-box" class="tasa-variacion var-neutra">+0.00 Bs</span>
+
+                <!-- Barra de Fecha Interactiva + Calendario Histórico + Alternador Fecha Posterior (Estilo Al Cambio) -->
+                <div class="calc-date-bar-alcambio" id="calc-date-bar-alcambio">
+                    <div id="calc-fecha-badge" class="calc-date-pill-main">Cargando fecha...</div>
+
+                    <!-- Botón de Calendario Histórico (con input date nativo superpuesto para iOS Safari) -->
+                    <div class="calc-date-action-wrap" id="wrap-calc-calendario" title="Consultar tasa de una fecha anterior">
+                        <input type="date" id="input-calc-fecha-hist" onchange="seleccionarFechaHistoricaCalc(this.value)" aria-label="Elegir fecha histórica">
+                        <button type="button" id="btn-calc-cal-icon" class="btn-calc-date-icon">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Botón Alternador Rápido entre Tasa del Día Actual y Fecha Valor Posterior / Volver a Hoy -->
+                    <button type="button" id="btn-calc-switch-fecha" class="btn-calc-date-icon oculto" style="display: none;" onclick="alternarFechaValorCalc()" title="Alternar entre fecha vigente y fecha posterior BCV">
+                        <span id="ico-calc-switch-fecha">📅→</span>
+                    </button>
                 </div>
+
+                <div class="calc-info-row">
+                    <span id="calc-estado-tasa-lbl" style="font-size: 11.5px; color: var(--text-secondary); font-weight: 600;">Variación respecto al cierre previo:</span>
+                    <span id="calc-variacion-box" class="tasa-variacion var-neutra">+0.00 Bs (0.00%)</span>
+                </div>
+
                 <div class="tasa-activa-box">
                     <label>Tasa a usar (Bs):</label>
                     <input type="number" id="input-tasa-activa" value="0.00" disabled oninput="recalcularDesdeTasa()" inputmode="decimal">
@@ -841,7 +868,7 @@
     <!-- Modal Historial Pro (Gráfico con Leyenda Personalizada + Agrupación Total por Mes y Día) -->
     <div id="modal-historial" class="glass-modal oculto" onclick="cerrarModal('modal-historial')">
         <div class="glass-modal-content historial-modal-content" onclick="event.stopPropagation()">
-            <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px;">
+            <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; flex-shrink: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <h2 id="historial-titulo-cuenta">Historial</h2>
@@ -978,7 +1005,7 @@
         </div>
     </div>
 
-    <!-- Modal Categorías con Selector de Color Personalizado -->
+    <!-- Modal Categorías con Selector de Color Personalizado y Edición en Vivo -->
     <div id="modal-categorias" class="glass-modal oculto" onclick="cerrarModal('modal-categorias')">
         <div class="glass-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header" style="margin-bottom: 12px;">
@@ -990,6 +1017,21 @@
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
+
+            <!-- Panel emergente integrado para cambiar el color de una categoría ya creada sin perder su historial -->
+            <div id="box-editar-color-existente" class="cat-edit-color-box oculto" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span id="lbl-editar-color-cat-nombre" style="font-size: 12.5px; font-weight: 800; color: var(--text-primary);">Cambiar color</span>
+                    <button type="button" class="btn-link-perfil" onclick="cerrarSelectorColorCategoriaExistente()" style="font-size: 11.5px; text-decoration: none; font-weight: 700;">✕ Cerrar</button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label class="cat-color-picker-btn" id="preview-editar-cat-color" style="width: 36px; height: 36px; flex: 0 0 36px; border-radius: 12px;" title="Elegir cualquier color libre">
+                        <input type="color" id="input-color-libre-cat-existente" oninput="seleccionarColorCategoriaExistente(this.value)">
+                    </label>
+                    <div class="palette-container cat-palette-row" id="paleta-editar-cat-existente" style="flex: 1;"></div>
+                </div>
+            </div>
+
             <ul id="lista-gestion-categorias" class="lista-gestion modal-list"></ul>
             
             <!-- Crear Nueva Categoría con su Color Representativo -->

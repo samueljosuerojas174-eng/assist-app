@@ -617,12 +617,44 @@ body.modal-open .app-container {
 .btn-ojo { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 8px; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: color 0.3s ease, transform 0.3s var(--ios-spring); }
 .btn-ojo:active { color: var(--text-primary); transform: scale(0.86); }
 
-/* Tasas Widget */
+/* Tasas Widget y Píldora de Brecha Cambiaria */
 .tasas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 5px; }
 .btn-refresh { background: transparent; border: none; font-size: 18px; cursor: pointer; transition: transform 0.35s var(--ios-spring), opacity 0.25s ease; padding: 5px; }
 .btn-refresh:active { transform: scale(0.86) rotate(45deg); opacity: 0.75; }
 .btn-refresh.spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+.brecha-pill {
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 9px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.btn-fecha-posterior-mini {
+    background: rgba(255, 214, 10, 0.14);
+    border: 1px solid rgba(255, 214, 10, 0.35);
+    color: #FFD60A;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 9px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.25s var(--ios-spring), background-color 0.25s ease;
+}
+.btn-fecha-posterior-mini:active {
+    transform: scale(0.9);
+}
+[data-theme="light"] .btn-fecha-posterior-mini {
+    color: #B25000;
+    background: rgba(255, 159, 10, 0.15);
+    border-color: rgba(255, 159, 10, 0.35);
+}
 
 .tasas-widget, .add-transaction, .gestion-seccion { background: var(--card-dark); border: 1px solid var(--border-light); padding: 14px 16px; border-radius: 24px; margin-bottom: 12px; box-shadow: var(--card-shadow); transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease; }
 .tasas-widget { display: flex; justify-content: space-between; padding: 12px 16px; }
@@ -640,9 +672,9 @@ body.modal-open .app-container {
 .input-wrapper input { border: none !important; background: transparent !important; padding: 12px 14px !important; flex: 1; outline: none; font-size: 20px; font-weight: 700; color: var(--text-primary) !important; width: 100%; box-shadow: none !important;}
 .input-wrapper .wrapper-divider { width: 1px; height: 24px; background: var(--border-light); }
 
-select.custom-select-btn, input[type="date"] { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 17px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04); transition: transform 0.32s var(--ios-spring), border-color 0.3s ease, box-shadow 0.3s ease; overflow: hidden; white-space: nowrap; }
-select.custom-select-btn:active, input[type="date"]:active { transform: scale(0.97); opacity: 0.88; }
-select.custom-select-btn:focus, input[type="date"]:focus { border-color: color-mix(in srgb, var(--accent) 65%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); outline: none;}
+select.custom-select-btn, input[type="date"]:not(#input-calc-fecha-hist):not(#filtro-fecha) { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg fill='%238E8E93' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 35px; flex: 1; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 17px; font-size: 15px; font-weight: 600; background-color: var(--input-bg); color: var(--text-primary); cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04); transition: transform 0.32s var(--ios-spring), border-color 0.3s ease, box-shadow 0.3s ease; overflow: hidden; white-space: nowrap; }
+select.custom-select-btn:active, input[type="date"]:not(#input-calc-fecha-hist):not(#filtro-fecha):active { transform: scale(0.97); opacity: 0.88; }
+select.custom-select-btn:focus, input[type="date"]:not(#input-calc-fecha-hist):not(#filtro-fecha):focus { border-color: color-mix(in srgb, var(--accent) 65%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); outline: none;}
 
 /* Botón Minimalista Bouncy para Moneda */
 select.custom-select-inline { 
@@ -683,7 +715,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .btn-secundario { width: 100%; padding: 12px 16px; background-color: var(--input-bg); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 18px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px -6px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.05); transition: transform 0.34s var(--ios-spring), background-color 0.25s ease, border-color 0.25s ease; display: flex; justify-content: center; align-items: center; gap: 8px;}
 .btn-secundario:active { transform: scale(0.965); background-color: rgba(150,150,150,0.14); }
 
-/* Listas UI, Scroll Vertical Nativo en Historial y Swipe to Delete */
+/* ================= LISTAS UI, SCROLL VERTICAL SIN APLASTAR TARJETAS Y SWIPE TO DELETE ================= */
 .lista-gestion {
     list-style: none;
     overflow-y: auto;
@@ -695,21 +727,57 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 
 #lista-transacciones,
 #lista-historial-meta {
+    display: block !important;
     list-style: none;
     overflow-y: auto !important;
-    overflow-x: hidden;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    width: 100%;
 }
 
-.swipe-container { position: relative; overflow: hidden; padding: 0 !important; border-radius: 20px; margin-bottom: 10px; background: var(--input-bg); border: 1px solid var(--border-light); box-shadow: 0 4px 14px -6px rgba(0,0,0,0.2);}
-.swipe-content { position: relative; width: 100%; padding: 15px 16px; background: var(--card-dark); z-index: 2; display: flex; justify-content: space-between; align-items: center; border-radius: 20px; transition: transform 0.34s var(--ios-spring); touch-action: pan-y; }
+.swipe-container {
+    position: relative;
+    overflow: hidden;
+    padding: 0 !important;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 14px -6px rgba(0,0,0,0.2);
+    flex-shrink: 0 !important;
+}
+.swipe-content {
+    position: relative;
+    width: 100%;
+    padding: 15px 16px;
+    background: var(--card-dark);
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 20px;
+    transition: transform 0.34s var(--ios-spring);
+    touch-action: pan-y;
+}
 .swipe-action { position: absolute; top: 0; right: 0; width: 80px; height: 100%; background: #FF453A; color: white; display: flex; justify-content: center; align-items: center; font-size: 20px; z-index: 1; cursor: pointer; border-radius: 0 20px 20px 0; }
 
-.transaccion-item { background: var(--input-bg); padding: 15px 16px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid var(--border-light); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03); transition: transform 0.3s var(--ios-spring), border-color 0.3s ease; }
+.transaccion-item {
+    background: var(--input-bg);
+    padding: 15px 16px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-light);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    transition: transform 0.3s var(--ios-spring), border-color 0.3s ease;
+    flex-shrink: 0 !important;
+}
 .trans-izq strong { font-size: 16.5px; display: block; font-weight: 600; color: var(--text-primary);}
 .trans-izq small { color: var(--text-secondary); font-size: 13px; }
 .monto-val { font-weight: 700; font-size: 16.5px; margin-right: 12px;}
@@ -724,10 +792,12 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 
 /* ================= HISTORIAL PRO, GRÁFICO CON LEYENDA LATERAL Y COLORES DE CATEGORÍAS ================= */
 .historial-modal-content {
+    height: 90vh !important;
     max-height: 92vh !important;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    overflow: hidden;
 }
 
 .btn-filtro-hist.activo {
@@ -821,6 +891,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     border-radius: 11px;
     background: rgba(150, 150, 150, 0.05);
     border: 1px solid var(--border-light);
+    flex-shrink: 0;
 }
 
 .legend-cat-left {
@@ -871,14 +942,13 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     border: 1px solid var(--border-light);
 }
 
-/* Agrupadores de Mes/Año y Día en el Historial Total */
+/* Agrupadores de Mes/Año y Día en el Historial Total (Sin compresión vertical) */
 .historial-full-list {
-    max-height: 56vh !important;
-    display: flex;
-    flex-direction: column;
+    display: block !important;
+    max-height: none !important;
     min-height: 0;
-    flex: 1;
-    padding-bottom: 28px !important;
+    flex: 1 1 auto;
+    padding-bottom: 36px !important;
 }
 
 .hist-mes-header {
@@ -895,7 +965,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     color: var(--text-primary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
 }
 
 .hist-mes-header:first-child {
@@ -912,7 +982,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     display: flex;
     align-items: center;
     gap: 6px;
-    flex-shrink: 0;
+    flex-shrink: 0 !important;
 }
 
 .hist-dia-header::before {
@@ -944,6 +1014,16 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     border: 1px solid var(--border-light);
     border-radius: 18px;
     padding: 10px 12px;
+}
+
+.cat-edit-color-box {
+    background: color-mix(in srgb, var(--accent) 10%, var(--input-bg));
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border-light));
+    border-radius: 18px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    animation: scaleFadeIn 0.25s var(--ios-spring) forwards;
 }
 
 .cat-color-picker-btn {
@@ -978,31 +1058,34 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 }
 
 .cat-palette-row {
-    padding: 4px 2px 2px !important;
-    gap: 9px !important;
+    padding: 6px 2px 4px !important;
+    gap: 10px !important;
+    touch-action: pan-x !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
 }
 
 .cat-color-dot-pick {
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
     border-radius: 50%;
     cursor: pointer;
-    border: 2px solid rgba(255, 255, 255, 0.18);
+    border: 2px solid rgba(255, 255, 255, 0.22);
     transition: transform 0.28s var(--ios-spring), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .cat-color-dot-pick.activo {
     transform: scale(1.18);
     border-color: #FFFFFF;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.55);
 }
 
 .btn-cat-color-item {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.35);
     cursor: pointer;
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
@@ -1580,17 +1663,120 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent); 
 }
 
-/* Paleta Ampliada de 20+ Colores */
-.palette-container { display: flex; gap: 12px; overflow-x: auto; padding: 6px 4px; scrollbar-width: none; -ms-overflow-style: none; }
+/* Paleta Ampliada de 20+ Colores con Soporte de Deslizamiento Horizontal Táctil */
+.palette-container {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    padding: 6px 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x !important;
+}
 .palette-container::-webkit-scrollbar { display: none; }
 .theme-dot { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; cursor: pointer; border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 3px 10px rgba(0,0,0,0.22); transition: transform 0.32s var(--ios-spring), box-shadow 0.3s ease; }
 .theme-dot:active { transform: scale(0.84); }
 
-/* Calculadora UI */
+/* ================= CALCULADORA UI Y BARRA DE FECHA ESTILO AL CAMBIO ================= */
 .calc-cambio-container { padding: 24px 22px; border-radius: 26px; border: 1px solid var(--border-light); box-shadow: var(--card-shadow); }
-.ios-segmented-control { display: flex; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 15px; padding: 4px; margin-bottom: 20px; }
+.ios-segmented-control { display: flex; background: var(--input-bg); border: 1px solid var(--border-light); border-radius: 15px; padding: 4px; margin-bottom: 16px; }
 .segment { flex: 1; text-align: center; padding: 9px 0; font-size: 13px; font-weight: 600; color: var(--text-secondary); border-radius: 11px; cursor: pointer; transition: all 0.34s var(--ios-spring); }
 .segment.activo { background: var(--card-dark); color: var(--text-primary); box-shadow: 0 3px 10px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.06); }
+
+/* Barra de Fecha Interactiva + Calendario Histórico + Alternador Fecha Valor */
+.calc-date-bar-alcambio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.calc-date-pill-main {
+    flex: 1;
+    height: 44px;
+    border-radius: 15px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    text-align: center;
+    letter-spacing: -0.2px;
+    transition: all 0.25s ease;
+}
+
+.calc-date-pill-main.fecha-futura-activa {
+    color: #FFD60A;
+    border-color: rgba(255, 214, 10, 0.35);
+    background: rgba(255, 214, 10, 0.08);
+}
+
+[data-theme="light"] .calc-date-pill-main.fecha-futura-activa {
+    color: #B25000;
+    background: rgba(255, 159, 10, 0.12);
+    border-color: rgba(255, 159, 10, 0.35);
+}
+
+.calc-date-action-wrap {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+#input-calc-fecha-hist {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    z-index: 3 !important;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.btn-calc-date-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 800;
+    flex-shrink: 0;
+    transition: transform 0.25s var(--ios-spring), background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.btn-calc-date-icon:active {
+    transform: scale(0.9);
+}
+
+.btn-calc-date-icon.destacado-ambar {
+    background: rgba(255, 214, 10, 0.16);
+    border-color: rgba(255, 214, 10, 0.4);
+    color: #FFD60A;
+}
+
+[data-theme="light"] .btn-calc-date-icon.destacado-ambar {
+    color: #B25000;
+    background: rgba(255, 159, 10, 0.16);
+    border-color: rgba(255, 159, 10, 0.4);
+}
+
 .tasa-activa-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .tasa-activa-box label { font-size: 15px; font-weight: 500; color: var(--text-secondary); }
 .tasa-activa-box input { width: 120px; padding: 10px; text-align: right; font-size: 18px; font-weight: 700; background: transparent !important; border: none; border-bottom: 1px solid var(--border-light); border-radius: 0; color: var(--text-primary) !important; transition: border-color 0.3s ease;}
@@ -1604,10 +1790,10 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 .calc-row span { font-size: 24px; color: var(--text-secondary); font-weight: 700; width: 35px;}
 .calc-row input { background: transparent !important; border: none !important; padding: 15px 0; font-size: 32px; font-weight: 800; flex: 1; outline: none; color: var(--text-primary); box-shadow: none !important;}
 
-.banner-alerta { background-color: rgba(255, 214, 10, 0.12); color: #FFD60A; padding: 12px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; border: 1px solid rgba(255, 214, 10, 0.25); transition: opacity 0.3s ease; }
+.banner-alerta { background-color: rgba(255, 214, 10, 0.12); color: #FFD60A; padding: 11px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 700; margin-bottom: 12px; border: 1px solid rgba(255, 214, 10, 0.25); transition: opacity 0.3s ease; }
+[data-theme="light"] .banner-alerta { color: #B25000; background-color: rgba(255, 159, 10, 0.14); border-color: rgba(255, 159, 10, 0.3); }
 .banner-alerta.oculto { display: none; }
-.calc-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-#calc-fecha-badge { font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--input-bg); border: 1px solid var(--border-light); padding: 4px 10px; border-radius: 10px; }
+.calc-info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 #calc-variacion-box { margin-top: 0 !important; font-size: 12px !important; }
 #calc-variacion-box.oculto { display: none; }
 
@@ -2043,6 +2229,7 @@ body[data-theme="glass"] {
 [data-theme="glass"] .pin-key-btn:not(.pin-key-action):not(.pin-key-backspace),
 [data-theme="glass"] .historial-chart-card,
 [data-theme="glass"] .cat-new-box,
+[data-theme="glass"] .cat-edit-color-box,
 [data-theme="glass"] .agenda-stat-card,
 [data-theme="glass"] .agenda-item-card,
 [data-theme="glass"] .agenda-home-banner {
@@ -2117,9 +2304,11 @@ body[data-theme="glass"] {
 [data-theme="glass"] .pin-interactive-area,
 [data-theme="glass"] select.custom-select-btn,
 [data-theme="glass"] select.custom-select-inline,
-[data-theme="glass"] input:not([type="hidden"]):not(#monto):not(#askbot-input):not(#input-pin):not([type="color"]),
+[data-theme="glass"] input:not([type="hidden"]):not(#monto):not(#askbot-input):not(#input-pin):not(#input-calc-fecha-hist):not(#filtro-fecha):not([type="color"]),
 [data-theme="glass"] .calc-row,
-[data-theme="glass"] .ios-segmented-control {
+[data-theme="glass"] .ios-segmented-control,
+[data-theme="glass"] .calc-date-pill-main:not(.fecha-futura-activa),
+[data-theme="glass"] .btn-calc-date-icon:not(.destacado-ambar) {
     background: rgba(255, 255, 255, 0.024) !important;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
