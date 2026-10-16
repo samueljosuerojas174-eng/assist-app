@@ -783,28 +783,41 @@ const ASKBOT_CATALOGO = [
     }
 ];
 
-// ================= 3. RENDERIZADO DE LA INTERFAZ INTERACTIVA DE ASKBOT =================
+// ================= 3. RENDERIZADO MINIMALISTA Y MENÚ EMERGENTE ULTRALIGERO =================
+
+let askbotModoFiltroMenu = 'todo';
+let askbotCatFiltroModal = null;
+let askbotCategoriasExpandidas = {};
+let askbotMenuDOMConstruido = false;
 
 function asegurarEstructuraDOMAskBot() {
     const container = document.getElementById('askbot-container');
     if (!container) return false;
 
-    // Si aún no hemos inyectado el dock interactivo de tarjetas, lo construimos limpiamente
-    if (!document.getElementById('askbot-interactive-dock')) {
-        const inputBarVieja = container.querySelector('.askbot-input-bar');
-        if (inputBarVieja) inputBarVieja.remove();
+    const topSubbarVieja = document.getElementById('askbot-top-Subbar');
+    if (topSubbarVieja) topSubbarVieja.remove();
+    const dockViejo = document.getElementById('askbot-interactive-dock');
+    if (dockViejo) dockViejo.remove();
+    const heroViejo = document.getElementById('askbot-welcome-hero');
+    if (heroViejo) heroViejo.remove();
 
+    if (!document.getElementById('askbot-messages') || !document.getElementById('askbot-bottom-launcher')) {
         container.innerHTML = `
-            <div id="askbot-top-Subbar" style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 8px; border-bottom: 1px solid var(--border-light); margin-bottom: 6px; flex-shrink: 0;">
-                <span style="font-size: 11.5px; font-weight: 700; color: var(--text-secondary);">🤖 Asesor Financiero y Guía Interactivo</span>
-                <button type="button" onclick="limpiarChatAskBot()" style="background: var(--input-bg); border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; cursor: pointer;">🧹 Reiniciar</button>
-            </div>
-
-            <div id="askbot-messages" class="askbot-messages" style="flex: 1; min-height: 120px; overflow-y: auto; padding: 6px 4px; display: flex; flex-direction: column; gap: 10px;"></div>
-
-            <div id="askbot-interactive-dock" style="flex-shrink: 0; border-top: 1px solid var(--border-light); padding-top: 10px; margin-top: 6px; display: flex; flex-direction: column; max-height: 48%;">
-                <div id="askbot-dock-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding: 0 2px;"></div>
-                <div id="askbot-welcome-hero" class="askbot-welcome-hero" style="padding: 2px; overflow-y: auto; max-height: 230px; align-items: stretch; text-align: left;"></div>
+            <div id="askbot-messages" class="askbot-messages"></div>
+            <div id="askbot-bottom-launcher" class="askbot-bottom-launcher">
+                <button type="button" class="askbot-launcher-btn" onclick="abrirMenuAskBot()">
+                    <div class="askbot-launcher-left">
+                        <span class="askbot-launcher-icon">✨</span>
+                        <div class="askbot-launcher-texts">
+                            <strong id="askbot-launcher-title">Explorar Consultas y Temas</strong>
+                            <small id="askbot-launcher-sub">Tasas en vivo, patrimonio, agenda y guía</small>
+                        </div>
+                    </div>
+                    <div class="askbot-launcher-pill">
+                        <span>Menú</span>
+                        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </div>
+                </button>
             </div>
         `;
     }
@@ -822,9 +835,9 @@ function agregarBurbujaAskBot(htmlTexto, tipo = 'bot', esBienvenida = false) {
     bubble.innerHTML = htmlTexto;
     box.appendChild(bubble);
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
-    }, 30);
+    });
 }
 
 function esfumarBurbujaBienvenidaAskBot(inmediato = false) {
@@ -838,10 +851,10 @@ function esfumarBurbujaBienvenidaAskBot(inmediato = false) {
     welcomeBubble.classList.add('esfumando');
     welcomeBubble.style.maxHeight = welcomeBubble.offsetHeight + 'px';
     welcomeBubble.style.overflow = 'hidden';
-    welcomeBubble.style.transition = 'opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1), transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.26s cubic-bezier(0.22, 1, 0.36, 1), margin 0.24s ease, padding 0.24s ease, border-width 0.24s ease';
+    welcomeBubble.style.transition = 'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.24s cubic-bezier(0.22, 1, 0.36, 1), margin 0.22s ease, padding 0.22s ease, border-width 0.22s ease';
     void welcomeBubble.offsetWidth;
     welcomeBubble.style.opacity = '0';
-    welcomeBubble.style.transform = 'translateY(-10px) scale(0.95)';
+    welcomeBubble.style.transform = 'translateY(-8px) scale(0.96)';
     welcomeBubble.style.maxHeight = '0px';
     welcomeBubble.style.marginTop = '0px';
     welcomeBubble.style.marginBottom = '0px';
@@ -850,7 +863,7 @@ function esfumarBurbujaBienvenidaAskBot(inmediato = false) {
     welcomeBubble.style.borderWidth = '0px';
     setTimeout(() => {
         if (welcomeBubble && welcomeBubble.parentNode) welcomeBubble.remove();
-    }, 250);
+    }, 230);
 }
 
 function mostrarSaludoInicialAskBot() {
@@ -860,109 +873,239 @@ function mostrarSaludoInicialAskBot() {
 
     const saludoNombre = (typeof userNombre !== 'undefined' && userNombre) ? `, <b>${userNombre}</b>` : '';
     agregarBurbujaAskBot(`
-        👋 ¡Hola${saludoNombre}! Soy <b>AskBot</b>, tu copiloto financiero y guía interactivo de <b>A$$IST 4.0</b>.<br><br>
-        Toca cualquiera de las <b>tarjetas de abajo</b> para consultar tus tasas, saldos y deudas en tiempo real o aprender a usar cada función de la app. 👇
+        👋 ¡Hola${saludoNombre}! Soy <b>AskBot</b>, tu copiloto financiero de <b>A$$IST 4.0</b>.<br><br>
+        Toca la barra <b>Explorar Consultas y Temas</b> de abajo para revisar tus tasas, saldos y deudas en tiempo real o consultar cualquier función de la app. 👇
     `, 'bot', true);
 }
 
-function animarCambioDockAskBot(dockBody, direccion = 'right') {
-    if (!dockBody) return;
-    dockBody.classList.remove('dock-anim-right', 'dock-anim-left');
-    void dockBody.offsetWidth;
-    dockBody.classList.add(direccion === 'left' ? 'dock-anim-left' : 'dock-anim-right');
+function normalizarBusquedaAskBot(str) {
+    return (str || '')
+        .toString()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
 }
 
-function renderizarDockTarjetasAskBot(direccionAnim = null) {
-    const dockHeader = document.getElementById('askbot-dock-header');
-    const dockBody = document.getElementById('askbot-welcome-hero');
-    if (!dockHeader || !dockBody) return;
-
-    dockBody.classList.remove('oculto-hero');
-
-    // VISTA 1: MENÚ PRINCIPAL DE CATEGORÍAS + ACCESOS RÁPIDOS EN VIVO
-    if (!askbotCategoriaActiva) {
-        dockHeader.innerHTML = `
-            <span style="font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">📌 Selecciona un tema o consulta rápida (40 tarjetas)</span>
-        `;
-
-        // Accesos directos rápidos en fila horizontal deslizable + Grid de las 8 categorías
-        const accesosRapidos = ASKBOT_CATALOGO[0].tarjetas.slice(0, 4);
-        const htmlRapidos = accesosRapidos.map(t => `
-            <button type="button" class="askbot-chip" onclick="ejecutarTarjetaAskBot('${t.id}')" style="flex: 0 0 auto; width: auto; min-width: 145px; max-width: 190px; padding: 9px 12px; flex-direction: row; align-items: center; gap: 7px;">
-                <span class="chip-icon" style="font-size: 15px;">${t.icono}</span>
-                <span class="chip-text" style="font-size: 11.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${t.pregunta.replace('¿', '').replace('?', '')}</span>
-            </button>
-        `).join('');
-
-        const htmlCategorias = ASKBOT_CATALOGO.map(cat => `
-            <button type="button" class="askbot-chip" onclick="abrirCategoriaAskBot('${cat.id}')" style="padding: 11px 12px; justify-content: space-between;">
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <span class="chip-icon" style="font-size: 18px;">${cat.icono}</span>
-                    <span style="font-size: 10px; font-weight: 800; color: var(--text-secondary); background: var(--card-dark); padding: 2px 7px; border-radius: 8px; border: 1px solid var(--border-light);">${cat.tarjetas.length}</span>
-                </div>
-                <div style="margin-top: 2px;">
-                    <strong style="display: block; font-size: 12.5px; color: var(--text-primary); line-height: 1.2;">${cat.titulo}</strong>
-                    <small style="display: block; font-size: 10.5px; color: var(--text-secondary); margin-top: 2px; line-height: 1.25;">${cat.subtitulo}</small>
-                </div>
-            </button>
-        `).join('');
-
-        dockBody.innerHTML = `
-            <div class="palette-container" style="padding: 0 0 8px 0; margin-bottom: 4px; gap: 8px; flex-shrink: 0;">
-                ${htmlRapidos}
+function generarHTMLItemsCategoriaAskBot(cat, tarjetasLista) {
+    const esVivo = cat.id === 'cat_consultas_vivo';
+    const items = (tarjetasLista || cat.tarjetas).map(t => `
+        <button type="button" class="askbot-menu-item ${esVivo ? 'item-vivo' : ''}" onclick="seleccionarConsultaDesdeMenuAskBot('${t.id}')">
+            <div class="askbot-menu-item-left">
+                <span class="askbot-menu-item-icon">${t.icono}</span>
+                <span class="askbot-menu-item-text">${t.pregunta}</span>
             </div>
-            <div class="askbot-chips" style="margin-bottom: 4px;">
-                ${htmlCategorias}
-            </div>
-        `;
-        dockBody.scrollTop = 0;
-        if (direccionAnim) animarCambioDockAskBot(dockBody, direccionAnim);
-        return;
-    }
-
-    // VISTA 2: TARJETAS DE LA CATEGORÍA SELECCIONADA
-    const categoriaObj = ASKBOT_CATALOGO.find(c => c.id === askbotCategoriaActiva);
-    if (!categoriaObj) {
-        askbotCategoriaActiva = null;
-        renderizarDockTarjetasAskBot('left');
-        return;
-    }
-
-    dockHeader.innerHTML = `
-        <button type="button" onclick="volverCategoriasAskBot()" style="background: var(--input-bg); border: 1px solid var(--border-light); color: var(--text-primary); font-size: 12px; font-weight: 800; padding: 5px 12px; border-radius: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: transform 0.22s var(--ios-spring);">
-            ‹ Categorías
-        </button>
-        <span style="font-size: 12px; font-weight: 800; color: var(--text-primary);">${categoriaObj.icono} ${categoriaObj.titulo}</span>
-    `;
-
-    const htmlTarjetas = categoriaObj.tarjetas.map(t => `
-        <button type="button" class="askbot-chip" onclick="ejecutarTarjetaAskBot('${t.id}')" style="width: 100%; flex-direction: row; align-items: center; justify-content: space-between; padding: 11px 14px; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1;">
-                <span class="chip-icon" style="font-size: 17px; flex-shrink: 0;">${t.icono}</span>
-                <span class="chip-text" style="font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: left;">${t.pregunta}</span>
-            </div>
-            <span style="color: var(--text-secondary); font-weight: 800; font-size: 14px; flex-shrink: 0;">›</span>
+            <span class="askbot-menu-item-arrow">›</span>
         </button>
     `).join('');
+    return `<div class="askbot-menu-items-wrap">${items}</div>`;
+}
 
-    dockBody.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 7px; width: 100%; padding-bottom: 4px;">
-            ${htmlTarjetas}
-        </div>
-    `;
-    dockBody.scrollTop = 0;
-    if (direccionAnim) animarCambioDockAskBot(dockBody, direccionAnim);
+// Construye únicamente los 8 encabezados ultraligeros; las preguntas se inyectan bajo demanda al tocar
+function construirBaseMenuLigeroAskBot() {
+    const listEl = document.getElementById('askbot-menu-list');
+    if (!listEl) return;
+
+    let html = '';
+    for (let i = 0; i < ASKBOT_CATALOGO.length; i++) {
+        const cat = ASKBOT_CATALOGO[i];
+        const esVivo = cat.id === 'cat_consultas_vivo';
+        const estaAbierta = Boolean(askbotCategoriasExpandidas[cat.id]);
+        html += `
+            <div id="askbot-cat-group-${cat.id}" class="askbot-menu-cat-group ${estaAbierta ? 'expandida' : ''} ${esVivo ? 'grupo-vivo' : ''}">
+                <button type="button" class="askbot-menu-cat-header" onclick="toggleAcordeonCategoriaAskBot('${cat.id}')">
+                    <div class="askbot-menu-cat-info">
+                        <span class="askbot-cat-icon-box">${cat.icono}</span>
+                        <div class="askbot-cat-titles">
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <strong>${cat.titulo}</strong>
+                                ${esVivo ? '<span class="askbot-live-badge">● EN VIVO</span>' : ''}
+                            </div>
+                            <small>${cat.subtitulo}</small>
+                        </div>
+                    </div>
+                    <span class="askbot-cat-chevron">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </span>
+                </button>
+                <div id="askbot-cat-body-${cat.id}" class="askbot-menu-cat-body ${estaAbierta ? 'abierto' : ''}">${estaAbierta ? generarHTMLItemsCategoriaAskBot(cat) : ''}</div>
+            </div>
+        `;
+    }
+    listEl.innerHTML = html;
+    askbotMenuDOMConstruido = true;
+}
+
+// Alterna una categoría en 0.1ms sin reconstruir el DOM completo del modal
+function toggleAcordeonCategoriaAskBot(catId) {
+    const groupEl = document.getElementById(`askbot-cat-group-${catId}`);
+    const bodyEl = document.getElementById(`askbot-cat-body-${catId}`);
+    if (!groupEl || !bodyEl) {
+        renderizarMenuModalAskBot();
+        return;
+    }
+
+    const estabaAbierta = groupEl.classList.contains('expandida');
+
+    // Cerrar cualquier otra categoría abierta para mantener la lista compacta y fluida
+    const abiertos = document.querySelectorAll('#askbot-menu-list .askbot-menu-cat-group.expandida');
+    abiertos.forEach(el => {
+        if (el.id !== `askbot-cat-group-${catId}`) {
+            el.classList.remove('expandida');
+            const b = el.querySelector('.askbot-menu-cat-body');
+            if (b) b.classList.remove('abierto');
+        }
+    });
+    askbotCategoriasExpandidas = {};
+
+    if (estabaAbierta) {
+        groupEl.classList.remove('expandida');
+        bodyEl.classList.remove('abierto');
+    } else {
+        const cat = ASKBOT_CATALOGO.find(c => c.id === catId);
+        if (cat && bodyEl.children.length === 0) {
+            bodyEl.innerHTML = generarHTMLItemsCategoriaAskBot(cat);
+        }
+        askbotCategoriasExpandidas[catId] = true;
+        groupEl.classList.add('expandida');
+        bodyEl.classList.add('abierto');
+    }
+}
+
+function filtrarMenuAskBotEnVivo() {
+    const inputBuscar = document.getElementById('buscar-askbot-menu');
+    const subEl = document.getElementById('askbot-menu-subtitulo');
+    const listEl = document.getElementById('askbot-menu-list');
+    if (!listEl) return;
+
+    const query = normalizarBusquedaAskBot(inputBuscar ? inputBuscar.value : '');
+
+    if (!query) {
+        if (subEl) subEl.innerText = 'Toca una categoría para desplegar sus consultas';
+        construirBaseMenuLigeroAskBot();
+        return;
+    }
+
+    if (subEl) subEl.innerText = `Resultados para "${inputBuscar.value.trim()}"`;
+    askbotMenuDOMConstruido = false;
+
+    let htmlLista = '';
+    let totalCoincidencias = 0;
+
+    for (let i = 0; i < ASKBOT_CATALOGO.length; i++) {
+        const cat = ASKBOT_CATALOGO[i];
+        const tarjetasFiltradas = cat.tarjetas.filter(t => {
+            const texto = normalizarBusquedaAskBot(`${cat.titulo} ${cat.subtitulo} ${t.pregunta}`);
+            return texto.includes(query);
+        });
+        if (tarjetasFiltradas.length === 0) continue;
+        totalCoincidencias += tarjetasFiltradas.length;
+
+        const esVivo = cat.id === 'cat_consultas_vivo';
+        htmlLista += `
+            <div id="askbot-cat-group-${cat.id}" class="askbot-menu-cat-group expandida ${esVivo ? 'grupo-vivo' : ''}">
+                <div class="askbot-menu-cat-header" style="cursor: default;">
+                    <div class="askbot-menu-cat-info">
+                        <span class="askbot-cat-icon-box">${cat.icono}</span>
+                        <div class="askbot-cat-titles">
+                            <strong>${cat.titulo}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div id="askbot-cat-body-${cat.id}" class="askbot-menu-cat-body abierto">
+                    ${generarHTMLItemsCategoriaAskBot(cat, tarjetasFiltradas)}
+                </div>
+            </div>
+        `;
+    }
+
+    if (totalCoincidencias === 0) {
+        htmlLista = `
+            <div class="askbot-menu-empty">
+                <span style="font-size: 28px; display: block; margin-bottom: 8px;">🔍</span>
+                <strong>No encontramos esa consulta</strong>
+                <small>Prueba con palabras como "tasa", "agenda", "USDT", "meta" o "PIN".</small>
+            </div>
+        `;
+    }
+
+    listEl.innerHTML = htmlLista;
+}
+
+function renderizarMenuModalAskBot() {
+    const inputBuscar = document.getElementById('buscar-askbot-menu');
+    const query = normalizarBusquedaAskBot(inputBuscar ? inputBuscar.value : '');
+    if (query) {
+        filtrarMenuAskBotEnVivo();
+        return;
+    }
+    const listEl = document.getElementById('askbot-menu-list');
+    if (!askbotMenuDOMConstruido || !listEl || listEl.children.length === 0) {
+        construirBaseMenuLigeroAskBot();
+    }
+}
+
+function abrirMenuAskBot() {
+    renderizarMenuModalAskBot();
+    if (typeof abrirModal === 'function') {
+        abrirModal('modal-askbot-menu');
+    } else {
+        const modal = document.getElementById('modal-askbot-menu');
+        if (modal) modal.classList.remove('oculto');
+    }
+}
+
+function cambiarFiltroModoAskBot(modo) {
+    askbotModoFiltroMenu = modo;
+    renderizarMenuModalAskBot();
+}
+
+function seleccionarPildoraCategoriaAskBot(catId) {
+    if (catId) toggleAcordeonCategoriaAskBot(catId);
+}
+
+function encontrarCategoriaDeTarjetaAskBot(tarjetaId) {
+    for (let i = 0; i < ASKBOT_CATALOGO.length; i++) {
+        const cat = ASKBOT_CATALOGO[i];
+        if (cat.tarjetas.some(t => t.id === tarjetaId)) return cat;
+    }
+    return null;
+}
+
+function seleccionarConsultaDesdeMenuAskBot(tarjetaId) {
+    if (typeof cerrarModal === 'function') {
+        cerrarModal('modal-askbot-menu');
+    } else {
+        const modal = document.getElementById('modal-askbot-menu');
+        if (modal) modal.classList.add('oculto');
+    }
+
+    const cat = encontrarCategoriaDeTarjetaAskBot(tarjetaId);
+    if (cat) {
+        askbotCategoriaActiva = cat.id;
+        const subLauncher = document.getElementById('askbot-launcher-sub');
+        if (subLauncher) {
+            subLauncher.innerText = `${cat.icono} ${cat.titulo} · Toca para cambiar`;
+        }
+    }
+
+    ejecutarTarjetaAskBot(tarjetaId);
+}
+
+function renderizarDockTarjetasAskBot() {
+    renderizarMenuModalAskBot();
 }
 
 function abrirCategoriaAskBot(catId) {
-    esfumarBurbujaBienvenidaAskBot(false);
     askbotCategoriaActiva = catId;
-    renderizarDockTarjetasAskBot('right');
+    abrirMenuAskBot();
+    if (!askbotCategoriasExpandidas[catId]) {
+        toggleAcordeonCategoriaAskBot(catId);
+    }
 }
 
 function volverCategoriasAskBot() {
     askbotCategoriaActiva = null;
-    renderizarDockTarjetasAskBot('left');
 }
 
 function buscarTarjetaPorIdAskBot(tarjetaId) {
@@ -978,7 +1121,6 @@ function ejecutarTarjetaAskBot(tarjetaId) {
     const tarjeta = buscarTarjetaPorIdAskBot(tarjetaId);
     if (!tarjeta) return;
 
-    // Esfumar o eliminar la burbuja de presentación para ahorrar espacio en pantalla
     esfumarBurbujaBienvenidaAskBot(false);
 
     askbotRespondiendo = true;
@@ -990,7 +1132,9 @@ function ejecutarTarjetaAskBot(tarjetaId) {
     typingEl.innerHTML = '<span></span><span></span><span></span>';
     if (box) {
         box.appendChild(typingEl);
-        box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+        requestAnimationFrame(() => {
+            box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+        });
     }
 
     setTimeout(() => {
@@ -1000,7 +1144,7 @@ function ejecutarTarjetaAskBot(tarjetaId) {
             : tarjeta.respuesta;
         agregarBurbujaAskBot(respuestaFinal, 'bot');
         askbotRespondiendo = false;
-    }, 240);
+    }, 220);
 }
 
 // ================= 4. CONEXIÓN GLOBAL CON EL ARRANQUE Y PESTAÑA DE LA APP =================
@@ -1012,19 +1156,29 @@ function inicializarAskBot() {
         mostrarSaludoInicialAskBot();
         askbotInicializado = true;
     }
-    renderizarDockTarjetasAskBot();
+    renderizarMenuModalAskBot();
 }
 
 function limpiarChatAskBot() {
     askbotCategoriaActiva = null;
+    askbotCatFiltroModal = null;
+    askbotModoFiltroMenu = 'todo';
+    askbotCategoriasExpandidas = {};
+    askbotMenuDOMConstruido = false;
     askbotRespondiendo = false;
     if (!asegurarEstructuraDOMAskBot()) return;
+    const inputBuscar = document.getElementById('buscar-askbot-menu');
+    if (inputBuscar) inputBuscar.value = '';
+    const subLauncher = document.getElementById('askbot-launcher-sub');
+    if (subLauncher) {
+        subLauncher.innerText = 'Tasas en vivo, patrimonio, agenda y guía';
+    }
     mostrarSaludoInicialAskBot();
-    renderizarDockTarjetasAskBot('left');
+    construirBaseMenuLigeroAskBot();
 }
 
 function enviarSugerenciaAskBot(idTarjeta) {
-    ejecutarTarjetaAskBot(idTarjeta);
+    seleccionarConsultaDesdeMenuAskBot(idTarjeta);
 }
 
 function enviarMensajeAskBot() {

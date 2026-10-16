@@ -553,7 +553,8 @@ function formatearMontoCensurado(texto, mantenerFisico = false) {
 const MODALES_IDS = [
     'modal-perfil', 'modal-historial', 'modal-detalle-meta', 'modal-accion-meta',
     'modal-cuentas', 'modal-categorias', 'modal-nueva-meta', 'modal-tutorial',
-    'modal-config-pin', 'modal-recuperar-pin', 'modal-nueva-agenda', 'modal-pagar-agenda'
+    'modal-config-pin', 'modal-recuperar-pin', 'modal-nueva-agenda', 'modal-pagar-agenda',
+    'modal-askbot-menu'
 ];
 
 let scrollGuardadoModal = 0;
@@ -584,11 +585,11 @@ function desbloquearScrollFondo() {
 // Interceptor táctil en iOS Safari: permite scroll horizontal en paletas y vertical en contenedores de listas
 document.addEventListener('touchmove', function(e) {
     if (document.body.classList.contains('modal-open')) {
-        const horizontalPalette = e.target.closest('.palette-container, .cat-palette-row');
+        const horizontalPalette = e.target.closest('.palette-container, .cat-palette-row, .askbot-cat-pills-bar');
         if (horizontalPalette && horizontalPalette.scrollWidth > horizontalPalette.clientWidth) {
             return;
         }
-        const scrollableEl = e.target.closest('.modal-list, #lista-transacciones, #lista-historial-meta, .historial-full-list, .tut-slide, .chart-custom-legend');
+        const scrollableEl = e.target.closest('.modal-list, #lista-transacciones, #lista-historial-meta, .historial-full-list, .tut-slide, .chart-custom-legend, #askbot-menu-list');
         if (!scrollableEl) {
             e.preventDefault();
             return;
@@ -618,8 +619,13 @@ function abrirModal(id) {
     modal.classList.remove('oculto');
 
     if (id === 'modal-historial') {
-        if (typeof mostrarHistorialDiaActual === 'function') mostrarHistorialDiaActual();
-        else mostrarHistorialTotalCuenta();
+        requestAnimationFrame(() => {
+            if (typeof mostrarHistorialDiaActual === 'function') mostrarHistorialDiaActual();
+            else mostrarHistorialTotalCuenta();
+        });
+    }
+    if (id === 'modal-askbot-menu') {
+        if (typeof renderizarMenuModalAskBot === 'function') renderizarMenuModalAskBot();
     }
     if (id === 'modal-cuentas' || id === 'modal-categorias') {
         renderizarListasGestion();

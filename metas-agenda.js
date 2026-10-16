@@ -43,18 +43,18 @@ function guardarNuevaMeta() {
 function renderizarMetas() {
     const lista = document.getElementById('lista-metas-principal');
     if(!lista) return;
-    lista.innerHTML = '';
     if(metas.length === 0) { 
         lista.innerHTML = '<p style="color:var(--text-secondary); font-size:13px; text-align:center;">No tienes metas activas. ¡Crea una!</p>'; 
         return; 
     }
     
+    let htmlMetas = '';
     metas.forEach((m, i) => {
         let pct = (m.acumulado / m.objetivo) * 100;
         if(pct > 100) pct = 100;
         const bgStyle = m.imagen ? `background-image: url(${m.imagen});` : ``;
 
-        lista.innerHTML += `
+        htmlMetas += `
         <div class="meta-item-card" onclick="abrirDetalleMeta(${i})">
             <div class="meta-card-top">
                 <div class="meta-bg-overlay" style="${bgStyle}"></div>
@@ -74,6 +74,7 @@ function renderizarMetas() {
             </div>
         </div>`;
     });
+    lista.innerHTML = htmlMetas;
 }
 
 function abrirDetalleMeta(index) {
@@ -101,7 +102,6 @@ function abrirDetalleMeta(index) {
 
 function renderizarHistorialEspecíficoMeta(nombreMeta) {
     const lista = document.getElementById('lista-historial-meta');
-    lista.innerHTML = '';
     let hMeta = transacciones.filter(t => t.categoria === 'Ahorro' && t.nota && t.nota.includes(nombreMeta)).reverse();
 
     if (hMeta.length === 0) {
@@ -109,11 +109,12 @@ function renderizarHistorialEspecíficoMeta(nombreMeta) {
         return;
     }
 
+    let htmlHist = '';
     hMeta.forEach((t) => {
         const esAbono = t.tipo === 'gasto'; 
         const claseColor = esAbono ? 'monto-ingreso' : 'monto-gasto';
         const signo = esAbono ? '+' : '-';
-        lista.innerHTML += `
+        htmlHist += `
             <li class="transaccion-item" style="margin-bottom: 8px;">
                 <div class="trans-izq">
                     <strong>${esAbono ? 'Abono' : 'Retiro'}</strong>
@@ -125,6 +126,7 @@ function renderizarHistorialEspecíficoMeta(nombreMeta) {
             </li>
         `;
     });
+    lista.innerHTML = htmlHist;
 }
 
 function prepararAccionMeta(tipo) {
@@ -140,8 +142,7 @@ function prepararAccionMeta(tipo) {
     document.getElementById('moneda-accion-meta').value = 'USD'; 
 
     const selectCuenta = document.getElementById('sel-cuenta-accion-meta');
-    selectCuenta.innerHTML = '';
-    cuentas.forEach(c => selectCuenta.innerHTML += `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`);
+    selectCuenta.innerHTML = cuentas.map(c => `<option value="${c.id}">${c.nombre} (${c.moneda})</option>`).join('');
     abrirModal('modal-accion-meta');
 }
 

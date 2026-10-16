@@ -27,6 +27,10 @@
         .app-unlocked { transform: scale(1) !important; opacity: 1 !important; }
     </style>
     
+    <!-- TIPOGRAFÍA EDITORIAL ESTILO CLAUDE -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400..800;1,8..60,400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- LIBRERÍA OFICIAL DE SUPABASE -->
@@ -318,11 +322,29 @@
                         <p style="font-size: 12px;">Copiloto Financiero</p>
                     </div>
                 </div>
+                <button type="button" class="btn-askbot-clear-header" onclick="limpiarChatAskBot()" title="Limpiar chat">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>Limpiar</span>
+                </button>
             </div>
 
             <section id="askbot-container" class="askbot-container blur-effect">
                 <div id="askbot-messages" class="askbot-messages"></div>
-                <div id="askbot-welcome-hero" class="askbot-welcome-hero"></div>
+                <div id="askbot-bottom-launcher" class="askbot-bottom-launcher">
+                    <button type="button" class="askbot-launcher-btn" onclick="abrirMenuAskBot()">
+                        <div class="askbot-launcher-left">
+                            <span class="askbot-launcher-icon">✨</span>
+                            <div class="askbot-launcher-texts">
+                                <strong>Explorar Consultas y Temas</strong>
+                                <small>Tasas en vivo, patrimonio, agenda y guía</small>
+                            </div>
+                        </div>
+                        <div class="askbot-launcher-pill">
+                            <span>Menú</span>
+                            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        </div>
+                    </button>
+                </div>
             </section>
         </div>
 
@@ -908,6 +930,29 @@
             </div>
 
             <ul id="lista-transacciones" class="modal-list historial-full-list"></ul>
+        </div>
+    </div>
+
+    <!-- Modal Menú Desplegable de AskBot (Centro de Consultas y Guía estilo Historial) -->
+    <div id="modal-askbot-menu" class="glass-modal oculto" style="z-index: 100003;" onclick="cerrarModal('modal-askbot-menu')">
+        <div class="glass-modal-content askbot-modal-content" onclick="event.stopPropagation()">
+            <div class="askbot-sheet-handle"></div>
+            <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <div style="min-width: 0; flex: 1;">
+                        <h2 id="askbot-menu-titulo">Categorías y Consultas</h2>
+                        <small id="askbot-menu-subtitulo" style="font-size: 11.5px; color: var(--text-secondary); font-weight: 600;">Toca una categoría para desplegar sus consultas</small>
+                    </div>
+                    <button class="btn-close-modal btn-close-historial-safe" onclick="cerrarModal('modal-askbot-menu')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="buscar-askbot-menu" placeholder="🔍 Buscar consulta, tasa, deuda, PIN, meta..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" oninput="filtrarMenuAskBotEnVivo()">
+                </div>
+            </div>
+
+            <div id="askbot-menu-list" class="modal-list historial-full-list askbot-menu-list"></div>
         </div>
     </div>
 

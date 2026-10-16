@@ -33,8 +33,8 @@ const PASOS_TUTORIAL = [
     {
         icono: "🤖",
         titulo: "5. AskBot 4.0: Copiloto en Vivo",
-        desc: "Tu asesor financiero interactivo 100% local con <b>40 tarjetas</b> organizadas en <b>Consultas en Vivo</b> y la enciclopedia completa de A$$IST.",
-        tip: "⚡ <b>Respuestas al instante:</b> Consulta con un toque las tasas de hoy y mañana, la radiografía de tu patrimonio, gastos del mes, deudas pendientes y el diagnóstico de liquidez vs agenda."
+        desc: "Tu asesor financiero interactivo 100% local con <b>Consultas en Vivo</b> de tus finanzas y la guía completa de A$$IST en un menú desplegable.",
+        tip: "⚡ <b>Respuestas al instante:</b> Abre el menú inferior para consultar las tasas de hoy y mañana, la radiografía de tu patrimonio, gastos del mes, deudas pendientes y el diagnóstico de liquidez."
     },
     {
         icono: "📅",
@@ -233,10 +233,10 @@ function renderizarListasGestion() {
     asegurarColoresCategorias();
     const lCuentas = document.getElementById('lista-gestion-cuentas');
     const lCat = document.getElementById('lista-gestion-categorias');
-    if(lCuentas) {
-        lCuentas.innerHTML = '';
+    if (lCuentas) {
+        let htmlCuentas = '';
         cuentas.forEach((c, i) => {
-            lCuentas.innerHTML += `
+            htmlCuentas += `
                 <li class="transaccion-item" style="padding: 12px 16px;">
                     <div class="trans-izq"><strong style="color:var(--text-primary);">${c.nombre}</strong><small>${c.moneda}</small></div>
                     <div class="acciones-gestion">
@@ -247,12 +247,13 @@ function renderizarListasGestion() {
                     </div>
                 </li>`;
         });
+        lCuentas.innerHTML = htmlCuentas;
     }
-    if(lCat) {
-        lCat.innerHTML = '';
+    if (lCat) {
+        let htmlCat = '';
         categorias.forEach((cat, i) => {
             const colorCat = obtenerColorCategoria(cat);
-            lCat.innerHTML += `
+            htmlCat += `
                 <li class="transaccion-item" style="padding: 12px 16px;">
                     <div class="trans-izq" style="display:flex; align-items:center; gap:10px;">
                         <button type="button" class="btn-cat-color-item" style="background:${colorCat};" onclick="abrirSelectorColorCategoria(${i})" title="Cambiar color de ${cat}"></button>
@@ -264,6 +265,7 @@ function renderizarListasGestion() {
                     </div>
                 </li>`;
         });
+        lCat.innerHTML = htmlCat;
     }
 }
 

@@ -232,9 +232,14 @@ function renderizarSliderCuentas() {
 
     if (cuentas.length === 0) {
         slider.innerHTML = `<div class="balance-section blur-effect"><h2>Sin Cuenta</h2><h1>$0.00</h1><span class="balance-tipo">--</span></div>`;
-        cuentaActivaId = null; actualizarListaTransacciones(); return;
+        cuentaActivaId = null;
+        const mHist = document.getElementById('modal-historial');
+        if (mHist && !mHist.classList.contains('oculto')) actualizarListaTransacciones();
+        return;
     }
 
+    let htmlSlider = '';
+    let htmlDots = '';
     cuentas.forEach((cuenta, index) => {
         let balanceUSD = 0;
         transacciones.forEach(t => { if (t.cuentaId == cuenta.id) balanceUSD += t.tipo === 'ingreso' ? t.montoUSD : -t.montoUSD; });
@@ -249,9 +254,11 @@ function renderizarSliderCuentas() {
         else if (cuenta.moneda === 'EUR') { strBalanceGrande = `€${(balanceUSD).toFixed(2)}`; strBalancePequeño = `≈ Bs ${(balanceUSD * tasaEUR).toFixed(2)}`; } 
         else { strBalanceGrande = `$${balanceUSD.toFixed(2)}`; strBalancePequeño = "Dólares / Físico"; }
 
-        slider.innerHTML += `<div class="balance-section blur-effect" id="tarjeta-cuenta-${cuenta.id}"><h2>${cuenta.nombre} <button class="btn-ojo" onclick="toggleCensura(event)">${iconOjo}</button></h2><h1>${formatearMontoCensurado(strBalanceGrande, false)}</h1><span class="balance-tipo">${formatearMontoCensurado(strBalancePequeño, true)}</span></div>`;
-        dots.innerHTML += `<div class="dot ${index === 0 ? 'activo' : ''}"></div>`;
+        htmlSlider += `<div class="balance-section blur-effect" id="tarjeta-cuenta-${cuenta.id}"><h2>${cuenta.nombre} <button class="btn-ojo" onclick="toggleCensura(event)">${iconOjo}</button></h2><h1>${formatearMontoCensurado(strBalanceGrande, false)}</h1><span class="balance-tipo">${formatearMontoCensurado(strBalancePequeño, true)}</span></div>`;
+        htmlDots += `<div class="dot ${index === 0 ? 'activo' : ''}"></div>`;
     });
+    slider.innerHTML = htmlSlider;
+    dots.innerHTML = htmlDots;
 
     if (!cuentaActivaId || !cuentas.find(c => c.id == cuentaActivaId)) cuentaActivaId = cuentas[0].id;
     actualizarOpcionesMoneda();
@@ -262,7 +269,12 @@ function renderizarSliderCuentas() {
                 const targetId = entry.target.id.replace('tarjeta-cuenta-', '');
                 const index = cuentas.findIndex(c => c.id == targetId);
                 document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('activo', i === index));
-                if (cuentaActivaId != targetId) { cuentaActivaId = targetId; actualizarOpcionesMoneda(); actualizarListaTransacciones(); }
+                if (cuentaActivaId != targetId) {
+                    cuentaActivaId = targetId;
+                    actualizarOpcionesMoneda();
+                    const mHist = document.getElementById('modal-historial');
+                    if (mHist && !mHist.classList.contains('oculto')) actualizarListaTransacciones();
+                }
             }
         });
     }, { root: slider, threshold: 0.6 });
