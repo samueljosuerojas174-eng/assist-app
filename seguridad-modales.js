@@ -80,14 +80,19 @@ function borrarDigitoPIN() {
     actualizarIndicadoresPIN();
 }
 
-window.addEventListener('load', () => {
+let _arranqueVisualEjecutado = false;
+function ejecutarArranqueVisualInmediato() {
+    if (_arranqueVisualEjecutado) return;
+    _arranqueVisualEjecutado = true;
+
     let savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
     if (savedThemeColor.toUpperCase() === '#000000') savedThemeColor = '#FFFFFF';
     const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
     cambiarColorAcento(savedThemeColor, true);
     cambiarModo(savedThemeMode, true);
 
-    document.getElementById('val-fecha').value = getLocalYYYYMMDD();
+    const inputFecha = document.getElementById('val-fecha');
+    if (inputFecha) inputFecha.value = getLocalYYYYMMDD();
     actualizarHeaderTutorial();
     actualizarUIPerfil();
     actualizarAvatarPantallaPIN();
@@ -96,26 +101,33 @@ window.addEventListener('load', () => {
     const pinScreen = document.getElementById('pin-screen');
     const appContainer = document.getElementById('app-main-container');
     
-    if (appPin) {
+    if (appPin && pinScreen) {
         pinScreen.style.zIndex = '99998'; 
         mostrarPantallaPINInteractiva(false);
     }
     
     setTimeout(() => {
-        splash.style.opacity = '0';
+        if (splash) splash.style.opacity = '0';
         setTimeout(() => {
-            splash.style.display = 'none';
-            if (appPin) {
+            if (splash) splash.style.display = 'none';
+            if (appPin && pinScreen) {
                 pinScreen.style.zIndex = '100000'; 
                 mostrarPantallaPINInteractiva(true);
             } else {
                 const skipAuth = localStorage.getItem('assist_skip_auth') === 'true';
                 if (!usuarioActual && !tieneDatosLocales() && !skipAuth) abrirPantallaAuth();
-                else appContainer.classList.add('app-unlocked');
+                else if (appContainer) appContainer.classList.add('app-unlocked');
             }
-        }, 500); 
-    }, 1200); 
-});
+        }, 260); 
+    }, 320); 
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ejecutarArranqueVisualInmediato);
+} else {
+    ejecutarArranqueVisualInmediato();
+}
+window.addEventListener('load', ejecutarArranqueVisualInmediato);
 
 // Sincronizar también el avatar del PIN cada vez que se actualice o elimine la foto de perfil
 if (typeof actualizarUIPerfil === 'function') {
@@ -149,8 +161,14 @@ function cambiarColorAcento(color, omitirSync = false) {
 }
 
 function cambiarModo(modo, omitirSync = false) {
+    const bgHex = (modo === 'light') ? '#F4F4F9' : '#000000';
     document.documentElement.setAttribute('data-theme', modo);
     document.body.setAttribute('data-theme', modo);
+    document.documentElement.style.setProperty('--bg-dark', bgHex);
+    document.documentElement.style.backgroundColor = bgHex;
+    document.body.style.backgroundColor = bgHex;
+    const metaTheme = document.getElementById('meta-theme-color');
+    if (metaTheme) metaTheme.setAttribute('content', bgHex);
     localStorage.setItem('app_theme_mode', modo);
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
@@ -639,7 +657,12 @@ function abrirModal(id) {
 
 function cerrarModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.add('oculto');
+    if (modal) {
+        const focusedEl = modal.querySelector(':focus');
+        if (focusedEl && typeof focusedEl.blur === 'function') focusedEl.blur();
+        modal.classList.add('oculto');
+    }
     if (id === 'modal-categorias') cerrarSelectorColorCategoriaExistente();
     desbloquearScrollFondo();
+    if (typeof repararViewportYBarraInferioriOS === 'function') repararViewportYBarraInferioriOS();
 }

@@ -149,12 +149,41 @@ function resetearScrollNativoiOS() {
     document.body.scrollTop = 0;
 }
 
+let _timersReparacionBarra = [];
+function repararViewportYBarraInferioriOS() {
+    _timersReparacionBarra.forEach(t => clearTimeout(t));
+    _timersReparacionBarra = [];
+
+    const ejecutarAjuste = () => {
+        if (!document.body.classList.contains('modal-open')) {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }
+        const nav = document.getElementById('bottom-nav-bar');
+        if (nav && !document.body.classList.contains('askbot-kb-open')) {
+            nav.style.bottom = '-0.5px';
+            void nav.offsetHeight;
+            nav.style.bottom = '0px';
+            nav.style.transform = 'translate3d(0, 0, 0)';
+        }
+    };
+
+    ejecutarAjuste();
+    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 70));
+    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 200));
+    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 360));
+}
+
 function cambiarPestana(idPestana, elementoNav) {
     const tabDestino = document.getElementById(idPestana);
     if (!tabDestino) return;
 
-    const inputAskbot = document.getElementById('askbot-input');
-    if (inputAskbot && idPestana !== 'tab-askbot') inputAskbot.blur();
+    // Si hay algún input con foco (ej. tasa o monto en Conversión), cerramos el teclado antes de cambiar de pestaña
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.blur();
+    }
 
     // Si el usuario toca la misma pestaña en la que ya está, hacer micro-rebote suave sin recargar de golpe
     if (pestanaActivaIdActual === idPestana && tabDestino.classList.contains('vista-activa')) {
@@ -163,7 +192,7 @@ function cambiarPestana(idPestana, elementoNav) {
             void elementoNav.offsetWidth;
             elementoNav.classList.add('nav-tap-bounce');
         }
-        resetearScrollNativoiOS();
+        repararViewportYBarraInferioriOS();
         return;
     }
 
@@ -192,19 +221,42 @@ function cambiarPestana(idPestana, elementoNav) {
 
     if (idPestana === 'tab-askbot') {
         document.body.classList.add('askbot-tab-open');
-        resetearScrollNativoiOS();
+        repararViewportYBarraInferioriOS();
         inicializarAskBot();
     } else {
         document.body.classList.remove('askbot-tab-open');
         document.body.classList.remove('askbot-kb-open');
         document.documentElement.style.setProperty('--askbot-vh', '100dvh');
-        resetearScrollNativoiOS();
+        repararViewportYBarraInferioriOS();
     }
 }
 
-// ================= COMPATIBILIDAD VISUAL VIEWPORT ASKBOT =================
-function ajustarAlturaVisualAskBot() {}
-function configurarVisualViewportAskBot() {}
+// ================= COMPATIBILIDAD VISUAL VIEWPORT Y REPARACIÓN DE BARRA EN iOS =================
+let _listenerViewportConfigurado = false;
+function ajustarAlturaVisualAskBot() {
+    repararViewportYBarraInferioriOS();
+}
+function configurarVisualViewportAskBot() {
+    if (_listenerViewportConfigurado) return;
+    _listenerViewportConfigurado = true;
+
+    document.addEventListener('focusout', (e) => {
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) {
+            repararViewportYBarraInferioriOS();
+        }
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const activeEl = document.activeElement;
+            const hayInputActivo = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+            if (!hayInputActivo) {
+                repararViewportYBarraInferioriOS();
+            }
+        });
+    }
+}
 
 // ================= GESTIÓN Y LISTAS =================
 function cargarSelects() {
@@ -438,7 +490,7 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
-// ================= ARRANQUE DE LA APP =================
+// ================= ARRANQUE INSTANTÁNEO DE LA APP (LOCAL-FIRST + SYNC EN SEGUNDO PLANO) =================
 async function inicializarApp() {
     asegurarColoresCategorias();
     renderizarPaletaColorNuevaCat();
@@ -447,7 +499,21 @@ async function inicializarApp() {
     inicializarAskBot();
     configurarVisualViewportAskBot();
 
-    if (supabaseClient) {
+    // Renderizado inmediato desde caché local en 0ms sin esperar la red
+    cargarSelects();
+    actualizarInterfaz();
+    setTasaModo('BCV'); 
+    toggleCategoriaSelect();
+    actualizarUIEstadoNube();
+
+    // Actualización de tasas y sincronización en la nube en paralelo sin bloquear el inicio
+    const promesaTasas = obtenerTasas().then(() => {
+        actualizarInterfaz();
+        setTasaModo(modoCalculadora || 'BCV');
+    }).catch(e => console.error("Error obteniendo tasas en arranque:", e));
+
+    const promesaNube = (async () => {
+        if (!supabaseClient) return;
         try {
             const { data } = await supabaseClient.auth.getSession();
             if (data && data.session && data.session.user) {
@@ -465,13 +531,9 @@ async function inicializarApp() {
             console.error("Modo offline activo:", e);
             actualizarUIEstadoNube();
         }
-    }
+    })();
 
-    await obtenerTasas();
-    cargarSelects();
-    actualizarInterfaz();
-    setTasaModo('BCV'); 
-    toggleCategoriaSelect();
+    await Promise.allSettled([promesaTasas, promesaNube]);
     setInterval(() => { obtenerTasas().then(() => actualizarInterfaz()); }, 300000); 
 }
 inicializarApp();
