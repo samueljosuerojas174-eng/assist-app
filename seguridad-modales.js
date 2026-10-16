@@ -88,8 +88,10 @@ function ejecutarArranqueVisualInmediato() {
     let savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
     if (savedThemeColor.toUpperCase() === '#000000') savedThemeColor = '#FFFFFF';
     const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
+    const savedFont = localStorage.getItem('app_font_family') || 'ios26';
     cambiarColorAcento(savedThemeColor, true);
     cambiarModo(savedThemeMode, true);
+    cambiarFuenteApp(savedFont, true);
 
     const inputFecha = document.getElementById('val-fecha');
     if (inputFecha) inputFecha.value = getLocalYYYYMMDD();
@@ -106,8 +108,12 @@ function ejecutarArranqueVisualInmediato() {
         mostrarPantallaPINInteractiva(false);
     }
     
+    // Duración de 1.5 segundos (1500ms) para que la app cargue fluidamente detrás del logo
     setTimeout(() => {
-        if (splash) splash.style.opacity = '0';
+        if (splash) {
+            splash.style.opacity = '0';
+            splash.style.transform = 'scale(1.06)';
+        }
         setTimeout(() => {
             if (splash) splash.style.display = 'none';
             if (appPin && pinScreen) {
@@ -118,8 +124,8 @@ function ejecutarArranqueVisualInmediato() {
                 if (!usuarioActual && !tieneDatosLocales() && !skipAuth) abrirPantallaAuth();
                 else if (appContainer) appContainer.classList.add('app-unlocked');
             }
-        }, 260); 
-    }, 320); 
+        }, 380); 
+    }, 1500); 
 }
 
 if (document.readyState === 'loading') {
@@ -173,6 +179,40 @@ function cambiarModo(modo, omitirSync = false) {
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
+function cambiarFuenteApp(fontKey, omitirAnim = false) {
+    const fuentesValidas = ['ios26', 'claude', 'windows', 'minecraft', '8bit', 'fredoka', 'jetbrains', 'outfit'];
+    const elegida = fuentesValidas.includes(fontKey) ? fontKey : 'ios26';
+    document.documentElement.setAttribute('data-font', elegida);
+    if (document.body) document.body.setAttribute('data-font', elegida);
+    localStorage.setItem('app_font_family', elegida);
+
+    document.querySelectorAll('#font-selector-grid .font-pill-btn').forEach(btn => {
+        btn.classList.toggle('activo', btn.getAttribute('data-font-opt') === elegida);
+    });
+
+    if (!omitirAnim) {
+        const vistaActiva = document.querySelector('.vista-activa');
+        if (vistaActiva) {
+            vistaActiva.style.transition = 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            vistaActiva.style.transform = 'scale(0.985)';
+            setTimeout(() => {
+                vistaActiva.style.transform = '';
+            }, 140);
+        }
+    }
+}
+
+function animarYQuitarElementoDOM(elemento, callbackFinal) {
+    if (!elemento) {
+        if (typeof callbackFinal === 'function') callbackFinal();
+        return;
+    }
+    elemento.classList.add('item-removing-anim');
+    setTimeout(() => {
+        if (typeof callbackFinal === 'function') callbackFinal();
+    }, 340);
+}
+
 let timeoutBloqueo;
 function reiniciarInactividad() {
     clearTimeout(timeoutBloqueo);
@@ -183,20 +223,47 @@ function reiniciarInactividad() {
         }, 3 * 60 * 1000); 
     }
 }
-window.addEventListener('touchstart', reiniciarInactividad);
+window.addEventListener('touchstart', reiniciarInactividad, { passive: true });
 window.addEventListener('click', reiniciarInactividad);
 
+// Doble toque seguro en tarjetas de saldo: verifica que NO sea un gesto de scroll antes de censurar/descensurar
 let lastTap = 0;
-document.getElementById('slider-cuentas-wrapper').addEventListener('touchstart', (e) => {
-    if(e.target.closest('button')) return; 
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTap;
-    if (tapLength < 300 && tapLength > 0) {
-        toggleCensura();
-        e.preventDefault();
-    }
-    lastTap = currentTime;
-});
+let lastTapX = 0;
+let lastTapY = 0;
+let touchStartSliderX = 0;
+let touchStartSliderY = 0;
+let touchMovedSlider = false;
+const sliderWrapperEl = document.getElementById('slider-cuentas-wrapper');
+if (sliderWrapperEl) {
+    sliderWrapperEl.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        touchStartSliderX = e.touches[0].clientX;
+        touchStartSliderY = e.touches[0].clientY;
+        touchMovedSlider = false;
+    }, { passive: true });
+
+    sliderWrapperEl.addEventListener('touchmove', (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        const dx = Math.abs(e.touches[0].clientX - touchStartSliderX);
+        const dy = Math.abs(e.touches[0].clientY - touchStartSliderY);
+        if (dx > 10 || dy > 10) touchMovedSlider = true;
+    }, { passive: true });
+
+    sliderWrapperEl.addEventListener('touchend', (e) => {
+        if (touchMovedSlider || e.target.closest('button')) return;
+        const currentTime = Date.now();
+        const tapLength = currentTime - lastTap;
+        const distPrev = Math.hypot(touchStartSliderX - lastTapX, touchStartSliderY - lastTapY);
+        if (tapLength < 280 && tapLength > 40 && distPrev < 28) {
+            toggleCensura();
+            lastTap = 0;
+            return;
+        }
+        lastTap = currentTime;
+        lastTapX = touchStartSliderX;
+        lastTapY = touchStartSliderY;
+    }, { passive: true });
+}
 
 document.getElementById('input-pin').addEventListener('input', function() {
     if (verificandoPinEnCurso) return;

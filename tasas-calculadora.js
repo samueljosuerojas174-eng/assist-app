@@ -186,20 +186,36 @@ function setTasaModo(modo) {
     const lblDivisa = document.getElementById('lbl-divisa');
     const symDivisa = document.getElementById('sym-divisa');
     const avisoUsdt = document.getElementById('aviso-usdt-calc');
+    const boxP2PUsdt = document.getElementById('box-usdt-p2p-calc');
 
     if (avisoUsdt) {
         avisoUsdt.classList.toggle('oculto', modo !== 'USDT');
         avisoUsdt.style.display = modo === 'USDT' ? 'block' : 'none';
     }
+    if (boxP2PUsdt) {
+        const mostrarP2P = modo === 'USDT' && !fechaHistoricaCalcSeleccionada;
+        boxP2PUsdt.classList.toggle('oculto', !mostrarP2P);
+        boxP2PUsdt.style.display = mostrarP2P ? 'block' : 'none';
+    }
 
     let valorUsar = tasasData[modo] ? tasasData[modo].valor : 1;
-    if (modo !== 'Custom' && fechaHistoricaCalcSeleccionada) {
+    if (modo === 'USDT' && !fechaHistoricaCalcSeleccionada) {
+        const p2pVal = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+        if (p2pVal > 0) valorUsar = p2pVal;
+    } else if (modo !== 'Custom' && fechaHistoricaCalcSeleccionada) {
         const histObj = obtenerTasaEnFechaHistorica(modo, fechaHistoricaCalcSeleccionada);
         if (histObj && histObj.valor > 0) valorUsar = histObj.valor;
     }
 
     if(modo === 'BCV') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$'; }
-    if(modo === 'USDT') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🪙 Tether (USDT)'; symDivisa.innerText = '₮'; }
+    if(modo === 'USDT') {
+        const etqModo = usdtP2PData.modoPrecio === 'sell' ? 'Venta P2P' : 'Compra P2P';
+        inputTasa.value = valorUsar.toFixed(2);
+        inputTasa.disabled = true;
+        lblDivisa.innerText = `🪙 Tether (USDT · ${etqModo})`;
+        symDivisa.innerText = '₮';
+        actualizarPanelUsdtP2PUI();
+    }
     if(modo === 'EUR') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇪🇺 Euros (EUR)'; symDivisa.innerText = '€'; }
     if(modo === 'Custom') { inputTasa.disabled = false; inputTasa.focus(); if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00"; lblDivisa.innerText = '💱 Divisa Base'; symDivisa.innerText = '$'; }
     actualizarInfoCalculadora(modo);
@@ -277,7 +293,17 @@ function calcularDesde(origen) {
     else if (origen === 'VES') { let valVES = parseFloat(inputVES.value) || 0; if(inputVES.value === '') inputUSD.value = ''; else inputUSD.value = (valVES / tasa).toFixed(2); }
 }
 function recalcularDesdeTasa() { calcularDesde(calcUltimaEdicion); }
-function limpiarCalc() { document.getElementById('calc-usd').value = ''; document.getElementById('calc-ves').value = ''; }
+function limpiarCalc() {
+    const inUsd = document.getElementById('calc-usd');
+    const inVes = document.getElementById('calc-ves');
+    if (inUsd) inUsd.value = '';
+    if (inVes) inVes.value = '';
+    document.querySelectorAll('#tab-calculadora .calc-row').forEach(row => {
+        row.classList.remove('calc-clear-bounce');
+        void row.offsetWidth;
+        row.classList.add('calc-clear-bounce');
+    });
+}
 
 // ================= CEREBRO INTELIGENTE DE TASAS + HISTORIAL REAL PERSISTENTE =================
 function procesarHistorial(key, currentValor, currentFecha) {
@@ -371,6 +397,84 @@ function extraerVigenteYFuturaDeSerie(serie, valorLive, fechaLiveRaw, keyFallbac
     return { vigente: vigenteObj, futura: futuraObj };
 }
 
+function actualizarPanelUsdtP2PUI() {
+    const buyVal = Number(usdtP2PData?.buy) || Number(tasasData?.USDT?.valor) || 0;
+    const sellVal = Number(usdtP2PData?.sell) || buyVal || 0;
+    const spreadVal = Number(usdtP2PData?.spread) || (sellVal > 0 ? Math.abs(((buyVal - sellVal) / sellVal) * 100) : 0);
+    const bybitBuy = Number(usdtP2PData?.bybitBuy) || 0;
+    const bybitSell = Number(usdtP2PData?.bybitSell) || 0;
+    const modoPrecio = usdtP2PData?.modoPrecio === 'sell' ? 'sell' : 'buy';
+
+    const elBuy = document.getElementById('val-usdt-p2p-buy');
+    const elSell = document.getElementById('val-usdt-p2p-sell');
+    const elSpread = document.getElementById('usdt-p2p-spread-lbl');
+    const btnBuy = document.getElementById('btn-usdt-p2p-buy');
+    const btnSell = document.getElementById('btn-usdt-p2p-sell');
+    const elBybit = document.getElementById('lbl-usdt-bybit-ref');
+    const elBrechaP2P = document.getElementById('lbl-usdt-brecha-ref');
+
+    if (elBuy && buyVal > 0) elBuy.innerText = `Bs ${buyVal.toFixed(2)}`;
+    if (elSell && sellVal > 0) elSell.innerText = `Bs ${sellVal.toFixed(2)}`;
+    if (elSpread) elSpread.innerText = `Spread: ${spreadVal.toFixed(2)}%`;
+    if (btnBuy) btnBuy.classList.toggle('activo', modoPrecio === 'buy');
+    if (btnSell) btnSell.classList.toggle('activo', modoPrecio === 'sell');
+
+    if (elBybit) {
+        if (bybitBuy > 0 && bybitSell > 0) {
+            elBybit.innerText = `Bybit P2P: C ${bybitBuy.toFixed(2)} · V ${bybitSell.toFixed(2)}`;
+        } else {
+            elBybit.innerText = `Fuente P2P verificada en vivo`;
+        }
+    }
+    if (elBrechaP2P) {
+        const bcvRef = Number(tasaBCV) || 1;
+        const refUsdt = modoPrecio === 'sell' ? sellVal : buyVal;
+        const brechaCalc = bcvRef > 0 && refUsdt > 0 ? ((refUsdt - bcvRef) / bcvRef) * 100 : (Number(usdtP2PData?.brechaPct) || 0);
+        const signo = brechaCalc > 0 ? '+' : '';
+        elBrechaP2P.innerText = `Brecha vs BCV: ${signo}${brechaCalc.toFixed(2)}%`;
+    }
+
+    // Indicadores de Compra / Venta en el Widget de Inicio (#tab-inicio)
+    const badgeHomeModo = document.getElementById('badge-modo-usdt-home');
+    if (badgeHomeModo) {
+        badgeHomeModo.innerText = modoPrecio === 'sell' ? '(VENTA)' : '(COMPRA)';
+    }
+    const subHomeCV = document.getElementById('sub-usdt-cv-home');
+    if (subHomeCV) {
+        if (buyVal > 0 && sellVal > 0) {
+            subHomeCV.classList.remove('oculto');
+            subHomeCV.innerText = `C: ${buyVal.toFixed(2)} · V: ${sellVal.toFixed(2)}`;
+        } else {
+            subHomeCV.classList.add('oculto');
+        }
+    }
+}
+
+function seleccionarPrecioUsdtP2P(modoPrecio) {
+    const nuevoModo = modoPrecio === 'sell' ? 'sell' : 'buy';
+    usdtP2PData.modoPrecio = nuevoModo;
+    localStorage.setItem('assist_usdt_modo_precio', nuevoModo);
+    localStorage.setItem('assist_usdt_p2p_data', JSON.stringify(usdtP2PData));
+
+    const valorElegido = nuevoModo === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+    if (valorElegido > 0) {
+        tasasVigentesHoy.USDT.valor = valorElegido;
+        tasasData.USDT.valor = valorElegido;
+        tasaParalelo = valorElegido;
+    }
+
+    aplicarTasasEnInterfaz();
+    if (calcModoTasa === 'USDT') {
+        setTasaModo('USDT');
+        animarPulsoCalculadora();
+    }
+}
+
+function alternarModoPrecioUsdtHome() {
+    const siguiente = usdtP2PData.modoPrecio === 'sell' ? 'buy' : 'sell';
+    seleccionarPrecioUsdtP2P(siguiente);
+}
+
 function aplicarTasasEnInterfaz() {
     if (usandoFechaPosterior && hayFechaPosteriorBCV && tasasFechaPosterior.BCV) {
         tasasData.BCV = { ...tasasFechaPosterior.BCV };
@@ -379,12 +483,18 @@ function aplicarTasasEnInterfaz() {
         tasasData.BCV = { ...tasasVigentesHoy.BCV };
         tasasData.EUR = { ...tasasVigentesHoy.EUR };
     }
+
+    // Asegurar que USDT refleje siempre el modo P2P activo (Compra o Venta de usdt.com.ve) y jamás caiga a BCV
+    const p2pElegido = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+    if (p2pElegido > 0) {
+        tasasVigentesHoy.USDT.valor = p2pElegido;
+    }
     tasasData.USDT = { ...tasasVigentesHoy.USDT };
     tasasData.Custom.fecha = new Date().toISOString();
 
     tasaBCV = tasasData.BCV.valor || 1;
     tasaEUR = tasasData.EUR.valor || 1;
-    tasaParalelo = tasasData.USDT.valor || 1;
+    tasaParalelo = tasasData.USDT.valor || p2pElegido || 1;
 
     actualizarLimiteCalendarioCalculadora();
 
@@ -418,6 +528,7 @@ function aplicarTasasEnInterfaz() {
     }
 
     actualizarBrechaCambiaria();
+    actualizarPanelUsdtP2PUI();
 
     const inputTasaUsdtVes = document.getElementById('input-tasa-usdt-ves');
     if (inputTasaUsdtVes && (!inputTasaUsdtVes.value || parseFloat(inputTasaUsdtVes.value) <= 1)) {
@@ -427,9 +538,12 @@ function aplicarTasasEnInterfaz() {
 
     actualizarInfoCalculadora(calcModoTasa);
     if (calcModoTasa !== 'Custom') {
-        const tasaMostrarCalc = fechaHistoricaCalcSeleccionada
+        let tasaMostrarCalc = fechaHistoricaCalcSeleccionada
             ? obtenerTasaEnFechaHistorica(calcModoTasa, fechaHistoricaCalcSeleccionada).valor
             : tasasData[calcModoTasa].valor;
+        if (calcModoTasa === 'USDT' && !fechaHistoricaCalcSeleccionada && p2pElegido > 0) {
+            tasaMostrarCalc = p2pElegido;
+        }
         const inActiva = document.getElementById('input-tasa-activa');
         if (inActiva) inActiva.value = (Number(tasaMostrarCalc) || 1).toFixed(2);
     }
@@ -454,13 +568,16 @@ async function fetchJsonConTimeout(url, timeoutMs = 6500) {
 
 function cargarTasasCacheLocalInmediato() {
     const hoyIso = getLocalYYYYMMDD();
-    if (tasasHistoricas.BCV.length > 0 || tasasHistoricas.USDT.length > 0) {
+    const p2pCached = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+
+    if (tasasHistoricas.BCV.length > 0 || tasasHistoricas.USDT.length > 0 || p2pCached > 0) {
         const infoBCV = extraerVigenteYFuturaDeSerie(tasasHistoricas.BCV, null, null, 'BCV');
         const infoEUR = extraerVigenteYFuturaDeSerie(tasasHistoricas.EUR, null, null, 'EUR');
-        const infoUSDT = extraerVigenteYFuturaDeSerie(tasasHistoricas.USDT, null, null, 'USDT');
+        const infoUSDT = extraerVigenteYFuturaDeSerie(tasasHistoricas.USDT, p2pCached > 0 ? p2pCached : null, null, 'USDT');
         tasasVigentesHoy.BCV = infoBCV.vigente;
         tasasVigentesHoy.EUR = infoEUR.vigente;
         tasasVigentesHoy.USDT = infoUSDT.vigente;
+        if (p2pCached > 0) tasasVigentesHoy.USDT.valor = p2pCached;
         tasasFechaPosterior.BCV = infoBCV.futura;
         tasasFechaPosterior.EUR = infoEUR.futura;
         hayFechaPosteriorBCV = Boolean(infoBCV.futura);
@@ -471,10 +588,14 @@ function cargarTasasCacheLocalInmediato() {
     const hBCV = JSON.parse(localStorage.getItem('history_BCV') || 'null');
     const hEUR = JSON.parse(localStorage.getItem('history_EUR') || 'null');
     const hUSDT = JSON.parse(localStorage.getItem('history_USDT') || 'null');
-    if (hBCV && Number(hBCV.last) > 1) {
-        tasasVigentesHoy.BCV = { valor: Number(hBCV.last), previo: Number(hBCV.prev) || Number(hBCV.last), fecha: hoyIso };
-        tasasVigentesHoy.EUR = { valor: Number(hEUR?.last) || Number(hBCV.last), previo: Number(hEUR?.prev) || Number(hEUR?.last) || 1, fecha: hoyIso };
-        tasasVigentesHoy.USDT = { valor: Number(hUSDT?.last) || Number(hBCV.last), previo: Number(hUSDT?.prev) || Number(hUSDT?.last) || 1, fecha: hoyIso };
+    if ((hBCV && Number(hBCV.last) > 1) || (hUSDT && Number(hUSDT.last) > 1)) {
+        if (hBCV && Number(hBCV.last) > 1) {
+            tasasVigentesHoy.BCV = { valor: Number(hBCV.last), previo: Number(hBCV.prev) || Number(hBCV.last), fecha: hoyIso };
+            tasasVigentesHoy.EUR = { valor: Number(hEUR?.last) || Number(hBCV.last), previo: Number(hEUR?.prev) || Number(hEUR?.last) || 1, fecha: hoyIso };
+        }
+        // JAMÁS usar BCV como fallback para USDT
+        const usdtInitVal = p2pCached > 0 ? p2pCached : (Number(hUSDT?.last) > 1 ? Number(hUSDT.last) : 1);
+        tasasVigentesHoy.USDT = { valor: usdtInitVal, previo: Number(hUSDT?.prev) || usdtInitVal, fecha: hoyIso };
         aplicarTasasEnInterfaz();
         return true;
     }
@@ -486,7 +607,9 @@ async function obtenerTasas() {
     cargarTasasCacheLocalInmediato();
 
     try {
-        const [dataBCV, dataEUR, dataParalelo, rawHistBCV, rawHistEUR, rawHistUSDT] = await Promise.all([
+        // Prioridad absoluta para USDT (Compra/Venta P2P) y verificación BCV en vivo desde usdt.com.ve
+        const [resUsdtVe, dataBCV, dataEUR, dataParalelo, rawHistBCV, rawHistEUR, rawHistUSDT] = await Promise.all([
+            fetchJsonConTimeout('https://www.usdt.com.ve/api/v1/rates/current', 6000),
             fetchJsonConTimeout('https://ve.dolarapi.com/v1/dolares/oficial', 6500),
             fetchJsonConTimeout('https://ve.dolarapi.com/v1/euros/oficial', 6500),
             fetchJsonConTimeout('https://ve.dolarapi.com/v1/dolares/paralelo', 6500),
@@ -495,21 +618,56 @@ async function obtenerTasas() {
             fetchJsonConTimeout('https://ve.dolarapi.com/v1/historicos/dolares/paralelo', 7500)
         ]);
 
-        let bcvPromedio = dataBCV?.promedio || dataBCV?.valor || null;
-        let bcvFecha = dataBCV?.fechaActualizacion || dataBCV?.fecha || null;
+        const liveUsdtVe = resUsdtVe?.data || null;
+        let usdtBuy = Number(liveUsdtVe?.binance?.buy_rate || liveUsdtVe?.best?.buy_rate || 0);
+        let usdtSell = Number(liveUsdtVe?.binance?.sell_rate || 0);
+        let usdtSpread = Number(liveUsdtVe?.binance?.spread || 0);
+        let bybitBuy = Number(liveUsdtVe?.bybit?.buy_rate || 0);
+        let bybitSell = Number(liveUsdtVe?.bybit?.sell_rate || 0);
+        let bcvFromUsdtVe = Number(liveUsdtVe?.bcv?.rate || 0);
+        let brechaFromUsdtVe = Number(liveUsdtVe?.brecha_pct || 0);
+        let fechaUsdtVe = liveUsdtVe?.captured_at || null;
+
+        if (usdtBuy > 0) {
+            if (usdtSell <= 0) usdtSell = Number((usdtBuy * 0.995).toFixed(2));
+            usdtP2PData = {
+                ...usdtP2PData,
+                buy: usdtBuy,
+                sell: usdtSell,
+                spread: usdtSpread,
+                bybitBuy: bybitBuy,
+                bybitSell: bybitSell,
+                brechaPct: brechaFromUsdtVe,
+                capturedAt: fechaUsdtVe || new Date().toISOString(),
+                modoPrecio: usdtP2PData.modoPrecio === 'sell' ? 'sell' : 'buy'
+            };
+            localStorage.setItem('assist_usdt_p2p_data', JSON.stringify(usdtP2PData));
+        } else if (Number(dataParalelo?.promedio || dataParalelo?.valor) > 0) {
+            // Fallback secundario P2P (nunca BCV) solo si usdt.com.ve no respondió y no había P2P previo
+            const refPar = Number(dataParalelo.promedio || dataParalelo.valor);
+            if (!usdtP2PData.buy || usdtP2PData.buy <= 1) {
+                usdtP2PData.buy = refPar;
+                usdtP2PData.sell = Number((refPar * 0.995).toFixed(2));
+                localStorage.setItem('assist_usdt_p2p_data', JSON.stringify(usdtP2PData));
+            }
+        }
+
+        // Tasa USDT activa según el modo elegido (Compra o Venta P2P de usdt.com.ve), jamás BCV
+        const usdtActivoP2P = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+        let usdtPromedio = usdtActivoP2P > 0 ? usdtActivoP2P : (Number(dataParalelo?.promedio || dataParalelo?.valor) || null);
+        let usdtFecha = fechaUsdtVe || dataParalelo?.fechaActualizacion || dataParalelo?.fecha || getLocalYYYYMMDD();
+
+        // BCV: priorizar Fecha Valor oficial de dolarapi o tasa en vivo de usdt.com.ve
+        let bcvPromedio = dataBCV?.promedio || dataBCV?.valor || (bcvFromUsdtVe > 0 ? bcvFromUsdtVe : null);
+        let bcvFecha = dataBCV?.fechaActualizacion || dataBCV?.fecha || fechaUsdtVe || null;
         let eurPromedio = dataEUR?.promedio || dataEUR?.valor || null;
         let eurFecha = dataEUR?.fechaActualizacion || dataEUR?.fecha || null;
-        let usdtPromedio = dataParalelo?.promedio || dataParalelo?.valor || null;
-        let usdtFecha = dataParalelo?.fechaActualizacion || dataParalelo?.fecha || null;
 
-        // Si el endpoint individual tardó pero el listado general de DolarApi responde, extraer de ahí
-        if (!bcvPromedio || !usdtPromedio) {
+        if (!bcvPromedio) {
             const listaDolares = await fetchJsonConTimeout('https://ve.dolarapi.com/v1/dolares', 5000);
             if (Array.isArray(listaDolares)) {
                 const ofi = listaDolares.find(d => d.fuente === 'oficial');
-                const par = listaDolares.find(d => d.fuente === 'paralelo');
-                if (!bcvPromedio && ofi?.promedio) { bcvPromedio = ofi.promedio; bcvFecha = ofi.fechaActualizacion; }
-                if (!usdtPromedio && par?.promedio) { usdtPromedio = par.promedio; usdtFecha = par.fechaActualizacion; }
+                if (ofi?.promedio) { bcvPromedio = ofi.promedio; bcvFecha = ofi.fechaActualizacion; }
             }
         }
 
@@ -536,6 +694,9 @@ async function obtenerTasas() {
         tasasVigentesHoy.BCV = analisisBCV.vigente;
         tasasVigentesHoy.EUR = analisisEUR.vigente;
         tasasVigentesHoy.USDT = analisisUSDT.vigente;
+        if (usdtPromedio > 0) {
+            tasasVigentesHoy.USDT.valor = Number(usdtPromedio);
+        }
 
         tasasFechaPosterior.BCV = analisisBCV.futura;
         tasasFechaPosterior.EUR = analisisEUR.futura;

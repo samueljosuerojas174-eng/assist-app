@@ -44,6 +44,17 @@ let tasasData = {
     Custom: { valor: 1, previo: 1, fecha: new Date().toISOString() }
 };
 
+let usdtP2PData = JSON.parse(localStorage.getItem('assist_usdt_p2p_data')) || {
+    buy: 0,
+    sell: 0,
+    spread: 0,
+    bybitBuy: 0,
+    bybitSell: 0,
+    brechaPct: 0,
+    capturedAt: null,
+    modoPrecio: localStorage.getItem('assist_usdt_modo_precio') || 'buy'
+};
+
 let tasasHistoricas = {
     BCV: JSON.parse(localStorage.getItem('assist_hist_serie_BCV')) || [],
     EUR: JSON.parse(localStorage.getItem('assist_hist_serie_EUR')) || [],

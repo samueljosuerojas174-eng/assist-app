@@ -433,14 +433,27 @@ function agregarTransaccion() {
 // Lógica de "Deslizar para Borrar" (Swipe to Delete)
 let swipeStartX = 0;
 let currentSwipeX = 0;
+let swipeStartY = 0;
+let swipeEje = null; // 'x' | 'y' | null (bloqueo de dirección para no pelear con el scroll vertical)
 
 function handleSwipeStart(e, element) {
     swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
     currentSwipeX = swipeStartX;
+    swipeEje = null;
     element.style.transition = 'none';
 }
 function handleSwipeMove(e, element) {
-    currentSwipeX = e.touches[0].clientX;
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    if (swipeEje === null) {
+        const dx = Math.abs(x - swipeStartX);
+        const dy = Math.abs(y - swipeStartY);
+        if (dx < 8 && dy < 8) return;
+        swipeEje = dx > dy * 1.2 ? 'x' : 'y';
+    }
+    if (swipeEje === 'y') return; // El usuario está haciendo scroll vertical: no mover la fila
+    currentSwipeX = x;
     let diff = currentSwipeX - swipeStartX;
     if (diff < -80) diff = -80; if (diff > 0) diff = 0; 
     element.style.transform = `translateX(${diff}px)`;
@@ -450,7 +463,9 @@ function handleSwipeMove(e, element) {
     }
 }
 function handleSwipeEnd(e, element) {
-    element.style.transition = 'transform 0.3s var(--ios-spring)';
+    element.style.transition = 'transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    if (swipeEje !== 'x') { swipeEje = null; return; }
+    swipeEje = null;
     let diff = currentSwipeX - swipeStartX;
     if (diff < -40) {
         element.style.transform = `translateX(-80px)`;
@@ -598,7 +613,7 @@ function actualizarListaTransacciones() {
                             <span class="monto-val ${claseColor}">${montoTexto}</span>
                         </div>
                     </div>
-                    <div class="swipe-action" onclick="eliminarTransaccion(${t.id})">🗑️</div>
+                    <div class="swipe-action" onclick="animarYQuitarElementoDOM(this.closest('li'), () => eliminarTransaccion(${t.id}))">🗑️</div>
                 </li>`;
         });
         lista.innerHTML = htmlAcumulado;

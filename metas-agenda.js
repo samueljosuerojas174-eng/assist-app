@@ -464,10 +464,16 @@ function guardarCompromisoAgenda() {
 
 function eliminarCompromisoAgenda(id) {
     if (!confirm("¿Eliminar este compromiso de la Agenda?")) return;
-    agendaPagos = agendaPagos.filter(a => String(a.id) !== String(id));
-    localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
-    renderizarAgenda();
-    programarSincronizacionSeguraAgenda();
+    const btnOrigen = (typeof event !== 'undefined' && event && event.target && event.target.closest) ? event.target : null;
+    const tarjeta = btnOrigen ? btnOrigen.closest('.agenda-item-card') : null;
+    const ejecutarBorrado = () => {
+        agendaPagos = agendaPagos.filter(a => String(a.id) !== String(id));
+        localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
+        renderizarAgenda();
+        programarSincronizacionSeguraAgenda();
+    };
+    if (tarjeta && typeof animarYQuitarElementoDOM === 'function') animarYQuitarElementoDOM(tarjeta, ejecutarBorrado);
+    else ejecutarBorrado();
 }
 
 function reactivarCompromisoAgenda(id) {

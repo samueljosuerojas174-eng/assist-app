@@ -150,16 +150,39 @@ function resetearScrollNativoiOS() {
 }
 
 let _timersReparacionBarra = [];
-function repararViewportYBarraInferioriOS() {
+function repararViewportYBarraInferioriOS(esCierreTeclado = false) {
     _timersReparacionBarra.forEach(t => clearTimeout(t));
     _timersReparacionBarra = [];
 
-    const ejecutarAjuste = () => {
-        if (!document.body.classList.contains('modal-open')) {
+    const ejecutarResnapNativo = (forzarPulsoAltura) => {
+        if (document.body.classList.contains('modal-open')) return;
+
+        // Si un input sigue activo (el usuario pasó de un input a otro), no forzar cierre
+        const activeEl = document.activeElement;
+        if (esCierreTeclado && activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA') && !activeEl.disabled && activeEl.type !== 'hidden') {
+            return;
+        }
+
+        // En iOS WebApp Standalone, WKWebView solo re-encaja el viewport (quitando la franja negra inferior)
+        // cuando detecta que el scrollHeight supera temporalmente al alto de la pantalla (tal como ocurre al ir a Inicio/Agenda/Ajustes).
+        const esPestanaCorta = ['tab-calculadora', 'tab-metas', 'tab-askbot'].includes(pestanaActivaIdActual);
+        const yGuardada = window.scrollY || document.documentElement.scrollTop || 0;
+        if (forzarPulsoAltura) {
+            const prevPad = document.body.style.paddingBottom;
+            document.body.style.paddingBottom = '260px';
+            void document.body.offsetHeight;
+            window.scrollTo(0, yGuardada + 1);
+            // Pestañas cortas: volver arriba (re-encaje). Pestañas largas: mantener exactamente donde estaba el usuario.
+            window.scrollTo(0, esPestanaCorta ? 0 : yGuardada);
+            setTimeout(() => {
+                document.body.style.paddingBottom = prevPad || '';
+            }, 60);
+        } else if (esPestanaCorta) {
             window.scrollTo(0, 0);
             document.documentElement.scrollTop = 0;
             document.body.scrollTop = 0;
         }
+
         const nav = document.getElementById('bottom-nav-bar');
         if (nav && !document.body.classList.contains('askbot-kb-open')) {
             nav.style.bottom = '-0.5px';
@@ -169,10 +192,18 @@ function repararViewportYBarraInferioriOS() {
         }
     };
 
-    ejecutarAjuste();
-    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 70));
-    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 200));
-    _timersReparacionBarra.push(setTimeout(ejecutarAjuste, 360));
+    if (esCierreTeclado) {
+        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 40));
+    } else {
+        ejecutarResnapNativo(false);
+    }
+    if (esCierreTeclado) {
+        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 85));
+        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 240));
+        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(false), 420));
+    } else {
+        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(false), 90));
+    }
 }
 
 function cambiarPestana(idPestana, elementoNav) {
@@ -192,7 +223,6 @@ function cambiarPestana(idPestana, elementoNav) {
             void elementoNav.offsetWidth;
             elementoNav.classList.add('nav-tap-bounce');
         }
-        repararViewportYBarraInferioriOS();
         return;
     }
 
@@ -221,38 +251,53 @@ function cambiarPestana(idPestana, elementoNav) {
 
     if (idPestana === 'tab-askbot') {
         document.body.classList.add('askbot-tab-open');
-        repararViewportYBarraInferioriOS();
+        resetearScrollNativoiOS();
+        repararViewportYBarraInferioriOS(false);
         inicializarAskBot();
     } else {
         document.body.classList.remove('askbot-tab-open');
         document.body.classList.remove('askbot-kb-open');
         document.documentElement.style.setProperty('--askbot-vh', '100dvh');
-        repararViewportYBarraInferioriOS();
+        resetearScrollNativoiOS();
+        repararViewportYBarraInferioriOS(false);
     }
 }
 
 // ================= COMPATIBILIDAD VISUAL VIEWPORT Y REPARACIÓN DE BARRA EN iOS =================
 let _listenerViewportConfigurado = false;
+let _tecladoEstabaAbierto = false;
 function ajustarAlturaVisualAskBot() {
-    repararViewportYBarraInferioriOS();
+    repararViewportYBarraInferioriOS(false);
 }
 function configurarVisualViewportAskBot() {
     if (_listenerViewportConfigurado) return;
     _listenerViewportConfigurado = true;
 
-    document.addEventListener('focusout', (e) => {
+    document.addEventListener('focusin', (e) => {
         const t = e.target;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) {
-            repararViewportYBarraInferioriOS();
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') && t.type !== 'hidden') {
+            _tecladoEstabaAbierto = true;
         }
     });
 
+    document.addEventListener('focusout', (e) => {
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA') && t.type !== 'hidden') {
+            _tecladoEstabaAbierto = false;
+            repararViewportYBarraInferioriOS(true);
+        }
+    });
+
+    // Solo actuar en visualViewport.resize cuando se cierra el teclado, JAMÁS durante el scroll normal del usuario
     if (window.visualViewport) {
+        let prevVvHeight = window.visualViewport.height;
         window.visualViewport.addEventListener('resize', () => {
-            const activeEl = document.activeElement;
-            const hayInputActivo = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-            if (!hayInputActivo) {
-                repararViewportYBarraInferioriOS();
+            const nuevoAlto = window.visualViewport.height;
+            const deltaSubida = nuevoAlto - prevVvHeight;
+            prevVvHeight = nuevoAlto;
+            // Si la altura visual salta +120px de golpe (cierre físico del teclado en iOS), reparar barra inferior
+            if (deltaSubida > 120) {
+                repararViewportYBarraInferioriOS(true);
             }
         });
     }
@@ -289,7 +334,7 @@ function renderizarListasGestion() {
         let htmlCuentas = '';
         cuentas.forEach((c, i) => {
             htmlCuentas += `
-                <li class="transaccion-item" style="padding: 12px 16px;">
+                <li id="item-gest-cuenta-${i}" class="transaccion-item" style="padding: 12px 16px;">
                     <div class="trans-izq"><strong style="color:var(--text-primary);">${c.nombre}</strong><small>${c.moneda}</small></div>
                     <div class="acciones-gestion">
                         <button class="btn-mover" onclick="moverCuenta(${i}, -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
@@ -306,7 +351,7 @@ function renderizarListasGestion() {
         categorias.forEach((cat, i) => {
             const colorCat = obtenerColorCategoria(cat);
             htmlCat += `
-                <li class="transaccion-item" style="padding: 12px 16px;">
+                <li id="item-gest-cat-${i}" class="transaccion-item" style="padding: 12px 16px;">
                     <div class="trans-izq" style="display:flex; align-items:center; gap:10px;">
                         <button type="button" class="btn-cat-color-item" style="background:${colorCat};" onclick="abrirSelectorColorCategoria(${i})" title="Cambiar color de ${cat}"></button>
                         <strong style="color:var(--text-primary);">${cat}</strong>
@@ -338,7 +383,16 @@ function agregarCuenta() {
     else { alert("Ingresa un nombre."); }
 }
 function editarCuenta(i) { const n = prompt("Nuevo nombre:", cuentas[i].nombre); if(n) { cuentas[i].nombre = n; guardarYActualizarGestion(); } }
-function eliminarCuenta(i) { if(confirm("¿Eliminar cuenta?")) { if(cuentas[i].id == cuentaActivaId) cuentaActivaId = null; cuentas.splice(i, 1); guardarYActualizarGestion(); } }
+function eliminarCuenta(i) {
+    if(confirm("¿Eliminar cuenta?")) {
+        const elItem = document.getElementById(`item-gest-cuenta-${i}`);
+        animarYQuitarElementoDOM(elItem, () => {
+            if(cuentas[i] && cuentas[i].id == cuentaActivaId) cuentaActivaId = null;
+            cuentas.splice(i, 1);
+            guardarYActualizarGestion();
+        });
+    }
+}
 
 function agregarCategoria() {
     const inputCat = document.getElementById('nueva-categoria');
@@ -374,8 +428,11 @@ function editarCategoria(i) {
 function eliminarCategoria(i) {
     if(confirm("¿Eliminar categoría?")) {
         cerrarSelectorColorCategoriaExistente();
-        categorias.splice(i, 1);
-        guardarYActualizarGestion();
+        const elItem = document.getElementById(`item-gest-cat-${i}`);
+        animarYQuitarElementoDOM(elItem, () => {
+            categorias.splice(i, 1);
+            guardarYActualizarGestion();
+        });
     }
 }
 
@@ -509,7 +566,7 @@ async function inicializarApp() {
     // Actualización de tasas y sincronización en la nube en paralelo sin bloquear el inicio
     const promesaTasas = obtenerTasas().then(() => {
         actualizarInterfaz();
-        setTasaModo(modoCalculadora || 'BCV');
+        setTasaModo(typeof calcModoTasa !== 'undefined' ? calcModoTasa : 'BCV');
     }).catch(e => console.error("Error obteniendo tasas en arranque:", e));
 
     const promesaNube = (async () => {

@@ -1,10 +1,46 @@
 /* ================= VARIABLES GLOBALES Y TEMAS ================= */
 :root {
     --ios-spring: cubic-bezier(0.22, 1, 0.36, 1);
+    --ios-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     --ios-kb-curve: cubic-bezier(0.32, 0.72, 0, 1);
     --accent: #FFFFFF;
     --askbot-vh: 100dvh;
     --font-claude: "Source Serif 4", "Iowan Old Style", "Charter", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-ios26: ui-rounded, "SF Pro Rounded", "Fredoka", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    --app-font: var(--font-ios26);
+}
+
+html[data-font="ios26"], body[data-font="ios26"] {
+    --app-font: ui-rounded, "SF Pro Rounded", "Fredoka", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.012em;
+}
+html[data-font="claude"], body[data-font="claude"] {
+    --app-font: "Source Serif 4", "Iowan Old Style", "Charter", "Palatino Linotype", Georgia, serif;
+    letter-spacing: -0.005em;
+}
+html[data-font="windows"], body[data-font="windows"] {
+    --app-font: "Segoe UI Variable Display", "Segoe UI", "Inter", system-ui, sans-serif;
+    letter-spacing: -0.01em;
+}
+html[data-font="minecraft"], body[data-font="minecraft"] {
+    --app-font: "Silkscreen", "Courier New", monospace;
+    letter-spacing: -0.03em;
+}
+html[data-font="8bit"], body[data-font="8bit"] {
+    --app-font: "Press Start 2P", "Silkscreen", monospace;
+    letter-spacing: -0.04em;
+}
+html[data-font="fredoka"], body[data-font="fredoka"] {
+    --app-font: "Fredoka", ui-rounded, "SF Pro Rounded", sans-serif;
+    letter-spacing: 0.005em;
+}
+html[data-font="jetbrains"], body[data-font="jetbrains"] {
+    --app-font: "JetBrains Mono", "SF Mono", Consolas, monospace;
+    letter-spacing: -0.025em;
+}
+html[data-font="outfit"], body[data-font="outfit"] {
+    --app-font: "Outfit", "Plus Jakarta Sans", -apple-system, sans-serif;
+    letter-spacing: -0.01em;
 }
 
 [data-theme="dark"] {
@@ -38,9 +74,9 @@
     --card-shadow: 0 14px 36px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-claude); font-variant-numeric: lining-nums; -webkit-tap-highlight-color: transparent; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--app-font); font-variant-numeric: lining-nums; -webkit-tap-highlight-color: transparent; }
 
-body { color: var(--text-primary); overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
+body { color: var(--text-primary); overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; overflow-x: clip; touch-action: manipulation; }
 
 /* Libera el containing block en Safari iOS para que position: fixed cubra hasta el borde físico inferior */
 #app-main-container.app-unlocked {
@@ -62,7 +98,8 @@ body.modal-open .app-container {
     user-select: none;
 }
 
-.app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(100px + env(safe-area-inset-bottom)) 20px; min-height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;}
+/* CONTENEDOR ÚNICO SIN DOBLE SCROLL INTERNO (ELIMINA SALTOS LOCOS Y BARRA NEGRA DE TECLADO EN iOS) */
+.app-container { max-width: 420px; margin: 0 auto; padding: env(safe-area-inset-top) 20px calc(105px + env(safe-area-inset-bottom)) 20px; min-height: calc(100vh + 1px); overflow-x: clip; overflow-y: visible; }
 
 /* Pantalla de Carga */
 #splash-screen {
@@ -658,7 +695,7 @@ body.modal-open .app-container {
 
 /* Slider Cuentas */
 .slider-cuentas-container { margin-bottom: 12px; width: 100%; overflow: hidden; position: relative; }
-.slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; scroll-behavior: smooth;}
+.slider-cuentas { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
 .slider-cuentas::-webkit-scrollbar { display: none; }
 .balance-section { scroll-snap-align: start; scroll-snap-stop: always; flex: 0 0 100%; border: 1px solid var(--border-light); padding: 18px 20px; border-radius: 26px; text-align: center; box-shadow: var(--card-shadow); transition: border-color 0.35s ease, box-shadow 0.35s ease; }
 .balance-section h2 { font-size: 15px; font-weight: 600; color: var(--text-secondary); display: flex; justify-content: center; align-items: center; }
@@ -1896,7 +1933,8 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
 
 /* ================= ASKBOT (FLUJO NATIVO SIN BUG DE FIXED EN iOS) ================= */
 html, body {
-    min-height: 100dvh;
+    min-height: 100vh;
+    overflow-x: clip;
 }
 
 body.askbot-tab-open .app-container {
@@ -3066,4 +3104,275 @@ body[data-theme="glass"]::before {
     background: var(--accent);
     width: 16px;
     border-radius: 8px;
+}
+
+/* ================= ESTILO iOS 26 BOUNCY (MÁS GORDITA Y REDONDEADA) Y ESCALADO RETRO ================= */
+:where(html[data-font="ios26"]) body,
+:where(html[data-font="ios26"]) input,
+:where(html[data-font="ios26"]) select,
+:where(html[data-font="ios26"]) button {
+    font-weight: 600;
+}
+:where(html[data-font="ios26"]) :where(h1, h2, h3, strong) {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+html[data-font="8bit"] {
+    font-size: 12.5px;
+}
+html[data-font="8bit"] .tasa-valor,
+html[data-font="8bit"] .balance-section h1,
+html[data-font="8bit"] .calc-row input {
+    letter-spacing: -1px;
+}
+html[data-font="8bit"] .nav-item span:last-child {
+    font-size: 7.5px !important;
+}
+html[data-font="8bit"] .segment {
+    font-size: 9px !important;
+}
+
+html[data-font="minecraft"] .nav-item span:last-child {
+    font-size: 9.5px !important;
+}
+
+/* ================= PANEL INTERACTIVO P2P COMPRA / VENTA (usdt.com.ve) ================= */
+.usdt-cv-mini-pill {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-light);
+    letter-spacing: -0.2px;
+    transition: transform 0.28s var(--ios-bounce), background-color 0.25s ease;
+}
+[data-theme="light"] .usdt-cv-mini-pill {
+    background: rgba(0, 0, 0, 0.04);
+}
+.usdt-cv-mini-pill.oculto {
+    display: none !important;
+}
+
+.usdt-p2p-panel {
+    background: var(--input-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 18px;
+    padding: 12px;
+    margin-top: -6px;
+    margin-bottom: 14px;
+    animation: p2pPanelSlideIn 0.36s var(--ios-bounce) forwards;
+}
+.usdt-p2p-panel.oculto {
+    display: none !important;
+}
+@keyframes p2pPanelSlideIn {
+    0% { opacity: 0; transform: translateY(-8px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.usdt-p2p-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 2px;
+}
+.usdt-p2p-source-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #30D158;
+    background: rgba(48, 209, 88, 0.12);
+    border: 1px solid rgba(48, 209, 88, 0.25);
+    padding: 3px 9px;
+    border-radius: 20px;
+}
+.usdt-p2p-spread {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.usdt-p2p-cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.usdt-p2p-card {
+    background: var(--card-dark);
+    border: 1.5px solid var(--border-light);
+    border-radius: 15px;
+    padding: 10px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: transform 0.32s var(--ios-bounce), border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+}
+.usdt-p2p-card:active {
+    transform: scale(0.93) !important;
+}
+.usdt-p2p-card.activo {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 11%, var(--card-dark));
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 38%, transparent);
+    transform: translateY(-1px) scale(1.015);
+}
+.p2p-card-tag {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+.usdt-p2p-card.activo .p2p-card-tag {
+    color: var(--accent);
+}
+.p2p-card-val {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.p2p-card-sub {
+    font-size: 9.5px;
+    color: var(--text-secondary);
+    opacity: 0.85;
+}
+.usdt-p2p-extra-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 9px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-light);
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* ================= SELECTOR DE TIPOGRAFÍAS EN AJUSTES ================= */
+.font-selector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+}
+.font-pill-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 11px;
+    border-radius: 16px;
+    background: var(--input-bg);
+    border: 1.5px solid var(--border-light);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.32s var(--ios-bounce), border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+.font-pill-btn:active {
+    transform: scale(0.93) !important;
+}
+.font-pill-btn.activo {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--input-bg));
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 38%, transparent);
+    transform: translateY(-1px);
+}
+.font-pill-preview {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: var(--card-dark);
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--accent);
+    flex-shrink: 0;
+}
+.font-pill-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.font-pill-info strong {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.font-pill-info small {
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ================= MICRO-ANIMACIONES BOUNCY DE DESPLAZAMIENTO Y AL QUITAR ELEMENTOS ================= */
+.item-removing-anim {
+    pointer-events: none !important;
+    overflow: hidden !important;
+    animation: itemSlideCollapseOut 0.36s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+}
+@keyframes itemSlideCollapseOut {
+    0% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        max-height: 160px;
+    }
+    45% {
+        opacity: 0;
+        transform: translateX(-42px) scale(0.92);
+        max-height: 160px;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-56px) scale(0.88);
+        max-height: 0;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        border-width: 0 !important;
+    }
+}
+
+.calc-clear-bounce {
+    animation: calcClearBounceAnim 0.38s var(--ios-bounce);
+}
+@keyframes calcClearBounceAnim {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.95) translateY(3px); opacity: 0.7; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Rebote elástico tipo iOS 26 en botones, tarjetas, chips y segmentos */
+.btn-primario,
+.btn-secundario,
+.segment,
+.tasa-item,
+.theme-dot,
+.nav-item,
+.chip-filtro,
+.meta-card,
+.agenda-item,
+.transaccion-wrapper {
+    transition: transform 0.34s var(--ios-bounce), background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, color 0.25s ease;
+}
+.tasa-item:active,
+.chip-filtro:active,
+.segment:active {
+    transform: scale(0.93);
+}
+.theme-dot:active {
+    transform: scale(0.82);
 }
