@@ -519,12 +519,26 @@ function reactivarCompromisoAgenda(id) {
     programarSincronizacionSeguraAgenda();
 }
 
+const ORDEN_VISTAS_AGENDA = ['pendientes', 'calendario', 'pagados'];
+
+function animarElementoAgenda(el, direccion = 'right') {
+    if (!el) return;
+    el.classList.remove('subview-anim-right', 'subview-anim-left');
+    void el.offsetWidth;
+    el.classList.add(direccion === 'left' ? 'subview-anim-left' : 'subview-anim-right');
+}
+
 function cambiarVistaAgenda(vista) {
+    const idxPrev = ORDEN_VISTAS_AGENDA.indexOf(agendaVistaActual);
+    const idxNext = ORDEN_VISTAS_AGENDA.indexOf(vista);
+    const dir = (idxPrev !== -1 && idxNext !== -1 && idxNext < idxPrev) ? 'left' : 'right';
+
     agendaVistaActual = vista;
     const segPend = document.getElementById('seg-agenda-pendientes');
     const segCal = document.getElementById('seg-agenda-calendario');
     const segPag = document.getElementById('seg-agenda-pagados');
     const calWrapper = document.getElementById('agenda-calendario-wrapper');
+    const listaPrincipal = document.getElementById('lista-agenda-principal');
 
     if (segPend) segPend.classList.toggle('activo', vista === 'pendientes');
     if (segCal) segCal.classList.toggle('activo', vista === 'calendario');
@@ -533,8 +547,10 @@ function cambiarVistaAgenda(vista) {
     if (calWrapper) {
         calWrapper.classList.toggle('oculto', vista !== 'calendario');
         calWrapper.style.display = vista === 'calendario' ? 'block' : 'none';
+        if (vista === 'calendario') animarElementoAgenda(calWrapper, dir);
     }
     renderizarAgenda();
+    animarElementoAgenda(listaPrincipal, dir);
 }
 
 function cambiarMesCalendarioAgenda(direccion) {
@@ -543,16 +559,21 @@ function cambiarMesCalendarioAgenda(direccion) {
     else if (agendaCalMes > 11) { agendaCalMes = 0; agendaCalAnio += 1; }
     agendaDiaSeleccionado = null;
     renderizarAgenda();
+    const dirStr = direccion < 0 ? 'left' : 'right';
+    animarElementoAgenda(document.getElementById('agenda-cal-grid'), dirStr);
+    animarElementoAgenda(document.getElementById('lista-agenda-principal'), dirStr);
 }
 
 function seleccionarDiaCalendarioAgenda(fechaIso) {
     agendaDiaSeleccionado = (agendaDiaSeleccionado === fechaIso) ? null : fechaIso;
     renderizarAgenda();
+    animarElementoAgenda(document.getElementById('lista-agenda-principal'), 'right');
 }
 
 function limpiarDiaSeleccionadoAgenda() {
     agendaDiaSeleccionado = null;
     renderizarAgenda();
+    animarElementoAgenda(document.getElementById('lista-agenda-principal'), 'left');
 }
 
 function renderizarCalendarioAgenda(hoyMsPrecalculado = null) {

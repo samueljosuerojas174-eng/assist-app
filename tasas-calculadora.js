@@ -162,7 +162,19 @@ function actualizarInfoCalculadora(modo) {
     }
 }
 
+function animarPulsoCalculadora() {
+    ['input-tasa-activa', 'calc-fecha-badge', 'lbl-divisa'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('calc-mode-pulse');
+            void el.offsetWidth;
+            el.classList.add('calc-mode-pulse');
+        }
+    });
+}
+
 function setTasaModo(modo) {
+    const cambioReal = calcModoTasa !== modo;
     calcModoTasa = modo;
     document.querySelectorAll('#tab-calculadora .segment').forEach(el => el.classList.remove('activo'));
     if(modo === 'BCV') document.getElementById('seg-bcv').classList.add('activo');
@@ -192,6 +204,7 @@ function setTasaModo(modo) {
     if(modo === 'Custom') { inputTasa.disabled = false; inputTasa.focus(); if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00"; lblDivisa.innerText = '💱 Divisa Base'; symDivisa.innerText = '$'; }
     actualizarInfoCalculadora(modo);
     recalcularDesdeTasa();
+    if (cambioReal) animarPulsoCalculadora();
 }
 
 function alternarFechaValorCalc() {
@@ -200,11 +213,13 @@ function alternarFechaValorCalc() {
         const inCal = document.getElementById('input-calc-fecha-hist');
         if (inCal) inCal.value = '';
         aplicarTasasEnInterfaz();
+        animarPulsoCalculadora();
         return;
     }
     if (!hayFechaPosteriorBCV) return;
     usandoFechaPosterior = !usandoFechaPosterior;
     aplicarTasasEnInterfaz();
+    animarPulsoCalculadora();
 }
 
 function seleccionarFechaHistoricaCalc(fechaISO) {

@@ -1,26 +1,64 @@
-// ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING V3.0) =================
+// ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING V4.0) =================
 const PASOS_TUTORIAL = [
     {
         icono: "🚀",
-        titulo: "Bienvenido a A$$IST 3.0", desc: "Tu centro de control financiero personal. Diseñado para ser ultrarrápido, funcionar 100\% offline en la calle y adaptarse a la economía real.", tip: "✨ <b>Filosofía Local-First + Nube:</b> Todo se guarda al instante en tu teléfono, se sincroniza silenciosamente en la nube y puedes personalizar tu perfil con nombre y foto desde el avatar superior." }, { icono: "💳", titulo: "1. Cuentas Multidivisa", desc: "Registra dónde tienes tu dinero: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b>.", tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En Inicio, desliza la tarjeta principal hacia los lados para cambiar de cuenta activa." }, { icono: "🏷️", titulo: "2. Categorías con Color y Memoria", desc: "Crea tus categorías personalizadas y asígnales un <b>color propio</b> desde la paleta o el selector libre para identificarlas al instante.", tip: "🧠 <b>Memoria inteligente:</b> A$$IST recuerda automáticamente con qué moneda pagaste por última vez cada categoría y puedes cambiar el color de cualquier categoría existente tocando su círculo."
+        titulo: "Bienvenido a A$$IST 4.0",
+        desc: "Tu centro de control financiero personal multidivisa. Ultrarrápido, <b>100% funcional sin internet</b> en la calle y adaptado milimétricamente a la economía de Venezuela.",
+        tip: "✨ <b>Filosofía Local-First + Nube:</b> Todo se guarda al instante en tu teléfono, se sincroniza en segundo plano con la nube y puedes personalizar tu perfil con nombre y foto desde el avatar superior."
+    },
+    {
+        icono: "💳",
+        titulo: "1. Cuentas Multidivisa",
+        desc: "Registra dónde tienes tu capital: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b> con equivalencias en tiempo real.",
+        tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En Inicio, desliza tu tarjeta principal hacia los lados para cambiar de cuenta activa."
+    },
+    {
+        icono: "🏷️",
+        titulo: "2. Categorías con Color y Memoria",
+        desc: "Crea tus categorías con un <b>color representativo</b> desde la paleta o el selector libre para identificarlas visualmente en toda la app.",
+        tip: "🧠 <b>Memoria y edición en vivo:</b> A$$IST recuerda con qué moneda pagaste por última vez en cada categoría, y puedes cambiar el color de cualquier categoría existente tocando su círculo sin perder historial."
     },
     {
         icono: "⚡",
         titulo: "3. Registro, Tasa USDT y Comisiones",
-        desc: "El formulario bloquea monedas incompatibles según la cuenta activa y, si operas en <b>Bs desde una cuenta USDT</b>, te permite editar la tasa USDT exacta.",
-        tip: "🇻🇪 <b>Comisiones Bancarias VE:</b> Al registrar un gasto en VES, elige entre <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
+        desc: "El formulario adapta las monedas según tu cuenta activa y, si registras un movimiento en <b>Bs desde una cuenta USDT</b>, te permite editar la tasa USDT aplicada.",
+        tip: "🇻🇪 <b>Comisiones Bancarias VE:</b> En gastos en VES, elige entre <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
     },
     {
         icono: "🔄",
-        titulo: "4. Transferencias P2P en 1 Clic",
-        desc: "¿Cambiaste USDT a Bolívares o viceversa? Selecciona <b>Transferir</b> en el panel de registro principal.",
-        tip: "⚡ En un solo paso, A$$IST descuenta el saldo de la cuenta de origen y suma el monto convertido en la cuenta destino usando la tasa que indiques." }, { icono: "📅", titulo: "5. Nueva Agenda de Pagos", desc: "Organiza tus deudas, recibos y suscripciones en la pestaña <b>Agenda</b> con vistas de <b>Pendientes</b>, <b>📅 Calendario mensual</b> y <b>Pagados</b>.", tip: "🔔 Recibe avisos no invasivos en Inicio cuando un pago vence en <b>≤ 3 días</b>, págalo en 1 clic descontando de tu cuenta (si es mensual avanza al próximo mes) o reviértelo si lo borras del historial." }, { icono: "📊", titulo: "6. Historial Pro y Metas Visuales", desc: "Analiza tus gastos con el nuevo <b>gráfico de dona interactivo</b> con leyenda lateral de colores y porcentajes, o filtra con el botón <b>Total</b> (por Mes/Año) y <b>📅 Día</b>.", tip: "🗑️ <b>Swipe to Delete y Reembolso:</b> Desliza hacia la izquierda cualquier movimiento para borrarlo. Y si eliminas una <b>Meta</b> con dinero ahorrado, se reembolsa automáticamente a tu cuenta." }, { icono: "🔒", titulo: "7. PIN 2.0, Modo Pánico y Temas", desc: "Protege tu app con el nuevo <b>teclado numérico integrado en pantalla</b> y <b>3 preguntas de seguridad personalizadas</b> con tolerancia inteligente y pistas sutiles.", tip: "🕵️‍♂️ Da <b>doble toque rápido</b> en tu balance para activar el <b>Modo Pánico</b> (********) y personaliza A$$IST con los temas <b>Oscuro</b>, <b>Claro</b> o <b>Liquid Glass</b> y 20 colores de acento."
+        titulo: "4. Transferencias y Comisión P2P",
+        desc: "¿Cambiaste USDT a Bolívares o compraste USDT con Bs? Elige <b>Transferir</b> en el panel principal para mover saldo entre cuentas en 1 clic.",
+        tip: "📉 <b>Comisión Binance P2P:</b> Al pasar de <b>VES a USDT</b>, puedes indicar la comisión en USDT (ej. <i>0.60 USDT</i>) para que A$$IST abone el neto exacto en tu billetera."
     },
     {
-        icono: "🛠️",
-        titulo: "8. AskBot y Calculadora en Vivo",
-        desc: "<b>AskBot</b> se encuentra temporalmente en mantenimiento programado mientras reconstruimos su motor de IA desde cero para próximas actualizaciones.",
-        tip: "💱 Mientras tanto, la <b>Calculadora Bidireccional</b> con <b>Brecha Cambiaria</b>, <b>Fecha Valor BCV</b> y <b>Calendario Histórico</b> está <b>100% operativa</b> en tiempo real."
+        icono: "🤖",
+        titulo: "5. AskBot 4.0: Copiloto en Vivo",
+        desc: "Tu asesor financiero interactivo 100% local con <b>40 tarjetas</b> organizadas en <b>Consultas en Vivo</b> y la enciclopedia completa de A$$IST.",
+        tip: "⚡ <b>Respuestas al instante:</b> Consulta con un toque las tasas de hoy y mañana, la radiografía de tu patrimonio, gastos del mes, deudas pendientes y el diagnóstico de liquidez vs agenda."
+    },
+    {
+        icono: "📅",
+        titulo: "6. Agenda de Pagos y Calendario",
+        desc: "Controla recibos, deudas y suscripciones con vistas de <b>Pendientes</b>, <b>📅 Calendario mensual interactivo</b> y <b>Pagados</b>.",
+        tip: "🔔 Recibe alertas en Inicio cuando un pago vence en <b>≤ 3 días</b>, ejecútalo con <b>💳 Pagar</b> descontando de tu cuenta (si es mensual salta al próximo mes) o usa <b>↩️ Revertir</b> si te equivocas."
+    },
+    {
+        icono: "💱",
+        titulo: "7. Calculadora, Brecha y Fecha Valor",
+        desc: "Convierte al instante entre <b>BCV, USDT, EUR o Tasa Propia</b> viendo siempre la <b>Brecha Cambiaria ($/USDT)</b> y la variación diaria.",
+        tip: "⏳ <b>Fecha Valor y Calendario Histórico:</b> Cuando el BCV publica la tasa de mañana aparece el botón amarillo <b>📅→</b> para adelantar cálculos, o toca el calendario <b>📅</b> para consultar tasas de días pasados."
+    },
+    {
+        icono: "📊",
+        titulo: "8. Historial Pro y Metas con Reembolso",
+        desc: "El Historial abre en los movimientos del <b>📅 Día de hoy</b> o en vista <b>Total</b> por Mes/Año, con buscador en vivo y <b>Gráfico de Dona</b> por porcentajes.",
+        tip: "🛡️ <b>Swipe to Delete y Metas Seguras:</b> Desliza un movimiento a la izquierda para borrarlo. Y si eliminas una <b>Meta de Ahorro</b> a la mitad, tu dinero ahorrado se reembolsa automáticamente a tu cuenta."
+    },
+    {
+        icono: "🔒",
+        titulo: "9. PIN 2.0, Modo Pánico, Temas y Nube",
+        desc: "Protege tu acceso con el <b>teclado numérico en pantalla</b> y <b>3 preguntas personalizadas</b> con tolerancia inteligente y pistas sutiles.",
+        tip: "🕵️‍♂️ Da <b>doble toque rápido</b> al saldo para activar el <b>Modo Pánico</b> (********), elige entre <b>Oscuro, Claro o Liquid Glass</b> con 19 acentos y respalda todo en la <b>Nube o en archivo Backup</b>."
     }
 ];
 
@@ -37,18 +75,19 @@ function actualizarHeaderTutorial() {
 
 function iniciarTutorial() {
     pasoTutorialActual = 0;
-    renderizarPasoTutorial();
+    renderizarPasoTutorial(1);
     abrirModal('modal-tutorial');
 }
 
-function renderizarPasoTutorial() {
+function renderizarPasoTutorial(direccion = 1) {
     const paso = PASOS_TUTORIAL[pasoTutorialActual];
     if (!paso) return;
     const slideBody = document.getElementById('tut-slide-body');
     if (slideBody) {
         slideBody.style.animation = 'none';
         void slideBody.offsetWidth;
-        slideBody.style.animation = 'scaleFadeIn 0.35s var(--ios-spring) forwards';
+        const animName = direccion < 0 ? 'tabEnterFromLeft' : 'tabEnterFromRight';
+        slideBody.style.animation = `${animName} 0.34s var(--ios-spring) forwards`;
     }
     document.getElementById('tut-icono').innerText = paso.icono;
     document.getElementById('tut-titulo').innerText = paso.titulo;
@@ -76,7 +115,7 @@ function moverPasoTutorial(direccion) {
     pasoTutorialActual += direccion;
     if (pasoTutorialActual < 0) { pasoTutorialActual = 0; return; }
     if (pasoTutorialActual >= PASOS_TUTORIAL.length) { completarTutorial(); return; }
-    renderizarPasoTutorial();
+    renderizarPasoTutorial(direccion);
 }
 
 function completarTutorial() {
@@ -93,7 +132,17 @@ function tutTouchEnd(e) {
     else if (diff > 45) moverPasoTutorial(-1);
 }
 
-// ================= NAVEGACIÓN =================
+// ================= NAVEGACIÓN FLUIDA CON TRANSICIÓN DIRECCIONAL =================
+const ORDEN_PESTANAS_NAV = [
+    'tab-inicio',
+    'tab-askbot',
+    'tab-agenda',
+    'tab-calculadora',
+    'tab-metas',
+    'tab-categorias'
+];
+let pestanaActivaIdActual = 'tab-inicio';
+
 function resetearScrollNativoiOS() {
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
@@ -101,13 +150,43 @@ function resetearScrollNativoiOS() {
 }
 
 function cambiarPestana(idPestana, elementoNav) {
+    const tabDestino = document.getElementById(idPestana);
+    if (!tabDestino) return;
+
     const inputAskbot = document.getElementById('askbot-input');
     if (inputAskbot && idPestana !== 'tab-askbot') inputAskbot.blur();
 
-    document.querySelectorAll('.tab-content, .vista-activa').forEach(el => el.className = 'vista-oculta');
-    document.getElementById(idPestana).className = 'vista-activa';
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('activo'));
-    elementoNav.classList.add('activo');
+    // Si el usuario toca la misma pestaña en la que ya está, hacer micro-rebote suave sin recargar de golpe
+    if (pestanaActivaIdActual === idPestana && tabDestino.classList.contains('vista-activa')) {
+        if (elementoNav) {
+            elementoNav.classList.remove('nav-tap-bounce');
+            void elementoNav.offsetWidth;
+            elementoNav.classList.add('nav-tap-bounce');
+        }
+        resetearScrollNativoiOS();
+        return;
+    }
+
+    const idxAnterior = ORDEN_PESTANAS_NAV.indexOf(pestanaActivaIdActual);
+    const idxNuevo = ORDEN_PESTANAS_NAV.indexOf(idPestana);
+    const claseDireccion = (idxAnterior !== -1 && idxNuevo !== -1 && idxNuevo < idxAnterior)
+        ? 'tab-anim-left'
+        : 'tab-anim-right';
+
+    pestanaActivaIdActual = idPestana;
+
+    document.querySelectorAll('.tab-content, .vista-activa').forEach(el => {
+        el.className = 'vista-oculta';
+    });
+
+    tabDestino.className = `vista-activa ${claseDireccion}`;
+
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('activo', 'nav-tap-bounce');
+    });
+    if (elementoNav) {
+        elementoNav.classList.add('activo', 'nav-tap-bounce');
+    }
 
     if (idPestana === 'tab-agenda') renderizarAgenda();
 
@@ -123,31 +202,9 @@ function cambiarPestana(idPestana, elementoNav) {
     }
 }
 
-// ================= ASKBOT (MODO EN MANTENIMIENTO LIGERO) =================
+// ================= COMPATIBILIDAD VISUAL VIEWPORT ASKBOT =================
 function ajustarAlturaVisualAskBot() {}
 function configurarVisualViewportAskBot() {}
-
-function inicializarAskBot() {
-    const hero = document.getElementById('askbot-welcome-hero');
-    const box = document.getElementById('askbot-messages');
-    const inputBar = document.querySelector('.askbot-input-bar');
-
-    if (box) { box.innerHTML = ''; box.classList.add('oculto-chat'); }
-    if (inputBar) { inputBar.style.opacity = '0.45'; inputBar.style.pointerEvents = 'none'; }
-    if (hero) {
-        hero.classList.remove('oculto-hero');
-        hero.innerHTML = `
-            <div class="askbot-hero-orb" style="margin-top: auto;">🛠️</div>
-            <h2 class="askbot-hero-title">AskBot en Mantenimiento</h2>
-            <p class="askbot-hero-sub" style="margin-bottom: auto; max-width: 280px;">
-                Estamos rediseñando el motor de inteligencia artificial desde cero para ofrecerte una experiencia superior en la próxima actualización.
-            </p>
-        `;
-    }
-}
-function limpiarChatAskBot() { inicializarAskBot(); }
-function enviarSugerenciaAskBot() { inicializarAskBot(); }
-function enviarMensajeAskBot() { inicializarAskBot(); }
 
 // ================= GESTIÓN Y LISTAS =================
 function cargarSelects() {

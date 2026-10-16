@@ -308,7 +308,7 @@
             </button>
         </div>
 
-        <!-- ================= APARTADO: ASKBOT (EN MANTENIMIENTO LIGERO) ================= -->
+        <!-- ================= APARTADO: ASKBOT 4.0 (COPILOTO Y GUÍA INTERACTIVO) ================= -->
         <div id="tab-askbot" class="vista-oculta">
             <div class="header-title askbot-header-bar">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -321,14 +321,8 @@
             </div>
 
             <section id="askbot-container" class="askbot-container blur-effect">
-                <div id="askbot-welcome-hero" class="askbot-welcome-hero">
-                    <div class="askbot-hero-orb" style="margin-top: auto;">🛠️</div>
-                    <h2 id="askbot-hero-title" class="askbot-hero-title">AskBot en Mantenimiento</h2>
-                    <p class="askbot-hero-sub" style="margin-bottom: auto; max-width: 280px;">
-                        Estamos rediseñando el motor de inteligencia artificial desde cero para ofrecerte una experiencia superior en la próxima actualización.
-                    </p>
-                </div>
-                <div id="askbot-messages" class="askbot-messages oculto-chat"></div>
+                <div id="askbot-messages" class="askbot-messages"></div>
+                <div id="askbot-welcome-hero" class="askbot-welcome-hero"></div>
             </section>
         </div>
 
@@ -537,7 +531,7 @@
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('dark')">Oscuro</button>
-                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass (Beta)</button>
+                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass</button>
                     <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('light')">Claro</button>
                 </div>
                 
@@ -584,7 +578,7 @@
             <!-- Sello de Versión de la App -->
             <div style="text-align: center; padding: 18px 10px 8px; opacity: 0.75;">
                 <p style="font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.5px;">A$$IST — Control de Capital</p>
-                <span style="display: inline-block; margin-top: 5px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--input-bg); border: 1px solid var(--border-light); padding: 4px 12px; border-radius: 12px;">Versión 3.0</span>
+                <span style="display: inline-block; margin-top: 5px; font-size: 11px; font-weight: 700; color: var(--text-secondary); background: var(--input-bg); border: 1px solid var(--border-light); padding: 4px 12px; border-radius: 12px;">Versión 4.0</span>
             </div>
         </div>
     </div>
@@ -1086,14 +1080,14 @@
     <div id="modal-tutorial" class="glass-modal oculto" style="z-index: 100005;" onclick="omitirTutorial()">
         <div class="glass-modal-content tutorial-content" onclick="event.stopPropagation()" ontouchstart="tutTouchStart(event)" ontouchend="tutTouchEnd(event)">
             <div class="glass-modal-header" style="margin-bottom: 12px;">
-                <span id="tut-paso-contador" class="tut-badge-step">PASO 1 DE 9</span>
+                <span id="tut-paso-contador" class="tut-badge-step">PASO 1 DE 10</span>
                 <button class="btn-tut-omitir" onclick="omitirTutorial()">Omitir</button>
             </div>
 
             <!-- Cuerpo del Paso -->
             <div class="tut-slide" id="tut-slide-body">
                 <div id="tut-icono" class="tut-icon-box">🚀</div>
-                <h2 id="tut-titulo" style="font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST 3.0</h2>
+                <h2 id="tut-titulo" style="font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST 4.0</h2>
                 <p id="tut-desc" style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;"></p>
                 <div id="tut-detalle" class="tut-tip-box"></div>
             </div>
@@ -1139,12 +1133,13 @@
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>
-    <!-- ARQUITECTURA MODULAR DE A$$IST V3.0 (ORDEN ESTRICTO DE CARGA) -->
+    <!-- ARQUITECTURA MODULAR DE A$$IST V4.0 (ORDEN ESTRICTO DE CARGA) -->
     <script src="estado-nube.js"></script>
     <script src="seguridad-modales.js"></script>
     <script src="tasas-calculadora.js"></script>
     <script src="cuentas-movimientos.js"></script>
     <script src="metas-agenda.js"></script>
+    <script src="askbot-guia.js"></script>
     <script src="gestion-arranque.js"></script>
 </body>
 </html>

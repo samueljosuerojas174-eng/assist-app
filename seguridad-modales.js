@@ -600,6 +600,10 @@ document.addEventListener('touchmove', function(e) {
     }
 
     if (document.body.classList.contains('askbot-tab-open') || document.body.classList.contains('askbot-kb-open')) {
+        const horizontalPalette = e.target.closest('.palette-container');
+        if (horizontalPalette && horizontalPalette.scrollWidth > horizontalPalette.clientWidth) {
+            return;
+        }
         const askbotScrollable = e.target.closest('.askbot-messages, .askbot-welcome-hero');
         if (!askbotScrollable || askbotScrollable.scrollHeight <= askbotScrollable.clientHeight) {
             e.preventDefault();
