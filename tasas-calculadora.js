@@ -439,15 +439,6 @@ function actualizarPanelUsdtP2PUI() {
     if (badgeHomeModo) {
         badgeHomeModo.innerText = modoPrecio === 'sell' ? '(VENTA)' : '(COMPRA)';
     }
-    const subHomeCV = document.getElementById('sub-usdt-cv-home');
-    if (subHomeCV) {
-        if (buyVal > 0 && sellVal > 0) {
-            subHomeCV.classList.remove('oculto');
-            subHomeCV.innerText = `C: ${buyVal.toFixed(2)} · V: ${sellVal.toFixed(2)}`;
-        } else {
-            subHomeCV.classList.add('oculto');
-        }
-    }
 }
 
 function seleccionarPrecioUsdtP2P(modoPrecio) {

@@ -80,6 +80,7 @@ html {
     overscroll-behavior: none !important;
     overscroll-behavior-y: none !important;
     height: 100%;
+    min-height: 100dvh;
 }
 
 body {
@@ -87,6 +88,7 @@ body {
     overscroll-behavior: none !important;
     overscroll-behavior-y: none !important;
     min-height: 100%;
+    min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     overflow-x: clip;
     touch-action: pan-y;
@@ -117,7 +119,9 @@ body.modal-open .app-container {
     max-width: 420px;
     margin: 0 auto;
     padding: env(safe-area-inset-top) 20px calc(72px + env(safe-area-inset-bottom)) 20px;
-    min-height: 0;
+    min-height: 100%;
+    min-height: 100dvh;
+    box-sizing: border-box;
     overflow-x: clip;
     overflow-y: visible;
 }
@@ -1959,7 +1963,7 @@ html, body {
 }
 
 body.askbot-tab-open .app-container {
-    min-height: 0 !important;
+    min-height: 100dvh !important;
     height: var(--askbot-vh, 100dvh) !important;
     padding-bottom: calc(74px + env(safe-area-inset-bottom)) !important;
     overflow: hidden !important;

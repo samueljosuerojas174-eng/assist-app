@@ -154,7 +154,7 @@ function repararViewportYBarraInferioriOS(esCierreTeclado = false) {
     _timersReparacionBarra.forEach(t => clearTimeout(t));
     _timersReparacionBarra = [];
 
-    const ejecutarResnapNativo = (forzarPulsoAltura) => {
+    const ejecutarResnapNativo = () => {
         if (document.body.classList.contains('modal-open')) return;
 
         // Si un input sigue activo (el usuario pasó de un input a otro), no forzar cierre
@@ -163,46 +163,18 @@ function repararViewportYBarraInferioriOS(esCierreTeclado = false) {
             return;
         }
 
-        // En iOS WebApp Standalone, WKWebView solo re-encaja el viewport (quitando la franja negra inferior)
-        // cuando detecta que el scrollHeight supera temporalmente al alto de la pantalla (tal como ocurre al ir a Inicio/Agenda/Ajustes).
-        const esPestanaCorta = ['tab-calculadora', 'tab-metas', 'tab-askbot'].includes(pestanaActivaIdActual);
-        const yGuardada = window.scrollY || document.documentElement.scrollTop || 0;
-        if (forzarPulsoAltura) {
-            const prevPad = document.body.style.paddingBottom;
-            document.body.style.paddingBottom = '2px';
-            void document.body.offsetHeight;
-            window.scrollTo(0, yGuardada + 1);
-            // Pestañas cortas: volver arriba (re-encaje). Pestañas largas: mantener exactamente donde estaba el usuario.
-            window.scrollTo(0, esPestanaCorta ? 0 : yGuardada);
-            setTimeout(() => {
-                document.body.style.paddingBottom = prevPad || '';
-            }, 60);
-        } else if (esPestanaCorta) {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-        }
-
         const nav = document.getElementById('bottom-nav-bar');
         if (nav && !document.body.classList.contains('askbot-kb-open')) {
-            nav.style.bottom = '-0.5px';
-            void nav.offsetHeight;
             nav.style.bottom = '0px';
             nav.style.transform = 'translate3d(0, 0, 0)';
         }
     };
 
     if (esCierreTeclado) {
-        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 40));
+        _timersReparacionBarra.push(setTimeout(ejecutarResnapNativo, 50));
+        _timersReparacionBarra.push(setTimeout(ejecutarResnapNativo, 180));
     } else {
-        ejecutarResnapNativo(false);
-    }
-    if (esCierreTeclado) {
-        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 85));
-        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(true), 240));
-        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(false), 420));
-    } else {
-        _timersReparacionBarra.push(setTimeout(() => ejecutarResnapNativo(false), 90));
+        ejecutarResnapNativo();
     }
 }
 
@@ -547,69 +519,14 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
-// ================= CONTROL ESTRICTO DE LÍMITES DE SCROLL =================
-// Evita desplazamientos excesivos hacia arriba o hacia abajo en las pantallas
-// (Inicio, Agenda, Conversión, Metas y Ajustes), limitando el scroll exactamente
-// hasta donde se encuentra el contenido visible sin dejar huecos vacíos.
+// ================= CONTROL FLUIDO DE SCROLL NATIVO (120 FPS) =================
+// La amortiguación y elasticidad suave en los límites de la pantalla [0, maxScroll]
+// es gestionada directamente por el motor nativo de iOS (overscroll-behavior-y: none en CSS)
+// sin e.preventDefault() bruscos ni scrollTo() continuos que frenaban el scroll en seco.
 function configurarLimitadorScrollApp() {
-    let touchStartY = 0;
-
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches && e.touches.length === 1) {
-            touchStartY = e.touches[0].clientY;
-        }
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-        // No intervenir si hay un modal abierto o si estamos dentro de AskBot
-        if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) {
-            return;
-        }
-        if (!e.touches || e.touches.length !== 1) return;
-
-        const currentY = e.touches[0].clientY;
-        const deltaY = currentY - touchStartY;
-        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-        const scrollHeight = document.documentElement.scrollHeight;
-        const clientHeight = window.innerHeight;
-        const maxScroll = Math.max(0, scrollHeight - clientHeight);
-
-        // Si la pantalla cabe completa sin necesidad de scroll (ej: Conversión o Metas con pocas metas)
-        if (maxScroll <= 2) {
-            // Permitir swipe horizontal si está sobre un carrusel/slider
-            const elementoHorizontal = e.target && e.target.closest && e.target.closest('.slider-cuentas, .palette-container');
-            if (!elementoHorizontal && e.cancelable) {
-                e.preventDefault();
-            }
-            return;
-        }
-
-        // Si ya está en el tope superior y el usuario desliza hacia abajo (intentando ir más arriba)
-        if (scrollTop <= 0 && deltaY > 0) {
-            if (e.cancelable) e.preventDefault();
-            return;
-        }
-
-        // Si ya está en el fondo y el usuario desliza hacia arriba (intentando ir más abajo del contenido)
-        if (scrollTop >= maxScroll - 1 && deltaY < 0) {
-            if (e.cancelable) e.preventDefault();
-            return;
-        }
-    }, { passive: false });
-
-    // Corrección reactiva para que el scroll nunca caiga fuera de los límites [0, maxScroll]
-    window.addEventListener('scroll', () => {
-        if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) {
-            return;
-        }
-        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
-        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        if (currentY < 0) {
-            window.scrollTo(0, 0);
-        } else if (maxScroll > 0 && currentY > maxScroll) {
-            window.scrollTo(0, maxScroll);
-        }
-    }, { passive: true });
+    // La inercia y amortiguación elástica suave nativa en los extremos [0, maxScroll]
+    // es controlada con fluidez a 120 FPS por overscroll-behavior-y: none en style.css,
+    // garantizando un deslizamiento sedoso sin saltos ni frenazos bruscos.
 }
 
 // ================= ARRANQUE INSTANTÁNEO DE LA APP (LOCAL-FIRST + SYNC EN SEGUNDO PLANO) =================
