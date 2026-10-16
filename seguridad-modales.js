@@ -88,7 +88,7 @@ function ejecutarArranqueVisualInmediato() {
     let savedThemeColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
     if (savedThemeColor.toUpperCase() === '#000000') savedThemeColor = '#FFFFFF';
     const savedThemeMode = localStorage.getItem('app_theme_mode') || 'dark';
-    const savedFont = localStorage.getItem('app_font_family') || 'ios26';
+    const savedFont = localStorage.getItem('app_font_family') || 'outfit';
     cambiarColorAcento(savedThemeColor, true);
     cambiarModo(savedThemeMode, true);
     cambiarFuenteApp(savedFont, true);
@@ -181,7 +181,7 @@ function cambiarModo(modo, omitirSync = false) {
 
 function cambiarFuenteApp(fontKey, omitirAnim = false) {
     const fuentesValidas = ['ios26', 'claude', 'windows', 'minecraft', '8bit', 'fredoka', 'jetbrains', 'outfit'];
-    const elegida = fuentesValidas.includes(fontKey) ? fontKey : 'ios26';
+    const elegida = fuentesValidas.includes(fontKey) ? fontKey : 'outfit';
     document.documentElement.setAttribute('data-font', elegida);
     if (document.body) document.body.setAttribute('data-font', elegida);
     localStorage.setItem('app_font_family', elegida);

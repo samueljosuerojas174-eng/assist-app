@@ -169,7 +169,7 @@ function repararViewportYBarraInferioriOS(esCierreTeclado = false) {
         const yGuardada = window.scrollY || document.documentElement.scrollTop || 0;
         if (forzarPulsoAltura) {
             const prevPad = document.body.style.paddingBottom;
-            document.body.style.paddingBottom = '260px';
+            document.body.style.paddingBottom = '2px';
             void document.body.offsetHeight;
             window.scrollTo(0, yGuardada + 1);
             // Pestañas cortas: volver arriba (re-encaje). Pestañas largas: mantener exactamente donde estaba el usuario.
@@ -547,8 +547,74 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
+// ================= CONTROL ESTRICTO DE LÍMITES DE SCROLL =================
+// Evita desplazamientos excesivos hacia arriba o hacia abajo en las pantallas
+// (Inicio, Agenda, Conversión, Metas y Ajustes), limitando el scroll exactamente
+// hasta donde se encuentra el contenido visible sin dejar huecos vacíos.
+function configurarLimitadorScrollApp() {
+    let touchStartY = 0;
+
+    window.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length === 1) {
+            touchStartY = e.touches[0].clientY;
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        // No intervenir si hay un modal abierto o si estamos dentro de AskBot
+        if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) {
+            return;
+        }
+        if (!e.touches || e.touches.length !== 1) return;
+
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - touchStartY;
+        const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+        const scrollHeight = document.documentElement.scrollHeight;
+        const clientHeight = window.innerHeight;
+        const maxScroll = Math.max(0, scrollHeight - clientHeight);
+
+        // Si la pantalla cabe completa sin necesidad de scroll (ej: Conversión o Metas con pocas metas)
+        if (maxScroll <= 2) {
+            // Permitir swipe horizontal si está sobre un carrusel/slider
+            const elementoHorizontal = e.target && e.target.closest && e.target.closest('.slider-cuentas, .palette-container');
+            if (!elementoHorizontal && e.cancelable) {
+                e.preventDefault();
+            }
+            return;
+        }
+
+        // Si ya está en el tope superior y el usuario desliza hacia abajo (intentando ir más arriba)
+        if (scrollTop <= 0 && deltaY > 0) {
+            if (e.cancelable) e.preventDefault();
+            return;
+        }
+
+        // Si ya está en el fondo y el usuario desliza hacia arriba (intentando ir más abajo del contenido)
+        if (scrollTop >= maxScroll - 1 && deltaY < 0) {
+            if (e.cancelable) e.preventDefault();
+            return;
+        }
+    }, { passive: false });
+
+    // Corrección reactiva para que el scroll nunca caiga fuera de los límites [0, maxScroll]
+    window.addEventListener('scroll', () => {
+        if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) {
+            return;
+        }
+        const currentY = window.scrollY || document.documentElement.scrollTop || 0;
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        if (currentY < 0) {
+            window.scrollTo(0, 0);
+        } else if (maxScroll > 0 && currentY > maxScroll) {
+            window.scrollTo(0, maxScroll);
+        }
+    }, { passive: true });
+}
+
 // ================= ARRANQUE INSTANTÁNEO DE LA APP (LOCAL-FIRST + SYNC EN SEGUNDO PLANO) =================
 async function inicializarApp() {
+    configurarLimitadorScrollApp();
     asegurarColoresCategorias();
     renderizarPaletaColorNuevaCat();
     actualizarHeaderTutorial();
