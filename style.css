@@ -87,19 +87,22 @@ body.modal-open .app-container {
     align-items: center;
 }
 
-/* ================= PANTALLA DE PIN INTERACTIVA Y TECLADO NUMÉRICO ESTILO iOS LOCK SCREEN ================= */
+/* ================= PANTALLA DE PIN INTERACTIVA Y TECLADO NUMÉRICO ESTILO iOS LOCK SCREEN (+20% ALTO) ================= */
 .pin-box-card {
     text-align: center;
     width: 92%;
-    max-width: 350px;
-    padding: 24px 20px 22px;
-    border-radius: 32px;
+    max-width: 360px;
+    min-height: 76dvh;
+    max-height: 670px;
+    padding: 34px 22px 32px;
+    border-radius: 36px;
     background: var(--card-dark);
     border: 1px solid var(--border-light);
     box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     opacity: 0;
     transform: translateY(18px) scale(0.95);
     transition: opacity 0.45s var(--ios-spring), transform 0.45s var(--ios-spring);
@@ -111,58 +114,74 @@ body.modal-open .app-container {
     transform: translateY(0) scale(1);
 }
 
+.pin-top-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.pin-middle-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 6px 0;
+}
+
 .pin-logo-wrap {
     position: relative;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
 .pin-logo-img {
-    width: 68px;
-    height: 68px;
-    border-radius: 18px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--border-light);
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--border-light);
 }
 
 .pin-lock-badge {
     position: absolute;
-    bottom: -5px;
-    right: -5px;
-    width: 24px;
-    height: 24px;
+    bottom: -3px;
+    right: -3px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: var(--card-dark);
     border: 1px solid var(--border-light);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 13px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
 .pin-title {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .pin-subtitle {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text-secondary);
-    margin-bottom: 14px;
+    margin-bottom: 4px;
     line-height: 1.35;
 }
 
 .pin-interactive-area {
     position: relative;
     width: 100%;
-    padding: 14px 12px;
-    border-radius: 20px;
+    padding: 18px 14px;
+    border-radius: 22px;
     background: var(--input-bg);
     border: 1px solid var(--border-light);
     margin-bottom: 8px;
@@ -180,14 +199,14 @@ body.modal-open .app-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 22px;
+    gap: 24px;
     pointer-events: none;
     z-index: 2;
 }
 
 .pin-dot-ind {
-    width: 16px;
-    height: 16px;
+    width: 17px;
+    height: 17px;
     border-radius: 50%;
     background: rgba(150, 150, 150, 0.16);
     border: 2px solid var(--border-light);
@@ -231,7 +250,7 @@ body.modal-open .app-container {
     color: #FF453A;
     font-size: 12px;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 2px;
     min-height: 16px;
     transition: opacity 0.25s ease;
 }
@@ -239,18 +258,18 @@ body.modal-open .app-container {
 /* Teclado Numérico Circular Estático estilo iPhone Lock Screen */
 .pin-keypad-grid {
     display: grid;
-    grid-template-columns: repeat(3, 68px);
+    grid-template-columns: repeat(3, 72px);
     justify-content: center;
     align-items: center;
-    gap: 12px 18px;
-    margin-top: 4px;
+    gap: 16px 20px;
+    margin-top: 2px;
     user-select: none;
     -webkit-user-select: none;
 }
 
 .pin-key-btn {
-    width: 68px;
-    height: 68px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
     background: var(--input-bg);
     border: 1px solid var(--border-light);
@@ -276,7 +295,7 @@ body.modal-open .app-container {
 }
 
 .pin-key-num {
-    font-size: 26px;
+    font-size: 27px;
     font-weight: 600;
     line-height: 1;
     color: var(--text-primary);
@@ -326,7 +345,7 @@ body.modal-open .app-container {
 }
 
 .pin-key-del-icon {
-    font-size: 22px;
+    font-size: 23px;
     color: var(--text-primary);
     line-height: 1;
 }
@@ -798,6 +817,45 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+}
+
+.historial-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.hist-dia-picker-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+#filtro-fecha {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    z-index: 2 !important;
+    cursor: pointer;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.btn-close-historial-safe {
+    position: relative;
+    z-index: 10 !important;
+    margin-left: 2px;
+    flex-shrink: 0;
 }
 
 .btn-filtro-hist.activo {
@@ -1663,7 +1721,7 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 65%, transparent); 
 }
 
-/* Paleta Ampliada de 20+ Colores con Soporte de Deslizamiento Horizontal Táctil */
+/* Paleta Ampliada de Colores con Soporte de Deslizamiento Horizontal Táctil */
 .palette-container {
     display: flex;
     gap: 12px;
@@ -1729,12 +1787,16 @@ select option { background-color: #1A1A1A !important; color: #FFFFFF !important;
     width: 44px;
     height: 44px;
     flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 15px;
 }
 
 #input-calc-fecha-hist {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     height: 100% !important;
     opacity: 0 !important;
     z-index: 3 !important;

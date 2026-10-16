@@ -13,7 +13,11 @@
     <!-- SCRIPT INLINE PARA EVITAR PANTALLAZO BLANCO EN IPHONE -->
     <script>
         const tMode = localStorage.getItem('app_theme_mode') || 'dark';
-        const tColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+        let tColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+        if (tColor.toUpperCase() === '#000000') {
+            tColor = '#FFFFFF';
+            localStorage.setItem('app_theme_color', '#FFFFFF');
+        }
         document.documentElement.setAttribute('data-theme', tMode);
         document.documentElement.style.setProperty('--accent', tColor);
     </script>
@@ -64,25 +68,28 @@
     <!-- Pantalla de Bloqueo PIN Interactiva con Teclado Numérico Integrado estilo iOS Lock Screen -->
     <div id="pin-screen" class="glass-modal oculto" style="z-index: 99998; background: var(--bg-dark) !important; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: none; -webkit-backdrop-filter: none;">
         <div class="pin-box-card" id="pin-box-card">
-            <div class="pin-logo-wrap">
-                <img src="logo.jpg" alt="Logo" class="app-logo pin-logo-img">
-                <span class="pin-lock-badge">🔒</span>
+            <div class="pin-top-section">
+                <div class="pin-logo-wrap">
+                    <img src="logo.jpg" alt="Perfil" id="pin-user-avatar" class="app-logo pin-logo-img">
+                    <span class="pin-lock-badge">🔒</span>
+                </div>
+                <h2 class="pin-title">Ingresa tu PIN</h2>
+                <p class="pin-subtitle" id="pin-status-text">Marca tu código de seguridad de 4 dígitos</p>
             </div>
-            <h2 class="pin-title">Ingresa tu PIN</h2>
-            <p class="pin-subtitle" id="pin-status-text">Marca tu código de seguridad de 4 dígitos</p>
 
             <!-- Área de los 4 círculos indicadores (Sin teclado nativo del sistema) -->
-            <div class="pin-interactive-area" id="pin-interactive-area">
-                <input type="hidden" id="input-pin" maxlength="4" value="">
-                <div class="pin-dots-row" id="pin-dots-row">
-                    <div class="pin-dot-ind"></div>
-                    <div class="pin-dot-ind"></div>
-                    <div class="pin-dot-ind"></div>
-                    <div class="pin-dot-ind"></div>
+            <div class="pin-middle-section">
+                <div class="pin-interactive-area" id="pin-interactive-area">
+                    <input type="hidden" id="input-pin" maxlength="4" value="">
+                    <div class="pin-dots-row" id="pin-dots-row">
+                        <div class="pin-dot-ind"></div>
+                        <div class="pin-dot-ind"></div>
+                        <div class="pin-dot-ind"></div>
+                        <div class="pin-dot-ind"></div>
+                    </div>
                 </div>
+                <p id="pin-error-feedback" class="pin-error-feedback oculto"></p>
             </div>
-
-            <p id="pin-error-feedback" class="pin-error-feedback oculto"></p>
 
             <!-- Teclado Numérico Circular Estático Integrado (Estilo iPhone) -->
             <div class="pin-keypad-grid" id="pin-keypad-grid">
@@ -274,6 +281,11 @@
                     <div id="box-transf-tasa" class="oculto" style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
                         <label style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">Tasa de Cambio:</label>
                         <input type="number" id="input-transf-tasa" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" style="flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(0,0,0,0.2); color: var(--text-primary); outline: none;" oninput="calcularMontoTransferencia()">
+                    </div>
+
+                    <div id="box-transf-comision-usdt" class="oculto" style="display: none; align-items: center; gap: 10px; margin-top: 2px;">
+                        <label style="font-size: 12px; color: var(--text-secondary); white-space: nowrap;">Comisión P2P (USDT):</label>
+                        <input type="number" id="input-transf-comision-usdt" placeholder="Ej: 0.60" step="0.01" inputmode="decimal" style="flex: 1; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(0,0,0,0.2); color: var(--text-primary); outline: none;" oninput="calcularMontoTransferencia()">
                     </div>
                     
                     <div style="text-align: right; margin-top: 5px;">
@@ -530,10 +542,9 @@
                 </div>
                 
                 <h3 class="section-subtitle" style="text-align: center;">Color de Acento</h3>
-                <!-- Paleta amplia deslizable horizontal -->
+                <!-- Paleta amplia deslizable horizontal (Sin color negro) -->
                 <div class="palette-container">
                     <div class="theme-dot" style="background:#FFFFFF;" onclick="cambiarColorAcento('#FFFFFF')"></div>
-                    <div class="theme-dot" style="background:#000000;" onclick="cambiarColorAcento('#000000')"></div>
                     <div class="theme-dot" style="background:#32D74B;" onclick="cambiarColorAcento('#32D74B')"></div>
                     <div class="theme-dot" style="background:#0A84FF;" onclick="cambiarColorAcento('#0A84FF')"></div>
                     <div class="theme-dot" style="background:#BF5AF2;" onclick="cambiarColorAcento('#BF5AF2')"></div>
@@ -869,18 +880,18 @@
     <div id="modal-historial" class="glass-modal oculto" onclick="cerrarModal('modal-historial')">
         <div class="glass-modal-content historial-modal-content" onclick="event.stopPropagation()">
             <div class="glass-modal-header" style="flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 12px; flex-shrink: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <div style="min-width: 0; flex: 1;">
                         <h2 id="historial-titulo-cuenta">Historial</h2>
                         <small id="historial-subtitulo-filtro" style="font-size: 11.5px; color: var(--text-secondary); font-weight: 600;">Todos los movimientos</small>
                     </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <button id="btn-hist-total" class="btn-secundario btn-filtro-hist activo" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;" onclick="mostrarHistorialTotalCuenta()">Total</button>
-                        <div style="position: relative; display: flex; align-items: center;">
-                            <input type="date" id="filtro-fecha" style="position: absolute; opacity: 0; width: 100%; height: 100%; z-index: 2; cursor: pointer;" onchange="actualizarListaTransacciones()">
-                            <button id="btn-hist-dia" class="btn-secundario btn-filtro-hist" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto; z-index: 1;">📅 Día</button>
+                    <div class="historial-header-actions">
+                        <button id="btn-hist-total" class="btn-secundario btn-filtro-hist" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;" onclick="mostrarHistorialTotalCuenta()">Total</button>
+                        <div class="hist-dia-picker-wrap">
+                            <input type="date" id="filtro-fecha" onchange="actualizarListaTransacciones()">
+                            <button id="btn-hist-dia" type="button" class="btn-secundario btn-filtro-hist activo" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;">📅 Día</button>
                         </div>
-                        <button class="btn-close-modal" style="margin-left: 2px;" onclick="cerrarModal('modal-historial')">
+                        <button class="btn-close-modal btn-close-historial-safe" onclick="cerrarModal('modal-historial')">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
@@ -1128,6 +1139,12 @@
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>
-    <script src="app.js"></script>
+    <!-- ARQUITECTURA MODULAR DE A$$IST V3.0 (ORDEN ESTRICTO DE CARGA) -->
+    <script src="estado-nube.js"></script>
+    <script src="seguridad-modales.js"></script>
+    <script src="tasas-calculadora.js"></script>
+    <script src="cuentas-movimientos.js"></script>
+    <script src="metas-agenda.js"></script>
+    <script src="gestion-arranque.js"></script>
 </body>
 </html>
