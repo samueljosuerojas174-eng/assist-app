@@ -169,26 +169,25 @@ function cambiarColorAcento(color, omitirSync = false) {
 }
 
 function cambiarModo(modo, omitirSync = false) {
-    const bgHex = (modo === 'light') ? '#F3F4F8' : '#000000';
-    document.documentElement.setAttribute('data-theme', modo);
-    document.body.setAttribute('data-theme', modo);
+    const modoEfectivo = (modo === 'light') ? 'light' : 'dark';
+    const bgHex = (modoEfectivo === 'light') ? '#EEF0F6' : '#000000';
+    document.documentElement.setAttribute('data-theme', modoEfectivo);
+    document.body.setAttribute('data-theme', modoEfectivo);
     document.documentElement.style.setProperty('--bg-dark', bgHex);
     document.documentElement.style.backgroundColor = bgHex;
     document.body.style.backgroundColor = bgHex;
     const metaTheme = document.getElementById('meta-theme-color');
     if (metaTheme) metaTheme.setAttribute('content', bgHex);
-    localStorage.setItem('app_theme_mode', modo);
+    localStorage.setItem('app_theme_mode', modoEfectivo);
 
     const savedColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
-    const accentEfectivo = (modo === 'light' && savedColor.toUpperCase() === '#FFFFFF') ? '#111116' : savedColor;
+    const accentEfectivo = (modoEfectivo === 'light' && savedColor.toUpperCase() === '#FFFFFF') ? '#111116' : savedColor;
     document.documentElement.style.setProperty('--accent', accentEfectivo);
 
     const btnDark = document.getElementById('btn-modo-dark');
-    const btnGlass = document.getElementById('btn-modo-glass');
     const btnLight = document.getElementById('btn-modo-light');
-    if (btnDark) btnDark.classList.toggle('modo-activo', modo === 'dark');
-    if (btnGlass) btnGlass.classList.toggle('modo-activo', modo === 'glass');
-    if (btnLight) btnLight.classList.toggle('modo-activo', modo === 'light');
+    if (btnDark) btnDark.classList.toggle('modo-activo', modoEfectivo === 'dark');
+    if (btnLight) btnLight.classList.toggle('modo-activo', modoEfectivo === 'light');
 
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }

@@ -528,7 +528,7 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
-// ================= SCROLL DE PANTALLA ELÁSTICO (~10% OVERSCROLL TIPO HISTORIAL iOS) =================
+// ================= SCROLL DE PANTALLA ELÁSTICO (~10% OVERSCROLL EN IPHONE Y PC CON RETORNO SEDOSO) =================
 let _scrollBounceConfigurado = false;
 function configurarLimitadorScrollApp() {
     if (_scrollBounceConfigurado) return;
@@ -536,43 +536,73 @@ function configurarLimitadorScrollApp() {
 
     let startY = 0;
     let startX = 0;
+    let prevMoveY = 0;
+    let prevMoveScrollY = 0;
     let anchorY = 0;
     let pullingOverscroll = false;
     let pullDirection = 0; // 1 = tope (hacia abajo), -1 = fondo (hacia arriba)
     let currentOffset = 0;
     let wheelOffset = 0;
-    let lastScrollY = window.scrollY || 0;
+    let lastScrollY = window.pageYOffset || window.scrollY || 0;
     let lastScrollTime = performance.now();
     let scrollVelocity = 0;
     let bounceTimer = null;
     let wheelResetTimer = null;
     let touchActivo = false;
+    let gestureLockedHorizontal = false;
 
     const obtenerVistaRebote = () => {
         if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) return null;
         return document.querySelector('.vista-activa');
     };
 
+    const obtenerScrollY = () => {
+        return Math.max(0, window.pageYOffset || window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0);
+    };
+
     const obtenerMaxScroll = () => {
-        return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const doc = document.documentElement;
+        const body = document.body;
+        const scrollH = Math.max(doc ? doc.scrollHeight : 0, body ? body.scrollHeight : 0);
+        const viewH = window.innerHeight || (doc ? doc.clientHeight : 0) || 800;
+        return Math.max(0, scrollH - viewH);
+    };
+
+    const estaEnTope = () => {
+        return obtenerScrollY() <= 3;
+    };
+
+    const estaEnFondo = (vista, scrollEstancadoHaciaAbajo = false) => {
+        const scrollY = obtenerScrollY();
+        const maxScroll = obtenerMaxScroll();
+        if (maxScroll <= 4 || scrollY >= maxScroll - 5) return true;
+        if (vista) {
+            const rect = vista.getBoundingClientRect();
+            const viewH = window.innerHeight || document.documentElement.clientHeight || 800;
+            const bottomSinOffset = rect.bottom - currentOffset;
+            if (bottomSinOffset <= viewH + 22) return true;
+        }
+        if (scrollEstancadoHaciaAbajo) return true;
+        return false;
     };
 
     const obtenerMaxOverscrollPx = () => {
         const vh = window.innerHeight || 800;
-        return Math.max(68, Math.min(115, Math.round(vh * 0.105)));
+        return Math.max(72, Math.min(115, Math.round(vh * 0.105)));
     };
 
-    const retornarAPosicionOriginal = (vista, duracionMs = 420) => {
+    // Retorno ultra-suave y progresivo a su posición original
+    const retornarAPosicionOriginal = (vista, duracionMs = 760) => {
         if (!vista) return;
         if (bounceTimer) clearTimeout(bounceTimer);
-        vista.style.transition = `transform ${duracionMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+        vista.style.transition = `transform ${duracionMs}ms cubic-bezier(0.16, 1, 0.3, 1)`;
         vista.style.transform = 'translate3d(0, 0px, 0)';
         bounceTimer = setTimeout(() => {
             if (!pullingOverscroll) {
                 vista.style.transition = '';
                 vista.style.transform = '';
             }
-        }, duracionMs + 20);
+        }, duracionMs + 30);
     };
 
     const aplicarReboteInercial = (desplazamientoPx) => {
@@ -580,20 +610,23 @@ function configurarLimitadorScrollApp() {
         if (!vista) return;
         if (bounceTimer) clearTimeout(bounceTimer);
 
-        vista.style.transition = 'transform 0.16s cubic-bezier(0.2, 0.85, 0.4, 1)';
+        vista.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.85, 0.4, 1)';
         vista.style.transform = `translate3d(0, ${desplazamientoPx.toFixed(1)}px, 0)`;
 
         bounceTimer = setTimeout(() => {
-            retornarAPosicionOriginal(vista, 400);
-        }, 145);
+            retornarAPosicionOriginal(vista, 740);
+        }, 190);
     };
 
     window.addEventListener('touchstart', (e) => {
         if (!e.touches || e.touches.length !== 1) return;
-        if (e.target.closest('.slider-cuentas, .accounts-slider, .palette-container, .cat-palette-row, .swipe-content, .lista-gestion, #lista-transacciones, #lista-historial-meta')) return;
+        if (e.target.closest('.palette-container, .cat-palette-row, .lista-gestion, #lista-transacciones, #lista-historial-meta, .modal-list')) return;
         touchActivo = true;
+        gestureLockedHorizontal = false;
         startY = e.touches[0].clientY;
         startX = e.touches[0].clientX;
+        prevMoveY = startY;
+        prevMoveScrollY = obtenerScrollY();
         anchorY = startY;
         pullingOverscroll = false;
         pullDirection = 0;
@@ -616,18 +649,28 @@ function configurarLimitadorScrollApp() {
         const curX = e.touches[0].clientX;
         const totalDy = curY - startY;
         const totalDx = curX - startX;
+        const frameDy = curY - prevMoveY;
+        const scrollY = obtenerScrollY();
+        const deltaScroll = Math.abs(scrollY - prevMoveScrollY);
 
-        if (!pullingOverscroll && Math.abs(totalDx) > Math.abs(totalDy) * 0.85) return;
+        if (!pullingOverscroll && !gestureLockedHorizontal) {
+            if (Math.abs(totalDx) > 10 && Math.abs(totalDx) > Math.abs(totalDy) * 0.9) {
+                gestureLockedHorizontal = true;
+                return;
+            }
+        }
+        if (gestureLockedHorizontal) return;
 
-        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-        const maxScroll = obtenerMaxScroll();
+        const scrollEstancadoAbajo = (frameDy < -1.5 && totalDy < -10 && deltaScroll < 0.5);
+        prevMoveY = curY;
+        prevMoveScrollY = scrollY;
 
         if (!pullingOverscroll) {
-            if (scrollY <= 2 && totalDy > 5) {
+            if (estaEnTope() && frameDy > 0.5 && totalDy > 5) {
                 pullingOverscroll = true;
                 pullDirection = 1;
                 anchorY = curY;
-            } else if (scrollY >= maxScroll - 2 && totalDy < -5) {
+            } else if (estaEnFondo(vista, scrollEstancadoAbajo) && frameDy < -0.5 && totalDy < -5) {
                 pullingOverscroll = true;
                 pullDirection = -1;
                 anchorY = curY;
@@ -640,26 +683,28 @@ function configurarLimitadorScrollApp() {
                 pullingOverscroll = false;
                 pullDirection = 0;
                 currentOffset = 0;
-                vista.style.transition = 'transform 0.2s ease-out';
+                vista.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
                 vista.style.transform = 'translate3d(0, 0px, 0)';
                 return;
             }
+            if (e.cancelable) e.preventDefault();
             const maxOverscroll = obtenerMaxOverscrollPx();
-            const resistencia = (window.innerHeight || 800) * 0.28;
+            const resistencia = (window.innerHeight || 800) * 0.27;
             currentOffset = Math.tanh(rawDelta / resistencia) * maxOverscroll;
             vista.style.transition = 'none';
             vista.style.transform = `translate3d(0, ${currentOffset.toFixed(1)}px, 0)`;
         }
-    }, { passive: true });
+    }, { passive: false });
 
     const finalizarPull = () => {
         touchActivo = false;
+        gestureLockedHorizontal = false;
         if (!pullingOverscroll) return;
         pullingOverscroll = false;
         pullDirection = 0;
         currentOffset = 0;
         const vista = obtenerVistaRebote();
-        retornarAPosicionOriginal(vista, 420);
+        retornarAPosicionOriginal(vista, 760);
     };
 
     window.addEventListener('touchend', finalizarPull, { passive: true });
@@ -667,20 +712,20 @@ function configurarLimitadorScrollApp() {
 
     window.addEventListener('scroll', () => {
         const now = performance.now();
-        const curY = window.scrollY || document.documentElement.scrollTop || 0;
+        const curY = obtenerScrollY();
         const dt = Math.max(8, now - lastScrollTime);
         const dy = curY - lastScrollY;
-        scrollVelocity = dy / dt; // px por ms
+        scrollVelocity = dy / dt;
 
         const maxScroll = obtenerMaxScroll();
         const maxOverscroll = obtenerMaxOverscrollPx();
 
-        if (!pullingOverscroll && !touchActivo && maxScroll > 15) {
-            if (curY <= 0 && lastScrollY > 2 && scrollVelocity < -0.12) {
-                const impulso = Math.min(maxOverscroll * 0.42, Math.max(8, Math.abs(scrollVelocity) * 14));
+        if (!pullingOverscroll && !touchActivo && maxScroll > 12) {
+            if (curY <= 1 && lastScrollY > 2 && scrollVelocity < -0.1) {
+                const impulso = Math.min(maxOverscroll * 0.45, Math.max(10, Math.abs(scrollVelocity) * 16));
                 aplicarReboteInercial(impulso);
-            } else if (curY >= maxScroll - 1 && lastScrollY < maxScroll - 3 && scrollVelocity > 0.12) {
-                const impulso = Math.min(maxOverscroll * 0.42, Math.max(8, Math.abs(scrollVelocity) * 14));
+            } else if (curY >= maxScroll - 2 && lastScrollY < maxScroll - 4 && scrollVelocity > 0.1) {
+                const impulso = Math.min(maxOverscroll * 0.45, Math.max(10, Math.abs(scrollVelocity) * 16));
                 aplicarReboteInercial(-impulso);
             }
         }
@@ -693,24 +738,22 @@ function configurarLimitadorScrollApp() {
         if (pullingOverscroll) return;
         const vista = obtenerVistaRebote();
         if (!vista) return;
-        const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-        const maxScroll = obtenerMaxScroll();
         const maxOverscroll = obtenerMaxOverscrollPx();
 
-        const enTopeWheel = scrollY <= 1 && e.deltaY < 0;
-        const enFondoWheel = scrollY >= maxScroll - 1 && e.deltaY > 0;
+        const enTopeWheel = estaEnTope() && e.deltaY < 0;
+        const enFondoWheel = estaEnFondo(vista, false) && e.deltaY > 0;
 
         if (enTopeWheel || enFondoWheel) {
             if (bounceTimer) clearTimeout(bounceTimer);
             if (wheelResetTimer) clearTimeout(wheelResetTimer);
             wheelOffset += (-e.deltaY * 0.35);
             const clamped = Math.tanh(wheelOffset / (maxOverscroll * 1.3)) * maxOverscroll;
-            vista.style.transition = 'transform 0.08s ease-out';
+            vista.style.transition = 'transform 0.1s ease-out';
             vista.style.transform = `translate3d(0, ${clamped.toFixed(1)}px, 0)`;
             wheelResetTimer = setTimeout(() => {
                 wheelOffset = 0;
-                retornarAPosicionOriginal(vista, 380);
-            }, 130);
+                retornarAPosicionOriginal(vista, 740);
+            }, 140);
         }
     }, { passive: true });
 }

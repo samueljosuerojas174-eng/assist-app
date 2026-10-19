@@ -14,7 +14,11 @@
     
     <!-- SCRIPT INLINE PARA EVITAR PANTALLAZO BLANCO EN IPHONE DESDE EL FRAME 0 -->
     <script>
-        const tMode = localStorage.getItem('app_theme_mode') || 'dark';
+        let tMode = localStorage.getItem('app_theme_mode') || 'dark';
+        if (tMode === 'glass') {
+            tMode = 'dark';
+            localStorage.setItem('app_theme_mode', 'dark');
+        }
         const tFont = localStorage.getItem('app_font_family') || 'outfit';
         let tColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
         if (tColor.toUpperCase() === '#000000') {
@@ -22,7 +26,7 @@
             localStorage.setItem('app_theme_color', '#FFFFFF');
         }
         const accentInit = (tMode === 'light' && tColor.toUpperCase() === '#FFFFFF') ? '#111116' : tColor;
-        const bgInit = (tMode === 'light') ? '#F2F4F8' : '#000000';
+        const bgInit = (tMode === 'light') ? '#EEF0F6' : '#000000';
         document.documentElement.setAttribute('data-theme', tMode);
         document.documentElement.setAttribute('data-font', tFont);
         document.documentElement.style.setProperty('--accent', accentInit);
@@ -45,7 +49,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Inter:wght@400..800&family=JetBrains+Mono:wght@400..800&family=Outfit:wght@400..800&family=Plus+Jakarta+Sans:wght@500..800&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..800;1,8..60,400..700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=20261019c">
 </head>
 <body data-theme="dark">
     <script>document.body.setAttribute('data-theme', tMode); document.body.setAttribute('data-font', tFont); document.body.style.backgroundColor = bgInit;</script>
@@ -178,30 +182,30 @@
         <div id="tab-inicio" class="vista-activa">
             
             <div class="header-title">
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 11px;">
                     <div>
                         <h1>A$$IST</h1>
                         <p id="header-greeting-sub">Control de Capital</p>
                     </div>
-                    <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">🎓 Tutorial</button>
-                </div>
-                <!-- Acciones de Cabecera: Calculadora Rápida tipo iPhone + Avatar/Logo -->
-                <div class="header-right-actions">
-                    <button id="btn-calc-rapida-header" type="button" class="btn-calc-header-mini" onclick="abrirCalculadoraRapida()" title="Calculadora rápida" aria-label="Abrir Calculadora Rápida">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="2" width="16" height="20" rx="3"></rect>
-                            <rect x="7.5" y="5" width="9" height="3.5" rx="1"></rect>
-                            <circle cx="8.5" cy="12" r="0.8" fill="currentColor"></circle>
-                            <circle cx="12" cy="12" r="0.8" fill="currentColor"></circle>
-                            <circle cx="15.5" cy="12" r="0.8" fill="currentColor"></circle>
-                            <circle cx="8.5" cy="15.2" r="0.8" fill="currentColor"></circle>
-                            <circle cx="12" cy="15.2" r="0.8" fill="currentColor"></circle>
-                            <circle cx="15.5" cy="15.2" r="0.8" fill="currentColor"></circle>
-                            <circle cx="8.5" cy="18.4" r="0.8" fill="currentColor"></circle>
-                            <circle cx="12" cy="18.4" r="0.8" fill="currentColor"></circle>
-                            <circle cx="15.5" cy="18.4" r="0.8" fill="currentColor"></circle>
+                    <button id="btn-calc-rapida-header" type="button" class="btn-calc-header-bw" onclick="abrirCalculadoraRapida()" title="Calculadora rápida" aria-label="Abrir Calculadora Rápida">
+                        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="3.5"></rect>
+                            <rect x="7.5" y="5.2" width="9" height="3.8" rx="1"></rect>
+                            <circle cx="8.5" cy="12.5" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="12" cy="12.5" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="15.5" cy="12.5" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="8.5" cy="15.6" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="12" cy="15.6" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="15.5" cy="15.6" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="8.5" cy="18.6" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="12" cy="18.6" r="1" fill="currentColor" stroke="none"></circle>
+                            <circle cx="15.5" cy="18.6" r="1" fill="currentColor" stroke="none"></circle>
                         </svg>
                     </button>
+                    <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">🎓 Tutorial</button>
+                </div>
+                <!-- Avatar/Logo de Perfil -->
+                <div class="header-right-actions">
                     <button id="btn-avatar-header" class="avatar-header-btn" onclick="abrirModal('modal-perfil')" aria-label="Abrir Mi Perfil">
                         <img src="logo.jpg" alt="Perfil" id="header-user-avatar" class="app-logo avatar-header-img">
                         <span class="avatar-online-dot" id="header-avatar-dot"></span>
@@ -606,9 +610,8 @@
             <section class="gestion-seccion" style="padding: 15px;">
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
                 <div class="theme-mode-selector" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
-                    <button id="btn-modo-dark" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('dark')">🌙 Oscuro</button>
-                    <button id="btn-modo-glass" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('glass')">✨ Liquid Glass</button>
-                    <button id="btn-modo-light" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('light')">☀️ Claro</button>
+                    <button id="btn-modo-dark" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('dark')">🌙 Oscuro</button>
+                    <button id="btn-modo-light" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('light')">☀️ Claro</button>
                 </div>
                 
                 <h3 class="section-subtitle" style="text-align: center;">Color de Acento</h3>
@@ -1391,12 +1394,12 @@
     <!-- LIBRERÍAS EXTERNAS Y ARQUITECTURA MODULAR DE A$$IST V4.0 (ORDEN ESTRICTO DE CARGA) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="estado-nube.js"></script>
-    <script src="seguridad-modales.js"></script>
-    <script src="tasas-calculadora.js"></script>
-    <script src="cuentas-movimientos.js"></script>
-    <script src="metas-agenda.js"></script>
-    <script src="askbot-guia.js"></script>
-    <script src="gestion-arranque.js"></script>
+    <script src="estado-nube.js?v=20261019c"></script>
+    <script src="seguridad-modales.js?v=20261019c"></script>
+    <script src="tasas-calculadora.js?v=20261019c"></script>
+    <script src="cuentas-movimientos.js?v=20261019c"></script>
+    <script src="metas-agenda.js?v=20261019c"></script>
+    <script src="askbot-guia.js?v=20261019c"></script>
+    <script src="gestion-arranque.js?v=20261019c"></script>
 </body>
 </html>
