@@ -194,7 +194,7 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
     else metas[metaAbonoActualIndex].acumulado -= montoUSD;
 
     if (metas[metaAbonoActualIndex].acumulado >= metas[metaAbonoActualIndex].objetivo) {
-        alert(`¡Felicidades! 🎉 Has completado tu meta: ${metas[metaAbonoActualIndex].nombre} 🥳\n\nEl objetivo ha sido alcanzado y se eliminará de las metas activas. (El dinero sigue descontado de tu cuenta principal, listo para usarse).`);
+        alert(`¡Felicidades! Has completado tu meta: ${metas[metaAbonoActualIndex].nombre}\n\nEl objetivo ha sido alcanzado y se eliminará de las metas activas. (El dinero sigue descontado de tu cuenta principal, listo para usarse).`);
         metas.splice(metaAbonoActualIndex, 1);
         guardarYActualizarGestion();
         cerrarModal('modal-accion-meta');
@@ -214,7 +214,7 @@ function eliminarMeta(index) {
     const montoAcumulado = Number(meta.acumulado) || 0;
 
     const mensaje = montoAcumulado > 0
-        ? `¿Seguro que deseas eliminar la meta "${meta.nombre}"?\n\n💰 Los $${montoAcumulado.toFixed(2)} ahorrados regresarán automáticamente a tu cuenta y se registrarán en el historial.`
+        ? `¿Seguro que deseas eliminar la meta "${meta.nombre}"?\n\nLos $${montoAcumulado.toFixed(2)} ahorrados regresarán automáticamente a tu cuenta y se registrarán en el historial.`
         : `¿Seguro que deseas eliminar la meta "${meta.nombre}"?`;
 
     if (!confirm(mensaje)) return;
@@ -312,15 +312,15 @@ function calcularDiasRestantesAgenda(fechaIso, hoyMsPrecalculado = null) {
 }
 
 function obtenerInfoEstadoAgenda(item, diasPrecalculados = null) {
-    if (item.estado === 'pagado') return { claseCard: 'pagado', claseBadge: 'pagado', textoBadge: '✅ Pagado', dias: 9999 };
+    if (item.estado === 'pagado') return { claseCard: 'pagado', claseBadge: 'pagado', textoBadge: '✓ Pagado', dias: 9999 };
     const dias = diasPrecalculados !== null ? diasPrecalculados : calcularDiasRestantesAgenda(item.fecha);
     if (dias < 0) {
         const abs = Math.abs(dias);
-        return { claseCard: 'vencido', claseBadge: 'vencido', textoBadge: abs === 1 ? '🚨 Venció ayer' : `🚨 Vencido hace ${abs} días`, dias };
+        return { claseCard: 'vencido', claseBadge: 'vencido', textoBadge: abs === 1 ? 'Venció ayer' : `Vencido hace ${abs} días`, dias };
     }
-    if (dias === 0) return { claseCard: 'hoy', claseBadge: 'hoy', textoBadge: '⚡ Vence HOY', dias };
-    if (dias <= 3) return { claseCard: 'proximo', claseBadge: 'proximo', textoBadge: dias === 1 ? '⏳ Vence mañana' : `⏳ En ${dias} días`, dias };
-    return { claseCard: '', claseBadge: 'normal', textoBadge: `🗓️ En ${dias} días`, dias };
+    if (dias === 0) return { claseCard: 'hoy', claseBadge: 'hoy', textoBadge: 'Vence HOY', dias };
+    if (dias <= 3) return { claseCard: 'proximo', claseBadge: 'proximo', textoBadge: dias === 1 ? 'Vence mañana' : `En ${dias} días`, dias };
+    return { claseCard: '', claseBadge: 'normal', textoBadge: `En ${dias} días`, dias };
 }
 
 function avanzarUnMesFechaISO(fechaIso) {
@@ -648,7 +648,7 @@ function renderizarCalendarioAgenda(hoyMsPrecalculado = null) {
     if (filtroBar && diaLabel) {
         if (agendaDiaSeleccionado) {
             filtroBar.classList.remove('oculto'); filtroBar.style.display = 'flex';
-            diaLabel.innerText = `📅 ${obtenerEtiquetaDiaCompleta(agendaDiaSeleccionado)}`;
+            diaLabel.innerText = obtenerEtiquetaDiaCompleta(agendaDiaSeleccionado);
         } else {
             filtroBar.classList.add('oculto'); filtroBar.style.display = 'none';
         }
@@ -661,12 +661,15 @@ function construirTarjetaItemAgendaHTML(item, diasPrecalculados = null) {
     const montoPrincipal = formatearMontoCensurado(formatearMontoMonedaAgenda(item.monto, item.moneda), false);
     const eqUSD = convertirMontoAgendaAUSD(item.monto, item.moneda);
     const textoEq = item.moneda !== 'USD' ? `<span class="agenda-item-eq">≈ ${formatearMontoCensurado('$' + eqUSD.toFixed(2), false)}</span>` : '';
-    const etiquetaFrec = item.frecuencia === 'mensual' ? '🔄 Mensual' : '📌 Único';
+    const etiquetaFrec = item.frecuencia === 'mensual' ? 'Mensual' : 'Único';
     const fechaLegible = obtenerEtiquetaDiaCompleta(item.fecha);
 
     const btnAccionPrincipal = item.estado === 'pagado'
-        ? `<button type="button" class="btn-secundario" style="width:auto; padding:6px 12px; font-size:11.5px; border-radius:11px;" onclick="reactivarCompromisoAgenda('${item.id}')">↩️ Revertir</button>`
-        : `<button type="button" class="btn-pagar-agenda-item" onclick="abrirModalPagarAgenda('${item.id}')">💳 Pagar</button>`;
+        ? `<button type="button" class="btn-secundario" style="width:auto; padding:6px 12px; font-size:11.5px; border-radius:11px;" onclick="reactivarCompromisoAgenda('${item.id}')">↩ Revertir</button>`
+        : `<button type="button" class="btn-pagar-agenda-item" onclick="abrirModalPagarAgenda('${item.id}')">Pagar</button>`;
+
+    const svgEdit = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`;
+    const svgTrash = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 
     return `
         <div class="agenda-item-card ${infoEstado.claseCard}">
@@ -688,8 +691,8 @@ function construirTarjetaItemAgendaHTML(item, diasPrecalculados = null) {
             <div class="agenda-item-bottom">
                 <span class="agenda-badge-status ${infoEstado.claseBadge}">${infoEstado.textoBadge}</span>
                 <div class="agenda-item-actions">
-                    <button type="button" class="btn-editar" style="width:30px; height:30px; border-radius:9px;" onclick="abrirModalNuevaAgenda('${item.id}')" title="Editar">✏️</button>
-                    <button type="button" class="btn-eliminar" style="width:30px; height:30px; border-radius:9px;" onclick="eliminarCompromisoAgenda('${item.id}')" title="Eliminar">🗑️</button>
+                    <button type="button" class="btn-editar" style="width:30px; height:30px; border-radius:9px;" onclick="abrirModalNuevaAgenda('${item.id}')" title="Editar">${svgEdit}</button>
+                    <button type="button" class="btn-eliminar" style="width:30px; height:30px; border-radius:9px;" onclick="eliminarCompromisoAgenda('${item.id}')" title="Eliminar">${svgTrash}</button>
                     ${btnAccionPrincipal}
                 </div>
             </div>
@@ -740,10 +743,10 @@ function actualizarRecordatoriosAgenda(urgentesPrecalculados = null, hoyMsPrecal
             const primero = primeroObj.item || primeroObj;
             const dias = primeroObj.dias !== undefined ? primeroObj.dias : calcularDiasRestantesAgenda(primero.fecha, baseHoyMs);
             const esCritico = dias <= 0;
-            let tagTexto = '⏳ PRÓXIMO PAGO AGENDADO';
-            if (dias < 0) tagTexto = '🚨 PAGO VENCIDO EN AGENDA';
-            else if (dias === 0) tagTexto = '⚡ PAGO AGENDADO PARA HOY';
-            else if (dias === 1) tagTexto = '⏳ VENCE MAÑANA';
+            let tagTexto = 'PRÓXIMO PAGO AGENDADO';
+            if (dias < 0) tagTexto = 'PAGO VENCIDO EN AGENDA';
+            else if (dias === 0) tagTexto = 'PAGO AGENDADO PARA HOY';
+            else if (dias === 1) tagTexto = 'VENCE MAÑANA';
 
             const montoStr = formatearMontoCensurado(formatearMontoMonedaAgenda(primero.monto, primero.moneda), false);
             const extraConteo = urgentes.length > 1 ? ` (+${urgentes.length - 1} más)` : '';
@@ -830,7 +833,7 @@ function renderizarAgenda() {
             statProxTexto.innerText = `Próx. en ${dProx} días`;
             statProxTexto.style.color = 'var(--text-secondary)';
         } else {
-            statProxTexto.innerText = 'Al día ✨';
+            statProxTexto.innerText = 'Al día';
             statProxTexto.style.color = '#32D74B';
         }
     }
@@ -876,10 +879,10 @@ function renderizarAgenda() {
     }
 
     let htmlPend = '';
-    if (grupoVencidos.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF453A;">🚨 Vencidos (${grupoVencidos.length})</div>` + grupoVencidos.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
-    if (grupoHoy.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF9F0A;">⚡ Para Hoy (${grupoHoy.length})</div>` + grupoHoy.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
-    if (grupoProximos3.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FFD60A;">⏳ Próximos a Vencer (${grupoProximos3.length})</div>` + grupoProximos3.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
-    if (grupoFuturos.length > 0) htmlPend += `<div class="agenda-group-title">🗓️ Más Adelante (${grupoFuturos.length})</div>` + grupoFuturos.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
+    if (grupoVencidos.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF453A;">Vencidos (${grupoVencidos.length})</div>` + grupoVencidos.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
+    if (grupoHoy.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FF9F0A;">Para Hoy (${grupoHoy.length})</div>` + grupoHoy.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
+    if (grupoProximos3.length > 0) htmlPend += `<div class="agenda-group-title" style="color:#FFD60A;">Próximos a Vencer (${grupoProximos3.length})</div>` + grupoProximos3.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
+    if (grupoFuturos.length > 0) htmlPend += `<div class="agenda-group-title">Más Adelante (${grupoFuturos.length})</div>` + grupoFuturos.map(e => construirTarjetaItemAgendaHTML(e.item, e.dias)).join('');
     contenedorLista.innerHTML = htmlPend;
 }
 
@@ -1061,7 +1064,7 @@ function confirmarPagoAgenda() {
     const mesesArr = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const fechaFormateada = `${dateObj.getDate()} ${mesesArr[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
-    let notaFinal = notaUsuario ? `📅 ${notaUsuario}` : `📅 Pago Agenda: ${comp.nota}`;
+    let notaFinal = notaUsuario ? notaUsuario : `Pago Agenda: ${comp.nota}`;
     if (datos.comisionBs > 0) notaFinal += ` (Comisión: Bs ${datos.comisionBs.toFixed(2)})`;
     if (datos.detalleTasaUsdt) notaFinal += ` (${datos.detalleTasaUsdt})`;
 

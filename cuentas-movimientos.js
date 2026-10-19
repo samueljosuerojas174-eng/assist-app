@@ -622,8 +622,8 @@ function actualizarListaTransacciones() {
     });
 
     if (subHist) {
-        if (fechaFiltro) subHist.innerText = `📅 Día seleccionado: ${obtenerEtiquetaDiaCompleta(fechaFiltro)} (${transCuenta.length})`;
-        else if (query) subHist.innerText = `🔍 Resultados encontrados: ${transCuenta.length}`;
+        if (fechaFiltro) subHist.innerText = `Día seleccionado: ${obtenerEtiquetaDiaCompleta(fechaFiltro)} (${transCuenta.length})`;
+        else if (query) subHist.innerText = `Resultados encontrados: ${transCuenta.length}`;
         else subHist.innerText = `Total de la cuenta: ${transCuenta.length} movimientos`;
     }
 
@@ -652,7 +652,7 @@ function actualizarListaTransacciones() {
                 const cantMovsMes = conteoPorMes[claveMes] || 0;
                 htmlAcumulado += `
                     <li class="hist-mes-header">
-                        <span>🗓️ ${obtenerEtiquetaMesAnio(iso)}</span>
+                        <span>${obtenerEtiquetaMesAnio(iso)}</span>
                         <span style="opacity: 0.75; font-size: 10.5px;">${cantMovsMes} ${cantMovsMes === 1 ? 'movimiento' : 'movimientos'}</span>
                     </li>`;
             }
@@ -667,7 +667,7 @@ function actualizarListaTransacciones() {
             const animDelay = Math.min(index * 0.03, 0.35);
             const colorCat = obtenerColorCategoria(t.categoria);
             const montoTexto = formatearMontoCensurado(`${signo}$${(Number(t.montoUSD) || 0).toFixed(2)}`, false);
-            const htmlNota = t.nota ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top:3px;">📝 ${t.nota}</div>` : '';
+            const htmlNota = t.nota ? `<div style="font-size: 11px; color: var(--text-secondary); margin-top:3px;">${t.nota}</div>` : '';
             
             htmlAcumulado += `
                 <li class="transaccion-item swipe-container" style="animation: slideInRight 0.3s var(--ios-spring) ${animDelay}s both;">
@@ -684,7 +684,7 @@ function actualizarListaTransacciones() {
                             <span class="monto-val ${claseColor}">${montoTexto}</span>
                         </div>
                     </div>
-                    <div class="swipe-action" onclick="animarYQuitarElementoDOM(this.closest('li'), () => eliminarTransaccion(${t.id}))">🗑️</div>
+                    <div class="swipe-action" onclick="animarYQuitarElementoDOM(this.closest('li'), () => eliminarTransaccion(${t.id}))"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></div>
                 </li>`;
         });
         lista.innerHTML = htmlAcumulado;
@@ -779,6 +779,7 @@ function renderizarGrafico(transFiltered) {
     }
 
     if (chartInstancia) chartInstancia.destroy(); 
+    if (typeof Chart === 'undefined') return;
     const modoActual = document.documentElement.getAttribute('data-theme') || 'dark';
     const colorVacio = modoActual === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
 

@@ -149,7 +149,7 @@ function renderizarCalendarioCalc() {
         if (futuraIso) {
             btnIrManana.classList.remove('oculto');
             btnIrManana.style.display = 'flex';
-            btnIrManana.innerText = `📅→ ${formatFechaCorta(futuraIso)}`;
+            btnIrManana.innerText = `Ir a ${formatFechaCorta(futuraIso)} →`;
         } else {
             btnIrManana.classList.add('oculto');
             btnIrManana.style.display = 'none';
@@ -280,7 +280,7 @@ function actualizarInfoCalculadora(modo) {
 
     if (fechaHistoricaCalcSeleccionada) {
         const fechaMostrada = formatFechaCorta(fechaHistoricaCalcSeleccionada);
-        if (badge) { badge.innerText = `📅 Histórica: ${fechaMostrada}`; badge.classList.add('fecha-futura-activa'); }
+        if (badge) { badge.innerText = `Histórica: ${fechaMostrada}`; badge.classList.add('fecha-futura-activa'); }
         if (lblEstado) lblEstado.innerText = `Variación del ${fechaMostrada}:`;
         if (banner) {
             banner.classList.remove('oculto');
@@ -299,7 +299,7 @@ function actualizarInfoCalculadora(modo) {
     if (badge) {
         const fRef = data.fecha || getLocalYYYYMMDD();
         const fCorta = formatFechaCorta(fRef);
-        badge.innerText = viendoFutura ? `⏳ Fecha Valor: ${fCorta}` : fCorta;
+        badge.innerText = viendoFutura ? `Fecha Valor: ${fCorta}` : fCorta;
         badge.classList.toggle('fecha-futura-activa', Boolean(viendoFutura));
     }
     if (lblEstado) {
@@ -319,10 +319,10 @@ function actualizarInfoCalculadora(modo) {
             btnSwitchCalc.classList.remove('oculto'); btnSwitchCalc.style.display = 'flex';
             btnSwitchCalc.classList.toggle('destacado-ambar', Boolean(usandoFechaPosterior));
         }
-        if (icoSwitchCalc) icoSwitchCalc.innerText = usandoFechaPosterior ? '↩' : '📅→';
+        if (icoSwitchCalc) icoSwitchCalc.innerText = usandoFechaPosterior ? '↩' : '→';
         if (btnSwitchHome) {
             btnSwitchHome.classList.remove('oculto'); btnSwitchHome.style.display = 'inline-flex';
-            btnSwitchHome.innerText = usandoFechaPosterior ? '↩ Hoy' : '📅→';
+            btnSwitchHome.innerText = usandoFechaPosterior ? '↩ Hoy' : 'Mañana →';
         }
     } else {
         if (btnSwitchCalc) { btnSwitchCalc.classList.add('oculto'); btnSwitchCalc.style.display = 'none'; btnSwitchCalc.classList.remove('destacado-ambar'); }
@@ -375,17 +375,17 @@ function setTasaModo(modo) {
         if (histObj && histObj.valor > 0) valorUsar = histObj.valor;
     }
 
-    if(modo === 'BCV') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇺🇸 Dólares (USD)'; symDivisa.innerText = '$'; }
+    if(modo === 'BCV') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = 'Dólares (USD)'; symDivisa.innerText = '$'; }
     if(modo === 'USDT') {
         const etqModo = usdtP2PData.modoPrecio === 'sell' ? 'Venta P2P' : 'Compra P2P';
         inputTasa.value = valorUsar.toFixed(2);
         inputTasa.disabled = true;
-        lblDivisa.innerText = `🪙 Tether (USDT · ${etqModo})`;
+        lblDivisa.innerText = `Tether (USDT · ${etqModo})`;
         symDivisa.innerText = '₮';
         actualizarPanelUsdtP2PUI();
     }
-    if(modo === 'EUR') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = '🇪🇺 Euros (EUR)'; symDivisa.innerText = '€'; }
-    if(modo === 'Custom') { inputTasa.disabled = false; inputTasa.focus(); if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00"; lblDivisa.innerText = '💱 Divisa Base'; symDivisa.innerText = '$'; }
+    if(modo === 'EUR') { inputTasa.value = valorUsar.toFixed(2); inputTasa.disabled = true; lblDivisa.innerText = 'Euros (EUR)'; symDivisa.innerText = '€'; }
+    if(modo === 'Custom') { inputTasa.disabled = false; inputTasa.focus(); if(parseFloat(inputTasa.value) === 0) inputTasa.value = "1.00"; lblDivisa.innerText = 'Divisa Base'; symDivisa.innerText = '$'; }
     actualizarInfoCalculadora(modo);
     recalcularDesdeTasa();
     if (cambioReal) animarPulsoCalculadora();
@@ -683,8 +683,9 @@ function aplicarTasasEnInterfaz() {
     if (elFechaTasas) {
         const fechaRef = tasasData.BCV.fecha || getLocalYYYYMMDD();
         const f = parsearFechaSeguraLocal(fechaRef);
-        const prefijo = (usandoFechaPosterior && hayFechaPosteriorBCV) ? '⏳ Fecha Valor:' : '🗓️ Vigente:';
-        elFechaTasas.innerText = `${prefijo} ${f.toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short' })}`;
+        const prefijo = (usandoFechaPosterior && hayFechaPosteriorBCV) ? 'Fecha Valor:' : 'Vigente:';
+        const sufijoOffline = !navigator.onLine ? ' · Guardada' : '';
+        elFechaTasas.innerText = `${prefijo} ${f.toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric', month: 'short' })}${sufijoOffline}`;
     }
 
     actualizarBrechaCambiaria();
@@ -710,6 +711,20 @@ function aplicarTasasEnInterfaz() {
     recalcularDesdeTasa();
     if (typeof renderizarSliderCuentas === 'function') renderizarSliderCuentas();
     if (typeof renderizarAgenda === 'function') renderizarAgenda();
+
+    // Persistir snapshot diario de tasas para que la app y la calculadora funcionen 100% sin Wi-Fi
+    if (tasaBCV > 1 || tasaParalelo > 1) {
+        try {
+            localStorage.setItem('assist_tasas_dia_snapshot_v2', JSON.stringify({
+                savedDate: getLocalYYYYMMDD(),
+                savedAt: new Date().toISOString(),
+                tasasVigentesHoy,
+                tasasFechaPosterior,
+                hayFechaPosteriorBCV,
+                usdtP2PData
+            }));
+        } catch (e) {}
+    }
 }
 
 async function fetchJsonConTimeout(url, timeoutMs = 6500) {
@@ -728,6 +743,40 @@ async function fetchJsonConTimeout(url, timeoutMs = 6500) {
 
 function cargarTasasCacheLocalInmediato() {
     const hoyIso = getLocalYYYYMMDD();
+
+    // 1. Intentar restaurar el snapshot completo de tasas guardadas del día (o última sesión con internet)
+    try {
+        const rawSnap = localStorage.getItem('assist_tasas_dia_snapshot_v2');
+        if (rawSnap) {
+            const snap = JSON.parse(rawSnap);
+            if (snap && snap.tasasVigentesHoy && (Number(snap.tasasVigentesHoy.BCV?.valor) > 1 || Number(snap.tasasVigentesHoy.USDT?.valor) > 1)) {
+                if (snap.usdtP2PData && Number(snap.usdtP2PData.buy) > 1) {
+                    const modoActual = localStorage.getItem('assist_usdt_modo_precio') || snap.usdtP2PData.modoPrecio || 'buy';
+                    usdtP2PData = { ...snap.usdtP2PData, modoPrecio: modoActual };
+                }
+                tasasVigentesHoy = {
+                    BCV: snap.tasasVigentesHoy.BCV || tasasVigentesHoy.BCV,
+                    EUR: snap.tasasVigentesHoy.EUR || tasasVigentesHoy.EUR,
+                    USDT: snap.tasasVigentesHoy.USDT || tasasVigentesHoy.USDT
+                };
+                if (snap.tasasFechaPosterior && snap.tasasFechaPosterior.BCV && snap.tasasFechaPosterior.BCV.fecha > hoyIso) {
+                    tasasFechaPosterior = snap.tasasFechaPosterior;
+                    hayFechaPosteriorBCV = true;
+                } else if (snap.tasasFechaPosterior && snap.tasasFechaPosterior.BCV && snap.tasasFechaPosterior.BCV.fecha === hoyIso) {
+                    // Si la fecha valor guardada ayer ya es hoy, pasa automáticamente a ser la tasa vigente de hoy
+                    tasasVigentesHoy.BCV = snap.tasasFechaPosterior.BCV;
+                    if (snap.tasasFechaPosterior.EUR) tasasVigentesHoy.EUR = snap.tasasFechaPosterior.EUR;
+                    tasasFechaPosterior = { BCV: null, EUR: null, USDT: null };
+                    hayFechaPosteriorBCV = false;
+                }
+                const p2pSnap = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
+                if (p2pSnap > 0) tasasVigentesHoy.USDT.valor = p2pSnap;
+                aplicarTasasEnInterfaz();
+                return true;
+            }
+        }
+    } catch (e) {}
+
     const p2pCached = usdtP2PData.modoPrecio === 'sell' ? Number(usdtP2PData.sell) : Number(usdtP2PData.buy);
 
     if (tasasHistoricas.BCV.length > 0 || tasasHistoricas.USDT.length > 0 || p2pCached > 0) {
@@ -763,8 +812,17 @@ function cargarTasasCacheLocalInmediato() {
 }
 
 async function obtenerTasas() {
-    // 1. Mostrar de inmediato cualquier historial en caché para no dejar "Conectando..."
-    cargarTasasCacheLocalInmediato();
+    // 1. Mostrar de inmediato cualquier tasa guardada en caché para que funcione al instante (con o sin internet)
+    const teniaCacheInicial = cargarTasasCacheLocalInmediato();
+    if (!navigator.onLine) {
+        if (!teniaCacheInicial) {
+            const elFecha = document.getElementById('fecha-tasas');
+            const badgeCalc = document.getElementById('calc-fecha-badge');
+            if (elFecha) elFecha.innerText = `Sin conexión (Modo Offline)`;
+            if (badgeCalc) badgeCalc.innerText = `Modo Offline`;
+        }
+        return;
+    }
 
     try {
         // Prioridad absoluta para USDT (Compra/Venta P2P) y verificación BCV en vivo desde usdt.com.ve
@@ -870,8 +928,8 @@ async function obtenerTasas() {
         const elFecha = document.getElementById('fecha-tasas');
         const badgeCalc = document.getElementById('calc-fecha-badge');
         if (!teniaCache) {
-            if (elFecha) elFecha.innerText = `⚠️ Sin conexión (Modo Offline)`;
-            if (badgeCalc) badgeCalc.innerText = `⚠️ Modo Offline`;
+            if (elFecha) elFecha.innerText = `Sin conexión (Modo Offline)`;
+            if (badgeCalc) badgeCalc.innerText = `Modo Offline`;
         }
     }
 }

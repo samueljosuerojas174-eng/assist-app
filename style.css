@@ -66,20 +66,21 @@ html[data-font="outfit"], body[data-font="outfit"] {
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--app-font); font-variant-numeric: lining-nums; -webkit-tap-highlight-color: transparent; }
 
 html {
-    overscroll-behavior: none !important;
-    overscroll-behavior-y: none !important;
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
     height: 100%;
     min-height: 100dvh;
 }
 
 body {
     color: var(--text-primary);
-    overscroll-behavior: none !important;
-    overscroll-behavior-y: none !important;
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
     min-height: 100%;
     min-height: 100dvh;
     -webkit-font-smoothing: antialiased;
     overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Libera el containing block en Safari iOS para que position: fixed cubra hasta el borde físico inferior */
@@ -2740,7 +2741,7 @@ body.askbot-kb-open .askbot-input-bar {
     left: 0;
     right: 0;
     top: 100%;
-    height: 80px;
+    height: 220px;
     background: inherit;
     pointer-events: none;
 }
@@ -3594,28 +3595,30 @@ body[data-theme="light"]::before {
     width: 42px;
     height: 42px;
     border-radius: 13px;
-    background: #FFFFFF;
-    color: #000000;
-    border: 1.5px solid rgba(255, 255, 255, 0.9);
+    background: linear-gradient(165deg, #16161C 0%, #050507 100%);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-top: 1px solid rgba(255, 255, 255, 0.42);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.55), inset 0 1px 0 #FFFFFF;
-    transition: transform 0.26s var(--ios-bounce), opacity 0.2s ease;
+    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: transform 0.26s var(--ios-bounce), opacity 0.2s ease, border-color 0.2s ease;
 }
 .btn-calc-header-bw:active {
     transform: scale(0.88);
     opacity: 0.86;
 }
 
-/* En Modo Claro se invierte: Fondo Negro Puro e Icono Blanco */
+/* En Modo Claro se invierte: Fondo Blanco con Borde Metálico Sutil e Icono Negro */
 [data-theme="light"] .btn-calc-header-bw {
-    background: #0A0A0E !important;
-    color: #FFFFFF !important;
-    border: 1.5px solid rgba(15, 23, 42, 0.85) !important;
-    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F4F6FA 100%) !important;
+    color: #0A0A0E !important;
+    border: 1px solid rgba(15, 23, 42, 0.16) !important;
+    border-top: 1px solid #FFFFFF !important;
+    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.10), inset 0 1px 0 #FFFFFF !important;
 }
 
 /* ================= CALENDARIO DE CONVERSIÓN (BLOQUEO DE DÍAS FUTUROS) ================= */

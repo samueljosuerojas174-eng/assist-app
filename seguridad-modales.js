@@ -165,7 +165,10 @@ function cambiarColorAcento(color, omitirSync = false) {
     const accentEfectivo = (modoActual === 'light' && colorSeguro.toUpperCase() === '#FFFFFF') ? '#111116' : colorSeguro;
     document.documentElement.style.setProperty('--accent', accentEfectivo);
     localStorage.setItem('app_theme_color', colorSeguro);
-    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    if (!omitirSync) {
+        localStorage.setItem('assist_pending_sync', 'true');
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    }
 }
 
 function cambiarModo(modo, omitirSync = false) {
@@ -189,7 +192,10 @@ function cambiarModo(modo, omitirSync = false) {
     if (btnDark) btnDark.classList.toggle('modo-activo', modoEfectivo === 'dark');
     if (btnLight) btnLight.classList.toggle('modo-activo', modoEfectivo === 'light');
 
-    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    if (!omitirSync) {
+        localStorage.setItem('assist_pending_sync', 'true');
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    }
 }
 
 function cambiarFuenteApp(fontKey, omitirAnim = false, omitirSync = false) {
@@ -213,7 +219,10 @@ function cambiarFuenteApp(fontKey, omitirAnim = false, omitirSync = false) {
             }, 140);
         }
     }
-    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    if (!omitirSync) {
+        localStorage.setItem('assist_pending_sync', 'true');
+        if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
+    }
 }
 
 function animarYQuitarElementoDOM(elemento, callbackFinal) {
@@ -349,7 +358,7 @@ function configurarPIN() {
     }
 
     if (badge) {
-        if (appPin) { badge.innerText = 'Activo 🔒'; badge.className = 'cloud-badge conectado'; }
+        if (appPin) { badge.innerText = 'Activo'; badge.className = 'cloud-badge conectado'; }
         else { badge.innerText = 'Inactivo'; badge.className = 'cloud-badge desconectado'; }
     }
     if (btnDesactivar) {
@@ -371,13 +380,13 @@ function mostrarMensajeConfigPIN(texto, esExito = false) {
 function guardarConfiguracionPIN() {
     const inPin = document.getElementById('in-new-pin');
     const nuevoPin = inPin ? inPin.value.replace(/\D/g, '').trim() : '';
-    if (nuevoPin.length !== 4) return mostrarMensajeConfigPIN('⚠️ El PIN debe tener exactamente 4 dígitos numéricos.');
+    if (nuevoPin.length !== 4) return mostrarMensajeConfigPIN('El PIN debe tener exactamente 4 dígitos numéricos.');
 
     const nuevasPreguntas = [];
     for (let i = 1; i <= 3; i++) {
         const q = (document.getElementById(`in-pin-q${i}`)?.value || '').trim();
         const a = (document.getElementById(`in-pin-a${i}`)?.value || '').trim();
-        if (!q || !a) return mostrarMensajeConfigPIN(`⚠️ Completa la Pregunta ${i} y su respuesta corta para proteger tu PIN.`);
+        if (!q || !a) return mostrarMensajeConfigPIN(`Completa la Pregunta ${i} y su respuesta corta para proteger tu PIN.`);
         nuevasPreguntas.push({ q, a });
     }
 
@@ -385,11 +394,12 @@ function guardarConfiguracionPIN() {
     pinQuestions = nuevasPreguntas;
     localStorage.setItem('app_pin', appPin);
     localStorage.setItem('assist_pin_questions', JSON.stringify(pinQuestions));
+    localStorage.setItem('assist_pending_sync', 'true');
 
     reiniciarInactividad();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 
-    mostrarMensajeConfigPIN('✅ ¡PIN y preguntas de seguridad guardados!', true);
+    mostrarMensajeConfigPIN('PIN y preguntas de seguridad guardados.', true);
     setTimeout(() => cerrarModal('modal-config-pin'), 550);
 }
 
@@ -397,6 +407,7 @@ function desactivarPINActual() {
     if (!confirm('¿Deseas desactivar el bloqueo por PIN en este dispositivo?')) return;
     localStorage.removeItem('app_pin');
     appPin = null;
+    localStorage.setItem('assist_pending_sync', 'true');
     clearTimeout(timeoutBloqueo);
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
     cerrarModal('modal-config-pin');
@@ -472,14 +483,14 @@ function generarTextoPistaSutil(respuestaRaw, nivel = 1) {
 
     if (nivel <= 1) {
         const mascara = primera + ' ' + Array(Math.max(1, len - 1)).fill('_').join(' ');
-        return `💡 Pista 1: Tiene ${len} letras y empieza con "${primera}" (${mascara})`;
+        return `Pista 1: Tiene ${len} letras y empieza con "${primera}" (${mascara})`;
     } else {
         const revelada = limpia.split('').map((ch, idx) => {
             if (idx === 0 || idx === len - 1 || ch === ' ') return ch;
             if (/[aeiouáéíóúAEIOUÁÉÍÓÚ]/.test(ch)) return ch.toLowerCase();
             return '_';
         }).join(' ');
-        return `💡 Pista 2: Empieza con "${primera}", termina en "${ultima}" → ${revelada}`;
+        return `Pista 2: Empieza con "${primera}", termina en "${ultima}" → ${revelada}`;
     }
 }
 
@@ -495,7 +506,7 @@ function renderizarPreguntaAleatoriaUI() {
         <div class="pin-question-card" id="card-rec-unica" style="margin-bottom: 10px; transition: border-color 0.25s ease;">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <span class="pin-q-badge">Pregunta de Seguridad (${preguntaRecuperacionIdx + 1} de ${pinQuestions.length})</span>
-                <button type="button" onclick="cambiarPreguntaRecuperacionPIN()" style="background: var(--card-dark); border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; cursor: pointer;">🎲 Otra pregunta</button>
+                <button type="button" onclick="cambiarPreguntaRecuperacionPIN()" style="background: var(--card-dark); border: 1px solid var(--border-light); color: var(--text-secondary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; cursor: pointer;">Otra pregunta</button>
             </div>
             <label id="lbl-rec-unica" class="pin-rec-q-title" style="font-size: 15px; margin-top: 2px;">${item.q}</label>
             <input type="text" id="in-rec-unica" placeholder="Escribe tu respuesta aquí..." autocomplete="off" oninput="limpiarErrorRecuperacionPIN()" onkeydown="if(event.key === 'Enter') verificarRecuperacionPIN()">
@@ -504,7 +515,7 @@ function renderizarPreguntaAleatoriaUI() {
         <div id="rec-pin-feedback" style="display: none; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; font-weight: 700; text-align: center; margin-top: 6px; line-height: 1.35;"></div>
     `;
     const btnPista = document.getElementById('btn-pedir-pista-pin');
-    if (btnPista) btnPista.innerText = '💡 No recuerdo / Dame una pista sutil';
+    if (btnPista) btnPista.innerText = 'No recuerdo / Dame una pista sutil';
 }
 
 function limpiarErrorRecuperacionPIN() {
@@ -540,7 +551,7 @@ function resetearPIN(event) {
         if (btnPista) {
             btnPista.classList.remove('oculto');
             btnPista.style.display = 'flex';
-            btnPista.innerText = '💡 No recuerdo / Dame una pista sutil';
+            btnPista.innerText = 'No recuerdo / Dame una pista sutil';
         }
         preguntaRecuperacionIdx = Math.floor(Math.random() * pinQuestions.length);
         renderizarPreguntaAleatoriaUI();
@@ -565,7 +576,7 @@ function mostrarPistasSutilesPIN() {
     }
     const btnPista = document.getElementById('btn-pedir-pista-pin');
     if (btnPista) {
-        btnPista.innerText = nivelPistaRecuperacion === 1 ? '💡 Dame una segunda pista más clara' : '✨ Pistas máximas activadas';
+        btnPista.innerText = nivelPistaRecuperacion === 1 ? 'Dame una segunda pista más clara' : 'Pistas máximas activadas';
     }
 }
 
@@ -599,13 +610,14 @@ function verificarRecuperacionPIN() {
         if (val === 'RESETEAR') {
             localStorage.removeItem('app_pin');
             appPin = null;
+            localStorage.setItem('assist_pending_sync', 'true');
             cerrarModal('modal-recuperar-pin');
             document.getElementById('pin-screen').classList.add('oculto');
             document.getElementById('app-main-container').classList.add('app-unlocked');
             if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
             setTimeout(() => configurarPIN(), 300);
         } else {
-            alert('❌ Palabra incorrecta. Escribe RESETEAR para restablecer tu PIN antiguo.');
+            alert('Palabra incorrecta. Escribe RESETEAR para restablecer tu PIN antiguo.');
         }
         return;
     }
@@ -614,12 +626,13 @@ function verificarRecuperacionPIN() {
     const respUser = (inputEl ? inputEl.value : '').trim();
     const preguntaActual = pinQuestions[preguntaRecuperacionIdx] || pinQuestions[0];
 
-    if (!respUser) return mostrarFeedbackRecuperacion('⚠️ Escribe tu respuesta antes de verificar.', false);
+    if (!respUser) return mostrarFeedbackRecuperacion('Escribe tu respuesta antes de verificar.', false);
 
     if (esRespuestaSeguridadValida(respUser, preguntaActual.a)) {
-        mostrarFeedbackRecuperacion('✅ ¡Respuesta correcta! Desbloqueando para cambiar tu PIN...', true);
+        mostrarFeedbackRecuperacion('Respuesta correcta. Desbloqueando para cambiar tu PIN...', true);
         localStorage.removeItem('app_pin');
         appPin = null;
+        localStorage.setItem('assist_pending_sync', 'true');
         setTimeout(() => {
             cerrarModal('modal-recuperar-pin');
             document.getElementById('pin-screen').classList.add('oculto');
@@ -627,7 +640,7 @@ function verificarRecuperacionPIN() {
             configurarPIN();
         }, 500);
     } else {
-        mostrarFeedbackRecuperacion('❌ Respuesta incorrecta. No coincide con tu respuesta guardada. Inténtalo de nuevo o pide una pista abajo.', false);
+        mostrarFeedbackRecuperacion('Respuesta incorrecta. No coincide con tu respuesta guardada. Inténtalo de nuevo o pide una pista abajo.', false);
     }
 }
 
@@ -638,6 +651,7 @@ function toggleCensura(event) {
     if(event) event.stopPropagation(); 
     censurado = !censurado;
     localStorage.setItem('censurado', censurado);
+    localStorage.setItem('assist_pending_sync', 'true');
     actualizarInterfaz();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }

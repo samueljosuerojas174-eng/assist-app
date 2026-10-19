@@ -1,64 +1,64 @@
 // ================= TUTORIAL GUIADO INTERACTIVO (ONBOARDING V4.0) =================
 const PASOS_TUTORIAL = [
     {
-        icono: "🚀",
+        icono: "A$",
         titulo: "Bienvenido a A$$IST 4.0",
         desc: "Tu centro de control financiero personal multidivisa. Ultrarrápido, <b>100% funcional sin internet</b> en la calle y adaptado milimétricamente a la economía de Venezuela.",
-        tip: "✨ <b>Filosofía Local-First + Nube:</b> Todo se guarda al instante en tu teléfono, se sincroniza en segundo plano con la nube y puedes personalizar tu perfil con nombre y foto desde el avatar superior."
+        tip: "<b>Filosofía Local-First + Nube:</b> Todo se guarda al instante en tu teléfono, se sincroniza en segundo plano con la nube y puedes personalizar tu perfil con nombre y foto desde el avatar superior."
     },
     {
-        icono: "💳",
+        icono: "01",
         titulo: "1. Cuentas Multidivisa",
         desc: "Registra dónde tienes tu capital: bancos en <b>Bolívares (VES)</b>, efectivo en <b>Dólares (USD)</b> o billeteras cripto en <b>USDT</b> con equivalencias en tiempo real.",
-        tip: "💡 Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En Inicio, desliza tu tarjeta principal hacia los lados para cambiar de cuenta activa."
+        tip: "Ve a <b>Ajustes > Gestionar Cuentas</b> para crearlas y ordenarlas con las flechas <b>▲ / ▼</b>. En Inicio, desliza tu tarjeta principal hacia los lados para cambiar de cuenta activa."
     },
     {
-        icono: "🏷️",
+        icono: "02",
         titulo: "2. Categorías con Color y Memoria",
         desc: "Crea tus categorías con un <b>color representativo</b> desde la paleta o el selector libre para identificarlas visualmente en toda la app.",
-        tip: "🧠 <b>Memoria y edición en vivo:</b> A$$IST recuerda con qué moneda pagaste por última vez en cada categoría, y puedes cambiar el color de cualquier categoría existente tocando su círculo sin perder historial."
+        tip: "<b>Memoria y edición en vivo:</b> A$$IST recuerda con qué moneda pagaste por última vez en cada categoría, y puedes cambiar el color de cualquier categoría existente tocando su círculo sin perder historial."
     },
     {
-        icono: "⚡",
+        icono: "03",
         titulo: "3. Registro, Tasa USDT y Comisiones",
         desc: "El formulario adapta las monedas según tu cuenta activa y, si registras un movimiento en <b>Bs desde una cuenta USDT</b>, te permite editar la tasa USDT aplicada.",
-        tip: "🇻🇪 <b>Comisiones Bancarias VE:</b> En gastos en VES, elige entre <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
+        tip: "<b>Comisiones Bancarias VE:</b> En gastos en VES, elige entre <b>Tarjeta/POS (0 Bs)</b>, <b>Pago Móvil P2P (0,30%)</b>, <b>Comercio P2C (1,50%)</b> o comisión manual."
     },
     {
-        icono: "🔄",
+        icono: "04",
         titulo: "4. Transferencias y Comisión P2P",
         desc: "¿Cambiaste USDT a Bolívares o compraste USDT con Bs? Elige <b>Transferir</b> en el panel principal para mover saldo entre cuentas en 1 clic.",
-        tip: "📉 <b>Comisión Binance P2P:</b> Al pasar de <b>VES a USDT</b>, puedes indicar la comisión en USDT (ej. <i>0.60 USDT</i>) para que A$$IST abone el neto exacto en tu billetera."
+        tip: "<b>Comisión Binance P2P:</b> Al pasar de <b>VES a USDT</b>, puedes indicar la comisión en USDT (ej. <i>0.60 USDT</i>) para que A$$IST abone el neto exacto en tu billetera."
     },
     {
-        icono: "🤖",
+        icono: "05",
         titulo: "5. AskBot 4.0: Copiloto en Vivo",
         desc: "Tu asesor financiero interactivo 100% local con <b>Consultas en Vivo</b> de tus finanzas y la guía completa de A$$IST en un menú desplegable.",
-        tip: "⚡ <b>Respuestas al instante:</b> Abre el menú inferior para consultar las tasas de hoy y mañana, la radiografía de tu patrimonio, gastos del mes, deudas pendientes y el diagnóstico de liquidez."
+        tip: "<b>Respuestas al instante:</b> Abre el menú inferior para consultar las tasas de hoy y mañana, la radiografía de tu patrimonio, gastos del mes, deudas pendientes y el diagnóstico de liquidez."
     },
     {
-        icono: "📅",
+        icono: "06",
         titulo: "6. Agenda de Pagos y Calendario",
-        desc: "Controla recibos, deudas y suscripciones con vistas de <b>Pendientes</b>, <b>📅 Calendario mensual interactivo</b> y <b>Pagados</b>.",
-        tip: "🔔 Recibe alertas en Inicio cuando un pago vence en <b>≤ 3 días</b>, ejecútalo con <b>💳 Pagar</b> descontando de tu cuenta (si es mensual salta al próximo mes) o usa <b>↩️ Revertir</b> si te equivocas."
+        desc: "Controla recibos, deudas y suscripciones con vistas de <b>Pendientes</b>, <b>Calendario mensual interactivo</b> y <b>Pagados</b>.",
+        tip: "Recibe alertas en Inicio cuando un pago vence en <b>≤ 3 días</b>, ejecútalo con <b>Pagar</b> descontando de tu cuenta (si es mensual salta al próximo mes) o usa <b>Revertir</b> si te equivocas."
     },
     {
-        icono: "💱",
+        icono: "07",
         titulo: "7. Calculadora, Brecha y Fecha Valor",
         desc: "Convierte al instante entre <b>BCV, USDT, EUR o Tasa Propia</b> viendo siempre la <b>Brecha Cambiaria ($/USDT)</b> y la variación diaria.",
-        tip: "⏳ <b>Fecha Valor y Calendario Histórico:</b> Cuando el BCV publica la tasa de mañana aparece el botón amarillo <b>📅→</b> para adelantar cálculos, o toca el calendario <b>📅</b> para consultar tasas de días pasados."
+        tip: "<b>Fecha Valor y Calendario Histórico:</b> Cuando el BCV publica la tasa de mañana aparece el botón <b>Mañana →</b> para adelantar cálculos, o toca el calendario para consultar tasas de días pasados."
     },
     {
-        icono: "📊",
+        icono: "08",
         titulo: "8. Historial Pro y Metas con Reembolso",
-        desc: "El Historial abre en los movimientos del <b>📅 Día de hoy</b> o en vista <b>Total</b> por Mes/Año, con buscador en vivo y <b>Gráfico de Dona</b> por porcentajes.",
-        tip: "🛡️ <b>Swipe to Delete y Metas Seguras:</b> Desliza un movimiento a la izquierda para borrarlo. Y si eliminas una <b>Meta de Ahorro</b> a la mitad, tu dinero ahorrado se reembolsa automáticamente a tu cuenta."
+        desc: "El Historial abre en los movimientos del <b>Día de hoy</b> o en vista <b>Total</b> por Mes/Año, con buscador en vivo y <b>Gráfico de Dona</b> por porcentajes.",
+        tip: "<b>Swipe to Delete y Metas Seguras:</b> Desliza un movimiento a la izquierda para borrarlo. Y si eliminas una <b>Meta de Ahorro</b> a la mitad, tu dinero ahorrado se reembolsa automáticamente a tu cuenta."
     },
     {
-        icono: "🔒",
+        icono: "09",
         titulo: "9. PIN 2.0, Modo Pánico, Temas y Nube",
         desc: "Protege tu acceso con el <b>teclado numérico en pantalla</b> y <b>3 preguntas personalizadas</b> con tolerancia inteligente y pistas sutiles.",
-        tip: "🕵️‍♂️ Da <b>doble toque rápido</b> al saldo para activar el <b>Modo Pánico</b> (********), elige entre <b>Oscuro, Claro o Liquid Glass</b> con 19 acentos y respalda todo en la <b>Nube o en archivo Backup</b>."
+        tip: "Da <b>doble toque rápido</b> al saldo para activar el <b>Modo Pánico</b> (********), elige entre <b>Oscuro o Claro</b> con 19 acentos y respalda todo en la <b>Nube o en archivo Backup</b>."
     }
 ];
 
@@ -304,6 +304,8 @@ function renderizarListasGestion() {
     asegurarColoresCategorias();
     const lCuentas = document.getElementById('lista-gestion-cuentas');
     const lCat = document.getElementById('lista-gestion-categorias');
+    const svgEdit = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>`;
+    const svgTrash = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
     if (lCuentas) {
         let htmlCuentas = '';
         cuentas.forEach((c, i) => {
@@ -313,8 +315,8 @@ function renderizarListasGestion() {
                     <div class="acciones-gestion">
                         <button class="btn-mover" onclick="moverCuenta(${i}, -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
                         <button class="btn-mover" onclick="moverCuenta(${i}, 1)" ${i === cuentas.length - 1 ? 'disabled' : ''}>▼</button>
-                        <button class="btn-editar" onclick="editarCuenta(${i})">✏️</button>
-                        <button class="btn-eliminar" onclick="eliminarCuenta(${i})">🗑️</button>
+                        <button class="btn-editar" onclick="editarCuenta(${i})" title="Editar">${svgEdit}</button>
+                        <button class="btn-eliminar" onclick="eliminarCuenta(${i})" title="Eliminar">${svgTrash}</button>
                     </div>
                 </li>`;
         });
@@ -331,8 +333,8 @@ function renderizarListasGestion() {
                         <strong style="color:var(--text-primary);">${cat}</strong>
                     </div>
                     <div class="acciones-gestion">
-                        <button class="btn-editar" onclick="editarCategoria(${i})" title="Cambiar nombre">✏️</button>
-                        <button class="btn-eliminar" onclick="eliminarCategoria(${i})" title="Eliminar">🗑️</button>
+                        <button class="btn-editar" onclick="editarCategoria(${i})" title="Cambiar nombre">${svgEdit}</button>
+                        <button class="btn-eliminar" onclick="eliminarCategoria(${i})" title="Eliminar">${svgTrash}</button>
                     </div>
                 </li>`;
         });
@@ -417,7 +419,9 @@ function guardarYActualizarGestion() {
     localStorage.setItem('transacciones', JSON.stringify(transacciones));
     localStorage.setItem('metas', JSON.stringify(metas));
     localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
+    localStorage.setItem('assist_pending_sync', 'true');
     cargarSelects(); renderizarListasGestion(); actualizarInterfaz();
+    if (typeof actualizarUIEstadoNube === 'function') actualizarUIEstadoNube();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
@@ -503,6 +507,7 @@ function importarDatos(e) {
                 localStorage.setItem('assist_agenda_pagos', JSON.stringify(agendaPagos));
                 localStorage.setItem('cuentas', JSON.stringify(cuentas));
                 localStorage.setItem('categorias', JSON.stringify(categorias));
+                localStorage.setItem('assist_pending_sync', 'true');
                 
                 if (usuarioActual) {
                     sincronizarHaciaNube().then(() => {
@@ -528,7 +533,7 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
-// ================= SCROLL DE PANTALLA ELÁSTICO (~10% OVERSCROLL EN IPHONE Y PC CON RETORNO SEDOSO) =================
+// ================= SCROLL DE PANTALLA ELÁSTICO (~20% OVERSCROLL EN IPHONE Y PC CON RETORNO ULTRA-SUAVE) =================
 let _scrollBounceConfigurado = false;
 function configurarLimitadorScrollApp() {
     if (_scrollBounceConfigurado) return;
@@ -556,43 +561,65 @@ function configurarLimitadorScrollApp() {
         return document.querySelector('.vista-activa');
     };
 
+    const obtenerAppContainer = () => document.getElementById('app-main-container');
+
     const obtenerScrollY = () => {
-        return Math.max(0, window.pageYOffset || window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0);
+        const se = document.scrollingElement || document.documentElement;
+        return Math.max(0, window.pageYOffset || window.scrollY || (se ? se.scrollTop : 0) || document.body.scrollTop || 0);
+    };
+
+    const obtenerViewportH = () => {
+        const vv = window.visualViewport ? window.visualViewport.height : 0;
+        const ih = window.innerHeight || 0;
+        const ch = document.documentElement ? document.documentElement.clientHeight : 0;
+        return vv || ih || ch || 800;
     };
 
     const obtenerMaxScroll = () => {
         const doc = document.documentElement;
         const body = document.body;
-        const scrollH = Math.max(doc ? doc.scrollHeight : 0, body ? body.scrollHeight : 0);
-        const viewH = window.innerHeight || (doc ? doc.clientHeight : 0) || 800;
+        const se = document.scrollingElement || doc;
+        const scrollH = Math.max(se ? se.scrollHeight : 0, doc ? doc.scrollHeight : 0, body ? body.scrollHeight : 0);
+        const viewH = Math.max(window.innerHeight || 0, doc ? doc.clientHeight : 0, window.visualViewport ? window.visualViewport.height : 0) || 800;
         return Math.max(0, scrollH - viewH);
     };
 
     const estaEnTope = () => {
-        return obtenerScrollY() <= 3;
+        if (obtenerScrollY() <= 5) return true;
+        const cont = obtenerAppContainer();
+        if (cont) {
+            const rect = cont.getBoundingClientRect();
+            if (rect.top >= -5) return true;
+        }
+        return false;
     };
 
     const estaEnFondo = (vista, scrollEstancadoHaciaAbajo = false) => {
         const scrollY = obtenerScrollY();
         const maxScroll = obtenerMaxScroll();
-        if (maxScroll <= 4 || scrollY >= maxScroll - 5) return true;
-        if (vista) {
-            const rect = vista.getBoundingClientRect();
-            const viewH = window.innerHeight || document.documentElement.clientHeight || 800;
-            const bottomSinOffset = rect.bottom - currentOffset;
-            if (bottomSinOffset <= viewH + 22) return true;
+        if (maxScroll <= 8 || scrollY >= maxScroll - 8) return true;
+        const cont = obtenerAppContainer();
+        if (cont) {
+            const rect = cont.getBoundingClientRect();
+            const viewH = Math.max(
+                window.innerHeight || 0,
+                document.documentElement ? document.documentElement.clientHeight : 0,
+                window.visualViewport ? window.visualViewport.height : 0
+            ) || 800;
+            if (rect.bottom <= viewH + 10) return true;
         }
         if (scrollEstancadoHaciaAbajo) return true;
         return false;
     };
 
+    // Permite estirar ~20% de la altura de la pantalla mostrando el fondo limpio
     const obtenerMaxOverscrollPx = () => {
-        const vh = window.innerHeight || 800;
-        return Math.max(72, Math.min(115, Math.round(vh * 0.105)));
+        const vh = obtenerViewportH();
+        return Math.max(140, Math.min(210, Math.round(vh * 0.20)));
     };
 
     // Retorno ultra-suave y progresivo a su posición original
-    const retornarAPosicionOriginal = (vista, duracionMs = 760) => {
+    const retornarAPosicionOriginal = (vista, duracionMs = 860) => {
         if (!vista) return;
         if (bounceTimer) clearTimeout(bounceTimer);
         vista.style.transition = `transform ${duracionMs}ms cubic-bezier(0.16, 1, 0.3, 1)`;
@@ -602,7 +629,7 @@ function configurarLimitadorScrollApp() {
                 vista.style.transition = '';
                 vista.style.transform = '';
             }
-        }, duracionMs + 30);
+        }, duracionMs + 40);
     };
 
     const aplicarReboteInercial = (desplazamientoPx) => {
@@ -610,12 +637,13 @@ function configurarLimitadorScrollApp() {
         if (!vista) return;
         if (bounceTimer) clearTimeout(bounceTimer);
 
-        vista.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.85, 0.4, 1)';
+        vista.style.animation = 'none';
+        vista.style.transition = 'transform 0.24s cubic-bezier(0.2, 0.85, 0.4, 1)';
         vista.style.transform = `translate3d(0, ${desplazamientoPx.toFixed(1)}px, 0)`;
 
         bounceTimer = setTimeout(() => {
-            retornarAPosicionOriginal(vista, 740);
-        }, 190);
+            retornarAPosicionOriginal(vista, 860);
+        }, 210);
     };
 
     window.addEventListener('touchstart', (e) => {
@@ -654,42 +682,45 @@ function configurarLimitadorScrollApp() {
         const deltaScroll = Math.abs(scrollY - prevMoveScrollY);
 
         if (!pullingOverscroll && !gestureLockedHorizontal) {
-            if (Math.abs(totalDx) > 10 && Math.abs(totalDx) > Math.abs(totalDy) * 0.9) {
+            if (Math.abs(totalDx) > 6 && Math.abs(totalDx) > Math.abs(totalDy) * 1.05) {
                 gestureLockedHorizontal = true;
                 return;
             }
         }
         if (gestureLockedHorizontal) return;
 
-        const scrollEstancadoAbajo = (frameDy < -1.5 && totalDy < -10 && deltaScroll < 0.5);
+        const scrollEstancadoAbajo = (frameDy < -0.5 && totalDy < -4 && deltaScroll < 0.5);
         prevMoveY = curY;
         prevMoveScrollY = scrollY;
 
-        if (!pullingOverscroll) {
-            if (estaEnTope() && frameDy > 0.5 && totalDy > 5) {
+        // Activación inmediata desde el primer frame táctil en iOS Safari/Chrome para evitar que WebKit bloquee el gesto
+        if (!pullingOverscroll && Math.abs(totalDy) > Math.abs(totalDx)) {
+            if (estaEnTope() && totalDy > 0.5 && frameDy >= 0) {
                 pullingOverscroll = true;
                 pullDirection = 1;
                 anchorY = curY;
-            } else if (estaEnFondo(vista, scrollEstancadoAbajo) && frameDy < -0.5 && totalDy < -5) {
+                vista.style.animation = 'none';
+            } else if (estaEnFondo(vista, scrollEstancadoAbajo) && totalDy < -0.5 && frameDy <= 0) {
                 pullingOverscroll = true;
                 pullDirection = -1;
                 anchorY = curY;
+                vista.style.animation = 'none';
             }
         }
 
         if (pullingOverscroll) {
             const rawDelta = curY - anchorY;
-            if ((pullDirection === 1 && rawDelta <= 0) || (pullDirection === -1 && rawDelta >= 0)) {
+            if ((pullDirection === 1 && rawDelta < -1) || (pullDirection === -1 && rawDelta > 1)) {
                 pullingOverscroll = false;
                 pullDirection = 0;
                 currentOffset = 0;
-                vista.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+                vista.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
                 vista.style.transform = 'translate3d(0, 0px, 0)';
                 return;
             }
             if (e.cancelable) e.preventDefault();
             const maxOverscroll = obtenerMaxOverscrollPx();
-            const resistencia = (window.innerHeight || 800) * 0.27;
+            const resistencia = obtenerViewportH() * 0.36;
             currentOffset = Math.tanh(rawDelta / resistencia) * maxOverscroll;
             vista.style.transition = 'none';
             vista.style.transform = `translate3d(0, ${currentOffset.toFixed(1)}px, 0)`;
@@ -704,7 +735,7 @@ function configurarLimitadorScrollApp() {
         pullDirection = 0;
         currentOffset = 0;
         const vista = obtenerVistaRebote();
-        retornarAPosicionOriginal(vista, 760);
+        retornarAPosicionOriginal(vista, 860);
     };
 
     window.addEventListener('touchend', finalizarPull, { passive: true });
@@ -722,10 +753,10 @@ function configurarLimitadorScrollApp() {
 
         if (!pullingOverscroll && !touchActivo && maxScroll > 12) {
             if (curY <= 1 && lastScrollY > 2 && scrollVelocity < -0.1) {
-                const impulso = Math.min(maxOverscroll * 0.45, Math.max(10, Math.abs(scrollVelocity) * 16));
+                const impulso = Math.min(maxOverscroll * 0.55, Math.max(14, Math.abs(scrollVelocity) * 20));
                 aplicarReboteInercial(impulso);
             } else if (curY >= maxScroll - 2 && lastScrollY < maxScroll - 4 && scrollVelocity > 0.1) {
-                const impulso = Math.min(maxOverscroll * 0.45, Math.max(10, Math.abs(scrollVelocity) * 16));
+                const impulso = Math.min(maxOverscroll * 0.55, Math.max(14, Math.abs(scrollVelocity) * 20));
                 aplicarReboteInercial(-impulso);
             }
         }
@@ -746,19 +777,20 @@ function configurarLimitadorScrollApp() {
         if (enTopeWheel || enFondoWheel) {
             if (bounceTimer) clearTimeout(bounceTimer);
             if (wheelResetTimer) clearTimeout(wheelResetTimer);
-            wheelOffset += (-e.deltaY * 0.35);
-            const clamped = Math.tanh(wheelOffset / (maxOverscroll * 1.3)) * maxOverscroll;
+            vista.style.animation = 'none';
+            wheelOffset += (-e.deltaY * 0.42);
+            const clamped = Math.tanh(wheelOffset / (maxOverscroll * 1.25)) * maxOverscroll;
             vista.style.transition = 'transform 0.1s ease-out';
             vista.style.transform = `translate3d(0, ${clamped.toFixed(1)}px, 0)`;
             wheelResetTimer = setTimeout(() => {
                 wheelOffset = 0;
-                retornarAPosicionOriginal(vista, 740);
-            }, 140);
+                retornarAPosicionOriginal(vista, 860);
+            }, 150);
         }
     }, { passive: true });
 }
 
-// ================= ARRANQUE INSTANTÁNEO DE LA APP (LOCAL-FIRST + SYNC EN SEGUNDO PLANO) =================
+// ================= ARRANQUE INSTANTÁNEO DE LA APP (LOCAL-FIRST + OFFLINE + SYNC EN SEGUNDO PLANO) =================
 async function inicializarApp() {
     configurarLimitadorScrollApp();
     asegurarColoresCategorias();
@@ -768,25 +800,38 @@ async function inicializarApp() {
     inicializarAskBot();
     configurarVisualViewportAskBot();
 
-    // Renderizado inmediato desde caché local en 0ms sin esperar la red
+    // 1. Cargar de inmediato la tasa guardada del día en caché local antes de renderizar la interfaz y la calculadora
+    if (typeof cargarTasasCacheLocalInmediato === 'function') {
+        cargarTasasCacheLocalInmediato();
+    }
+
+    // 2. Renderizado inmediato desde caché local en 0ms sin esperar la red
     cargarSelects();
     actualizarInterfaz();
     setTasaModo('BCV'); 
     toggleCategoriaSelect();
     actualizarUIEstadoNube();
 
-    // Actualización de tasas y sincronización en la nube en paralelo sin bloquear el inicio
+    // 3. Actualización de tasas y sincronización en la nube en paralelo sin bloquear el inicio
     const promesaTasas = obtenerTasas().then(() => {
         actualizarInterfaz();
         setTasaModo(typeof calcModoTasa !== 'undefined' ? calcModoTasa : 'BCV');
     }).catch(e => console.error("Error obteniendo tasas en arranque:", e));
 
     const promesaNube = (async () => {
-        if (!supabaseClient) return;
+        if (typeof asegurarClienteSupabase === 'function') asegurarClienteSupabase();
+        if (!supabaseClient) {
+            actualizarUIEstadoNube();
+            return;
+        }
         try {
             const { data } = await supabaseClient.auth.getSession();
             if (data && data.session && data.session.user) {
                 usuarioActual = data.session.user;
+                localStorage.setItem('assist_cached_user', JSON.stringify({
+                    id: usuarioActual.id,
+                    email: usuarioActual.email
+                }));
                 actualizarUIEstadoNube();
 
                 if (navigator.onLine) {
@@ -803,6 +848,8 @@ async function inicializarApp() {
     })();
 
     await Promise.allSettled([promesaTasas, promesaNube]);
-    setInterval(() => { obtenerTasas().then(() => actualizarInterfaz()); }, 300000); 
+    setInterval(() => {
+        if (navigator.onLine) obtenerTasas().then(() => actualizarInterfaz());
+    }, 300000); 
 }
 inicializarApp();

@@ -1,9 +1,24 @@
 // ================= CONFIGURACIÓN DE SUPABASE (NUBE LOCAL-FIRST) =================
 const SUPABASE_URL = 'https://gzbjsbhgpqtycsndwkpc.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_TrvXyss9fBLXQ4BKRAzMYg_S7yOlAP-';
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+function asegurarClienteSupabase() {
+    if (!supabaseClient && window.supabase && typeof window.supabase.createClient === 'function') {
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    return supabaseClient;
+}
 
 let usuarioActual = null;
+try {
+    const cachedUsr = JSON.parse(localStorage.getItem('assist_cached_user') || 'null');
+    if (cachedUsr && cachedUsr.id) usuarioActual = cachedUsr;
+} catch (e) {}
 let authModoActual = 'login';
 let sincronizandoNube = false;
 let syncPendienteEnCola = false;
@@ -198,6 +213,7 @@ function seleccionarColorCategoriaExistente(nuevoColor) {
     const catNombre = categorias[categoriaEditandoColorIndex];
     categoriasColores[catNombre] = nuevoColor;
     localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
+    localStorage.setItem('assist_pending_sync', 'true');
 
     abrirSelectorColorCategoria(categoriaEditandoColorIndex);
     renderizarListasGestion();
@@ -266,6 +282,7 @@ function guardarPerfilUsuario() {
     userNombre = nuevoNombre;
     if (userNombre) localStorage.setItem('assist_user_name', userNombre);
     else localStorage.removeItem('assist_user_name');
+    localStorage.setItem('assist_pending_sync', 'true');
 
     if (inSettings) inSettings.blur();
     if (inModal) inModal.blur();
@@ -305,6 +322,7 @@ function procesarFotoPerfil(event) {
     redimensionarAvatarPerfil(file, (base64) => {
         userAvatar = base64;
         localStorage.setItem('assist_user_avatar', userAvatar);
+        localStorage.setItem('assist_pending_sync', 'true');
         actualizarUIPerfil();
         if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
     });
@@ -315,6 +333,7 @@ function eliminarFotoPerfil() {
     if (!userAvatar) return;
     userAvatar = null;
     localStorage.removeItem('assist_user_avatar');
+    localStorage.setItem('assist_pending_sync', 'true');
     actualizarUIPerfil();
     if (usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
@@ -387,8 +406,8 @@ function actualizarUIEstadoNube() {
             if (modalBadge) { modalBadge.innerText = 'Pendiente (Sin señal)'; modalBadge.className = 'cloud-badge pendiente'; }
             if (headerDot) headerDot.className = 'avatar-online-dot pendiente';
         } else {
-            if (badge) { badge.innerText = 'Sincronizado ☁️'; badge.className = 'cloud-badge conectado'; }
-            if (modalBadge) { modalBadge.innerText = 'Sincronizado ☁️'; modalBadge.className = 'cloud-badge conectado'; }
+            if (badge) { badge.innerText = 'Sincronizado'; badge.className = 'cloud-badge conectado'; }
+            if (modalBadge) { modalBadge.innerText = 'Sincronizado'; modalBadge.className = 'cloud-badge conectado'; }
             if (headerDot) headerDot.className = 'avatar-online-dot conectado';
         }
     } else {
@@ -404,6 +423,7 @@ function actualizarUIEstadoNube() {
 }
 
 async function procesarAuth() {
+    asegurarClienteSupabase();
     if (!supabaseClient) return mostrarErrorAuth("Librería de nube no disponible.");
     if (!navigator.onLine) return mostrarErrorAuth("Necesitas conexión a internet para iniciar sesión o registrarte.");
 
@@ -424,6 +444,9 @@ async function procesarAuth() {
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) throw error;
             usuarioActual = data.user;
+            if (usuarioActual) {
+                localStorage.setItem('assist_cached_user', JSON.stringify({ id: usuarioActual.id, email: usuarioActual.email }));
+            }
             if (usuarioActual && tieneDatosLocales()) await sincronizarHaciaNube();
             else if (usuarioActual) await descargarDesdeNube();
         } else {
@@ -431,6 +454,7 @@ async function procesarAuth() {
             if (error) throw error;
             usuarioActual = data.user;
             if (usuarioActual) {
+                localStorage.setItem('assist_cached_user', JSON.stringify({ id: usuarioActual.id, email: usuarioActual.email }));
                 const descargado = await descargarDesdeNube();
                 if (!descargado && tieneDatosLocales()) await sincronizarHaciaNube();
             }
@@ -460,7 +484,11 @@ async function procesarAuth() {
 
 async function sincronizarHaciaNube() {
     localStorage.setItem('assist_pending_sync', 'true');
-    if (!supabaseClient || !usuarioActual) return;
+    asegurarClienteSupabase();
+    if (!supabaseClient || !usuarioActual) {
+        actualizarUIEstadoNube();
+        return;
+    }
     if (!navigator.onLine) {
         actualizarUIEstadoNube();
         return;
@@ -757,17 +785,17 @@ async function forzarSincronizacionManual() {
     if (!navigator.onLine) return alert("Sin conexión a internet. Tus datos siguen seguros en tu teléfono.");
     try {
         await sincronizarHaciaNube();
-        alert("☁️ ¡Datos sincronizados con éxito en la nube!");
+        alert("Datos sincronizados con éxito en la nube.");
     } catch (e) {
-        alert("⚠️ Hubo un detalle al sincronizar: " + (e.message || "Intenta de nuevo."));
+        alert("Hubo un detalle al sincronizar: " + (e.message || "Intenta de nuevo."));
     }
 }
 
 async function cerrarSesionNube() {
     if (!confirm("¿Deseas cerrar tu sesión en la nube en este dispositivo?")) return;
-    if (navigator.onLine && usuarioActual) {
+    if (navigator.onLine && usuarioActual && supabaseClient) {
         try { await sincronizarHaciaNube(); } catch (e) { console.error(e); }
-        await supabaseClient.auth.signOut();
+        try { await supabaseClient.auth.signOut(); } catch (e) { console.error(e); }
     }
     usuarioActual = null;
     transacciones = [];
@@ -790,6 +818,7 @@ async function cerrarSesionNube() {
     localStorage.removeItem('assist_pin_questions');
     localStorage.removeItem('assist_skip_auth');
     localStorage.removeItem('assist_pending_sync');
+    localStorage.removeItem('assist_cached_user');
 
     cargarSelects();
     renderizarListasGestion();
@@ -798,10 +827,30 @@ async function cerrarSesionNube() {
     abrirPantallaAuth();
 }
 
-window.addEventListener('online', () => {
+window.addEventListener('online', async () => {
     actualizarUIEstadoNube();
+    if (typeof obtenerTasas === 'function') {
+        obtenerTasas().then(() => {
+            if (typeof actualizarInterfaz === 'function') actualizarInterfaz();
+            if (typeof setTasaModo === 'function') setTasaModo(typeof calcModoTasa !== 'undefined' ? calcModoTasa : 'BCV');
+        }).catch(e => console.error(e));
+    }
+    asegurarClienteSupabase();
+    if (supabaseClient && !usuarioActual) {
+        try {
+            const { data } = await supabaseClient.auth.getSession();
+            if (data && data.session && data.session.user) {
+                usuarioActual = data.session.user;
+                localStorage.setItem('assist_cached_user', JSON.stringify({ id: usuarioActual.id, email: usuarioActual.email }));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
     if (usuarioActual && localStorage.getItem('assist_pending_sync') === 'true') {
         sincronizarHaciaNube().catch(e => console.error(e));
+    } else {
+        actualizarUIEstadoNube();
     }
 });
 window.addEventListener('offline', () => actualizarUIEstadoNube());

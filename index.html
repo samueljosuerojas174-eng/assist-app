@@ -36,7 +36,7 @@
         if (metaTheme) metaTheme.setAttribute('content', bgInit);
     </script>
     <style>
-        html, body { background-color: var(--bg-dark, #000000); margin: 0; padding: 0; width: 100%; min-height: 100%; overscroll-behavior: none !important; overscroll-behavior-y: none !important; }
+        html, body { background-color: var(--bg-dark, #000000); margin: 0; padding: 0; width: 100%; min-height: 100%; overscroll-behavior-y: auto; overscroll-behavior-x: none; }
         #splash-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg-dark, #000000); z-index: 99999; display: flex; flex-direction: column; gap: 14px; justify-content: center; align-items: center; transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1), transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.42s; }
         .splash-logo { width: 88px; height: 88px; border-radius: 24px; object-fit: cover; box-shadow: 0 10px 32px rgba(0,0,0,0.45); animation: splashPulseBouncy 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) infinite alternate; }
         @keyframes splashPulseBouncy { 0% { transform: scale(0.94); } 100% { transform: scale(1.05); } }
@@ -49,7 +49,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Inter:wght@400..800&family=JetBrains+Mono:wght@400..800&family=Outfit:wght@400..800&family=Plus+Jakarta+Sans:wght@500..800&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..800;1,8..60,400..700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="style.css?v=20261019c">
+    <link rel="stylesheet" href="style.css?v=20261019d">
 </head>
 <body data-theme="dark">
     <script>document.body.setAttribute('data-theme', tMode); document.body.setAttribute('data-font', tFont); document.body.style.backgroundColor = bgInit;</script>
@@ -96,7 +96,9 @@
             <div class="pin-top-section">
                 <div class="pin-logo-wrap">
                     <img src="logo.jpg" alt="Perfil" id="pin-user-avatar" class="app-logo pin-logo-img">
-                    <span class="pin-lock-badge">🔒</span>
+                    <span class="pin-lock-badge">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
                 </div>
                 <h2 class="pin-title">Ingresa tu PIN</h2>
                 <p class="pin-subtitle" id="pin-status-text">Marca tu código de seguridad de 4 dígitos</p>
@@ -202,7 +204,7 @@
                             <circle cx="15.5" cy="18.6" r="1" fill="currentColor" stroke="none"></circle>
                         </svg>
                     </button>
-                    <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">🎓 Tutorial</button>
+                    <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">Tutorial</button>
                 </div>
                 <!-- Avatar/Logo de Perfil -->
                 <div class="header-right-actions">
@@ -229,26 +231,28 @@
                         <h3 class="section-subtitle" style="margin-bottom: 0;">Tasas del Día</h3>
                         <span id="badge-brecha-home" class="brecha-pill">Brecha: --%</span>
                     </div>
-                    <span id="fecha-tasas" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">🗓️ Conectando...</span>
+                    <span id="fecha-tasas" style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">Conectando...</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px;">
-                    <button id="btn-home-switch-fecha" type="button" class="btn-fecha-posterior-mini oculto" style="display: none;" onclick="alternarFechaValorCalc()" title="Alternar entre tasa de hoy y fecha valor BCV">📅→</button>
-                    <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh">🔄</button>
+                    <button id="btn-home-switch-fecha" type="button" class="btn-fecha-posterior-mini oculto" style="display: none;" onclick="alternarFechaValorCalc()" title="Alternar entre tasa de hoy y fecha valor BCV">→</button>
+                    <button id="btn-refresh-tasas" onclick="actualizarTasasManual()" class="btn-refresh" aria-label="Actualizar tasas">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    </button>
                 </div>
             </div>
             <section class="tasas-widget">
                 <div class="tasa-item">
-                    <span class="tasa-label">🇻🇪 BCV</span>
+                    <span class="tasa-label">BCV</span>
                     <span class="tasa-valor" id="val-bcv">...</span>
                     <span class="tasa-variacion var-neutra" id="var-bcv">0.00%</span>
                 </div>
                 <div class="tasa-item">
-                    <span class="tasa-label">🇪🇺 EUR</span>
+                    <span class="tasa-label">EUR</span>
                     <span class="tasa-valor" id="val-eur">...</span>
                     <span class="tasa-variacion var-neutra" id="var-eur">0.00%</span>
                 </div>
                 <div class="tasa-item" onclick="alternarModoPrecioUsdtHome()" style="cursor: pointer;" title="Toca para alternar entre Precio de Compra y Venta P2P">
-                    <span class="tasa-label">🪙 USDT <small id="badge-modo-usdt-home" style="font-size: 9px; opacity: 0.85; font-weight: 700;">(COMPRA)</small></span>
+                    <span class="tasa-label">USDT <small id="badge-modo-usdt-home" style="font-size: 9px; opacity: 0.85; font-weight: 700;">(COMPRA)</small></span>
                     <span class="tasa-valor" id="val-usdt">...</span>
                     <span class="tasa-variacion var-neutra" id="var-usdt">0.00%</span>
                 </div>
@@ -282,10 +286,10 @@
                 <div id="box-comision-ves" class="input-group oculto" style="display: none; flex-direction: column; gap: 8px;">
                     <label style="font-size: 13px; color: var(--text-secondary); padding-left: 5px;">Método de Pago (Bolívares)</label>
                     <select id="sel-tipo-comision" class="custom-select-btn" onchange="toggleComisionManual(); calcularEquivalenteUsdtVes();">
-                        <option value="tarjeta" selected>💳 Tarjeta de Débito / POS (0 Bs)</option>
-                        <option value="p2p">📱 Pago Móvil P2P (0,30% - mín Bs 14)</option>
-                        <option value="p2c">🏪 Pago Móvil Comercio (1,50% - mín Bs 14)</option>
-                        <option value="manual">✍️ Comisión Manual</option>
+                        <option value="tarjeta" selected>Tarjeta de Débito / POS (0 Bs)</option>
+                        <option value="p2p">Pago Móvil P2P (0,30% - mín Bs 14)</option>
+                        <option value="p2c">Pago Móvil Comercio (1,50% - mín Bs 14)</option>
+                        <option value="manual">Comisión Manual</option>
                     </select>
                     <input type="number" id="input-comision-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" oninput="calcularEquivalenteUsdtVes()" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 16px; background: var(--input-bg); color: var(--text-primary); outline: none;">
                 </div>
@@ -293,7 +297,7 @@
                 <!-- Caja de Tasa Personalizada USDT cuando se opera con VES en una cuenta USDT -->
                 <div id="box-tasa-usdt-ves" class="oculto" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 10px; background: var(--input-bg); padding: 12px 15px; border-radius: 16px; border: 1px solid var(--border-light);">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">🪙 Tasa USDT aplicada (Bs):</label>
+                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600; white-space: nowrap;">Tasa USDT aplicada (Bs):</label>
                         <input type="number" id="input-tasa-usdt-ves" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" style="max-width: 135px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border-light); background: rgba(0,0,0,0.2); color: var(--text-primary); font-size: 14px; font-weight: 700; text-align: right; outline: none;" oninput="calcularEquivalenteUsdtVes()">
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px; border-top: 1px solid var(--border-light);">
@@ -341,7 +345,7 @@
 
             <!-- Botón para abrir el Historial -->
             <button class="btn-secundario" style="margin-bottom: 4px;" onclick="abrirModal('modal-historial')">
-                📜 Ver Historial y Gráficos
+                Ver Historial y Gráficos
             </button>
         </div>
 
@@ -349,7 +353,7 @@
         <div id="tab-askbot" class="vista-oculta">
             <div class="header-title askbot-header-bar">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <div class="askbot-header-badge">🤖</div>
+                    <div class="askbot-header-badge" style="font-size: 13px; font-weight: 800; letter-spacing: -0.5px;">AI</div>
                     <div>
                         <h1 style="font-size: 26px;">AskBot</h1>
                         <p style="font-size: 12px;">Copiloto Financiero</p>
@@ -366,7 +370,6 @@
                 <div id="askbot-bottom-launcher" class="askbot-bottom-launcher">
                     <button type="button" class="askbot-launcher-btn" onclick="abrirMenuAskBot()">
                         <div class="askbot-launcher-left">
-                            <span class="askbot-launcher-icon">✨</span>
                             <div class="askbot-launcher-texts">
                                 <strong>Explorar Consultas y Temas</strong>
                                 <small>Tasas en vivo, patrimonio, agenda y guía</small>
@@ -408,7 +411,7 @@
             <!-- Selector de Vista: Pendientes / Calendario / Pagados -->
             <div class="ios-segmented-control" style="margin-bottom: 14px;">
                 <div class="segment activo" id="seg-agenda-pendientes" onclick="cambiarVistaAgenda('pendientes')">Pendientes</div>
-                <div class="segment" id="seg-agenda-calendario" onclick="cambiarVistaAgenda('calendario')">📅 Calendario</div>
+                <div class="segment" id="seg-agenda-calendario" onclick="cambiarVistaAgenda('calendario')">Calendario</div>
                 <div class="segment" id="seg-agenda-pagados" onclick="cambiarVistaAgenda('pagados')">Pagados</div>
             </div>
 
@@ -470,7 +473,7 @@
 
                     <!-- Botón Alternador Rápido entre Tasa del Día Actual y Fecha Valor Posterior / Volver a Hoy -->
                     <button type="button" id="btn-calc-switch-fecha" class="btn-calc-date-icon oculto" style="display: none;" onclick="alternarFechaValorCalc()" title="Alternar entre fecha vigente y fecha posterior BCV">
-                        <span id="ico-calc-switch-fecha">📅→</span>
+                        <span id="ico-calc-switch-fecha">→</span>
                     </button>
                 </div>
 
@@ -487,17 +490,17 @@
                 <!-- Panel Interactivo P2P Compra / Venta (usdt.com.ve) -->
                 <div id="box-usdt-p2p-calc" class="usdt-p2p-panel oculto" style="display: none;">
                     <div class="usdt-p2p-header">
-                        <span class="usdt-p2p-source-badge">🟢 P2P en vivo · usdt.com.ve</span>
+                        <span class="usdt-p2p-source-badge">● P2P en vivo · usdt.com.ve</span>
                         <span id="usdt-p2p-spread-lbl" class="usdt-p2p-spread">Spread: --%</span>
                     </div>
                     <div class="usdt-p2p-cards-row">
                         <button type="button" id="btn-usdt-p2p-buy" class="usdt-p2p-card activo" onclick="seleccionarPrecioUsdtP2P('buy')">
-                            <span class="p2p-card-tag">📈 PRECIO COMPRA</span>
+                            <span class="p2p-card-tag">▲ PRECIO COMPRA</span>
                             <strong id="val-usdt-p2p-buy" class="p2p-card-val">0.00 Bs</strong>
                             <small id="sub-usdt-p2p-buy" class="p2p-card-sub">Binance P2P</small>
                         </button>
                         <button type="button" id="btn-usdt-p2p-sell" class="usdt-p2p-card" onclick="seleccionarPrecioUsdtP2P('sell')">
-                            <span class="p2p-card-tag">📉 PRECIO VENTA</span>
+                            <span class="p2p-card-tag">▼ PRECIO VENTA</span>
                             <strong id="val-usdt-p2p-sell" class="p2p-card-val">0.00 Bs</strong>
                             <small id="sub-usdt-p2p-sell" class="p2p-card-sub">Binance P2P</small>
                         </button>
@@ -509,18 +512,18 @@
                 </div>
 
                 <div id="aviso-usdt-calc" class="oculto" style="display: none; font-size: 11px; color: #FFD60A; background: rgba(255, 214, 10, 0.08); border: 1px solid rgba(255, 214, 10, 0.2); padding: 8px 10px; border-radius: 12px; margin-top: -10px; margin-bottom: 15px; line-height: 1.35; text-align: center;">
-                    ⚠️ Tasa USDT referencial. El mercado P2P fluctúa constantemente; es mejor verificar directamente en el exchange antes de operar.
+                    Tasa USDT referencial. El mercado P2P fluctúa constantemente; es mejor verificar directamente en el exchange antes de operar.
                 </div>
                 <div class="calc-divider"></div>
                 <div class="input-calc-group">
-                    <label id="lbl-divisa">🇺🇸 Dólares (USD)</label>
+                    <label id="lbl-divisa">Dólares (USD)</label>
                     <div class="calc-row">
                         <span id="sym-divisa">$</span>
                         <input type="number" id="calc-usd" placeholder="0.00" oninput="calcularDesde('USD')" inputmode="decimal">
                     </div>
                 </div>
                 <div class="input-calc-group">
-                    <label>🇻🇪 Bolívares (VES)</label>
+                    <label>Bolívares (VES)</label>
                     <div class="calc-row">
                         <span>Bs</span>
                         <input type="number" id="calc-ves" placeholder="0.00" oninput="calcularDesde('VES')" inputmode="decimal">
@@ -568,7 +571,9 @@
                 <div class="perfil-top-row">
                     <div class="perfil-avatar-wrapper" onclick="seleccionarFotoPerfil()" title="Cambiar foto de perfil">
                         <img src="logo.jpg" alt="Avatar" id="settings-user-avatar" class="perfil-avatar-img">
-                        <div class="perfil-avatar-edit-badge">📷</div>
+                        <div class="perfil-avatar-edit-badge">
+                            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        </div>
                     </div>
                     <div class="perfil-info-col">
                         <label style="font-size: 11px; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Nombre de Usuario</label>
@@ -590,7 +595,7 @@
                     <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
                         Tus datos están guardados en este dispositivo. Inicia sesión o regístrate para respaldarlos en la nube y no perderlos nunca.
                     </p>
-                    <button class="btn-primario" onclick="abrirPantallaAuth()">☁️ Conectar Cuenta / Registrarme</button>
+                    <button class="btn-primario" onclick="abrirPantallaAuth()">Conectar Cuenta / Registrarme</button>
                 </div>
 
                 <!-- Vista cuando SÍ ha iniciado sesión -->
@@ -600,7 +605,7 @@
                             <small style="color: var(--text-secondary); font-size: 11px; display: block;">Correo sincronizado</small>
                             <strong id="cloud-user-email" style="font-size: 13.5px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
                         </div>
-                        <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">🔄 Sincronizar</button>
+                        <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">Sincronizar</button>
                     </div>
                     <button class="btn-secundario" onclick="cerrarSesionNube()" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25);">Cerrar Sesión</button>
                 </div>
@@ -610,8 +615,8 @@
             <section class="gestion-seccion" style="padding: 15px;">
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
                 <div class="theme-mode-selector" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
-                    <button id="btn-modo-dark" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('dark')">🌙 Oscuro</button>
-                    <button id="btn-modo-light" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('light')">☀️ Claro</button>
+                    <button id="btn-modo-dark" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('dark')">Oscuro</button>
+                    <button id="btn-modo-light" class="btn-secundario btn-theme-mode" style="flex: 1; font-size: 13.5px; padding: 11px 12px;" onclick="cambiarModo('light')">Claro</button>
                 </div>
                 
                 <h3 class="section-subtitle" style="text-align: center;">Color de Acento</h3>
@@ -702,15 +707,15 @@
             
             <section class="gestion-seccion" style="display: flex; flex-direction: column; gap: 15px;">
                 <h3 class="section-subtitle">Opciones de Administración</h3>
-                <button class="btn-secundario" onclick="abrirModal('modal-cuentas')">💳 Gestionar Cuentas</button>
-                <button class="btn-secundario" onclick="abrirModal('modal-categorias')">🏷️ Gestionar Categorías</button>
-                <button class="btn-secundario" onclick="configurarPIN()">🔒 Configurar PIN de Acceso</button>
-                <button class="btn-secundario" onclick="iniciarTutorial()">🎓 Ver Tutorial de la App</button>
+                <button class="btn-secundario" onclick="abrirModal('modal-cuentas')">Gestionar Cuentas</button>
+                <button class="btn-secundario" onclick="abrirModal('modal-categorias')">Gestionar Categorías</button>
+                <button class="btn-secundario" onclick="configurarPIN()">Configurar PIN de Acceso</button>
+                <button class="btn-secundario" onclick="iniciarTutorial()">Ver Tutorial de la App</button>
                 
                 <h3 class="section-subtitle" style="margin-top: 15px;">Copias de Seguridad</h3>
-                <button class="btn-secundario" onclick="exportarDatos()">📥 Exportar Datos (Backup)</button>
+                <button class="btn-secundario" onclick="exportarDatos()">Exportar Datos (Backup)</button>
                 <label class="btn-secundario" style="cursor: pointer; text-align: center;">
-                    📤 Importar Datos
+                    Importar Datos
                     <input type="file" id="file-import" accept=".json" style="display: none;" onchange="importarDatos(event)">
                 </label>
             </section>
@@ -740,12 +745,12 @@
 
                 <!-- Concepto / Nota Principal -->
                 <div style="margin-bottom: 10px;">
-                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">📝 CONCEPTO O PAGO</label>
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">CONCEPTO O PAGO</label>
                     <input type="text" id="in-agenda-nota" placeholder="Ej: Pagar luz/agua, Netflix, Cuota..." maxlength="60" style="width: 100%;">
                 </div>
 
                 <!-- Monto y Moneda (VES, USD, USDT, EUR) -->
-                <label class="pin-config-label" style="display:block; margin-bottom:5px;">💰 MONTO Y MONEDA</label>
+                <label class="pin-config-label" style="display:block; margin-bottom:5px;">MONTO Y MONEDA</label>
                 <div class="input-wrapper" style="padding: 5px; padding-left: 0; margin-bottom: 12px;">
                     <input type="number" id="in-agenda-monto" placeholder="0.00" step="0.01" inputmode="decimal" style="flex: 1; margin-left: 10px;">
                     <select id="in-agenda-moneda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;">
@@ -759,11 +764,11 @@
                 <!-- Fecha de Vencimiento y Frecuencia -->
                 <div class="input-group" style="margin-bottom: 12px;">
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                        <label class="pin-config-label">📅 FECHA DE PAGO</label>
+                        <label class="pin-config-label">FECHA DE PAGO</label>
                         <input type="date" id="in-agenda-fecha" style="width: 100%; font-size: 14px; padding: 12px 10px;">
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                        <label class="pin-config-label">🔄 FRECUENCIA</label>
+                        <label class="pin-config-label">FRECUENCIA</label>
                         <select id="in-agenda-frecuencia" class="custom-select-btn" style="width: 100%;">
                             <option value="unico">Pago Único</option>
                             <option value="mensual">Mensual (Repetir)</option>
@@ -774,7 +779,7 @@
                 <!-- Categoría + Acceso Directo a Crear Categoría Rápida -->
                 <div style="margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label class="pin-config-label">🏷️ CATEGORÍA</label>
+                        <label class="pin-config-label">CATEGORÍA</label>
                         <button type="button" class="btn-link-perfil" onclick="toggleCrearCategoriaRapidaAgenda()" style="font-size: 11.5px; color: var(--accent); text-decoration: none; font-weight: 700;">+ Crear categoría rápida</button>
                     </div>
                     <select id="in-agenda-categoria" class="custom-select-btn" style="width: 100%;"></select>
@@ -791,7 +796,7 @@
                 </div>
             </div>
 
-            <button class="btn-primario" onclick="guardarCompromisoAgenda()" style="margin-top: 6px;">📅 Guardar en Agenda</button>
+            <button class="btn-primario" onclick="guardarCompromisoAgenda()" style="margin-top: 6px;">Guardar en Agenda</button>
         </div>
     </div>
 
@@ -812,12 +817,12 @@
 
                 <!-- Cuenta de donde se descontará -->
                 <div style="margin-bottom: 10px;">
-                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">💳 ¿DE QUÉ CUENTA SE DESCONTARÁ?</label>
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">¿DE QUÉ CUENTA SE DESCONTARÁ?</label>
                     <select id="sel-cuenta-pagar-agenda" class="custom-select-btn" style="width: 100%;" onchange="actualizarUIModalPagarAgenda()"></select>
                 </div>
 
                 <!-- Monto y Moneda del Pago -->
-                <label class="pin-config-label" style="display:block; margin-bottom:5px;">💰 MONTO A PAGAR</label>
+                <label class="pin-config-label" style="display:block; margin-bottom:5px;">MONTO A PAGAR</label>
                 <div class="input-wrapper" style="padding: 5px; padding-left: 0; margin-bottom: 10px;">
                     <input type="number" id="monto-pagar-agenda" placeholder="0.00" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="flex: 1; margin-left: 10px;">
                     <select id="moneda-pagar-agenda" class="custom-select-inline" style="flex: 0 0 auto; width: auto;" onchange="actualizarUIModalPagarAgenda()">
@@ -832,10 +837,10 @@
                 <div id="box-comision-agenda-ves" class="input-group oculto" style="display: none; flex-direction: column; gap: 8px; margin-bottom: 10px;">
                     <label style="font-size: 12px; color: var(--text-secondary); padding-left: 4px; font-weight: 600;">Método de Pago (Bolívares)</label>
                     <select id="sel-comision-agenda" class="custom-select-btn" onchange="toggleComisionManualAgenda(); calcularPreviewModalPagarAgenda();">
-                        <option value="tarjeta" selected>💳 Tarjeta de Débito / POS (0 Bs)</option>
-                        <option value="p2p">📱 Pago Móvil P2P (0,30% - mín Bs 14)</option>
-                        <option value="p2c">🏪 Pago Móvil Comercio (1,50% - mín Bs 14)</option>
-                        <option value="manual">✍️ Comisión Manual</option>
+                        <option value="tarjeta" selected>Tarjeta de Débito / POS (0 Bs)</option>
+                        <option value="p2p">Pago Móvil P2P (0,30% - mín Bs 14)</option>
+                        <option value="p2c">Pago Móvil Comercio (1,50% - mín Bs 14)</option>
+                        <option value="manual">Comisión Manual</option>
                     </select>
                     <input type="number" id="input-comision-agenda-manual" class="oculto" placeholder="Monto exacto de la comisión (Bs)" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="width: 100%;">
                 </div>
@@ -843,7 +848,7 @@
                 <!-- Tasa USDT personalizada si la cuenta o moneda involucra USDT y VES -->
                 <div id="box-tasa-agenda-usdt" class="oculto" style="display: none; flex-direction: column; gap: 6px; margin-bottom: 10px; background: var(--input-bg); padding: 10px 14px; border-radius: 16px; border: 1px solid var(--border-light);">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">🪙 Tasa USDT aplicada (Bs):</label>
+                        <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">Tasa USDT aplicada (Bs):</label>
                         <input type="number" id="input-tasa-agenda-usdt" placeholder="Ej: 994.66" step="0.01" inputmode="decimal" oninput="calcularPreviewModalPagarAgenda()" style="max-width: 125px; padding: 7px 10px; border-radius: 10px; text-align: right; font-weight: 700;">
                     </div>
                 </div>
@@ -856,7 +861,7 @@
 
                 <!-- Categoría y Fecha/Nota -->
                 <div style="margin-bottom: 10px; margin-top: 10px;">
-                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">🏷️ CATEGORÍA</label>
+                    <label class="pin-config-label" style="display:block; margin-bottom:5px;">CATEGORÍA</label>
                     <select id="cat-pagar-agenda" class="custom-select-btn" style="width: 100%;"></select>
                 </div>
 
@@ -866,7 +871,7 @@
                 </div>
             </div>
 
-            <button class="btn-primario" onclick="confirmarPagoAgenda()" style="margin-top: 8px;">✅ Confirmar y Descontar</button>
+            <button class="btn-primario" onclick="confirmarPagoAgenda()" style="margin-top: 8px;">✓ Confirmar y Descontar</button>
         </div>
     </div>
 
@@ -890,7 +895,7 @@
 
                 <!-- Nuevo PIN de 4 dígitos -->
                 <div class="pin-config-block" style="margin-bottom: 14px;">
-                    <label class="pin-config-label">🔢 NUEVO PIN DE 4 DÍGITOS</label>
+                    <label class="pin-config-label">NUEVO PIN DE 4 DÍGITOS</label>
                     <input type="password" inputmode="numeric" pattern="[0-9]*" id="in-new-pin" placeholder="Ej: 2580" maxlength="4" autocomplete="off" style="text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 10px;">
                 </div>
 
@@ -919,7 +924,7 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-                <button class="btn-primario" onclick="guardarConfiguracionPIN()">🔒 Guardar PIN y Preguntas</button>
+                <button class="btn-primario" onclick="guardarConfiguracionPIN()">Guardar PIN y Preguntas</button>
                 <button id="btn-desactivar-pin" class="btn-secundario oculto" onclick="desactivarPINActual()" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25); display: none;">Desactivar PIN actual</button>
             </div>
         </div>
@@ -947,8 +952,8 @@
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px;">
-                <button class="btn-primario" onclick="verificarRecuperacionPIN()">🔓 Verificar y Cambiar PIN</button>
-                <button id="btn-pedir-pista-pin" class="btn-secundario" onclick="mostrarPistasSutilesPIN()" style="font-size: 13px; padding: 10px;">💡 No recuerdo / Dame una pista sutil</button>
+                <button class="btn-primario" onclick="verificarRecuperacionPIN()">Verificar y Cambiar PIN</button>
+                <button id="btn-pedir-pista-pin" class="btn-secundario" onclick="mostrarPistasSutilesPIN()" style="font-size: 13px; padding: 10px;">No recuerdo / Dame una pista sutil</button>
             </div>
         </div>
     </div>
@@ -970,7 +975,9 @@
             <div style="display: flex; flex-direction: column; align-items: center; margin-bottom: 16px;">
                 <div class="perfil-avatar-wrapper grande" onclick="seleccionarFotoPerfil()">
                     <img src="logo.jpg" alt="Avatar" id="modal-user-avatar" class="perfil-avatar-img grande">
-                    <div class="perfil-avatar-edit-badge">📷</div>
+                    <div class="perfil-avatar-edit-badge">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    </div>
                 </div>
                 <div style="display: flex; gap: 14px; margin-top: 8px;">
                     <button class="btn-link-perfil" onclick="seleccionarFotoPerfil()">Subir o cambiar foto</button>
@@ -994,7 +1001,7 @@
                 <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; text-align: center; line-height: 1.4;">
                     Conecta tu cuenta gratuita para sincronizar tu perfil, cuentas y movimientos en la nube.
                 </p>
-                <button class="btn-primario" onclick="cerrarModal('modal-perfil'); abrirPantallaAuth();">☁️ Conectar Cuenta / Registrarme</button>
+                <button class="btn-primario" onclick="cerrarModal('modal-perfil'); abrirPantallaAuth();">Conectar Cuenta / Registrarme</button>
             </div>
 
             <div id="modal-cloud-logged-in-box" class="oculto" style="display: none; flex-direction: column; gap: 10px;">
@@ -1003,7 +1010,7 @@
                         <small style="color: var(--text-secondary); font-size: 11px; display: block;">Sesión activa en la nube</small>
                         <strong id="modal-cloud-user-email" style="font-size: 14px; color: var(--text-primary); word-break: break-all;">usuario@correo.com</strong>
                     </div>
-                    <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">🔄 Sincronizar</button>
+                    <button class="btn-secundario" onclick="forzarSincronizacionManual()" style="width: auto; padding: 8px 12px; font-size: 12px; border-radius: 12px; flex-shrink: 0;">Sincronizar</button>
                 </div>
                 <button class="btn-secundario" onclick="cerrarModal('modal-perfil'); cerrarSesionNube();" style="color: #FF453A; border-color: rgba(255, 69, 58, 0.25);">Cerrar Sesión</button>
             </div>
@@ -1023,7 +1030,7 @@
                         <button id="btn-hist-total" class="btn-secundario btn-filtro-hist" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;" onclick="mostrarHistorialTotalCuenta()">Total</button>
                         <div class="hist-dia-picker-wrap">
                             <input type="date" id="filtro-fecha" onchange="actualizarListaTransacciones()">
-                            <button id="btn-hist-dia" type="button" class="btn-secundario btn-filtro-hist activo" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;">📅 Día</button>
+                            <button id="btn-hist-dia" type="button" class="btn-secundario btn-filtro-hist activo" style="padding: 6px 12px; font-size: 13px; border-radius: 12px; width: auto;">Día</button>
                         </div>
                         <button class="btn-close-modal btn-close-historial-safe" onclick="cerrarModal('modal-historial')">
                             <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1031,7 +1038,7 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="buscar-historial" placeholder="🔍 Buscar categoría, monto o nota..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
+                    <input type="text" id="buscar-historial" placeholder="Buscar categoría, monto o nota..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline:none;" oninput="actualizarListaTransacciones()">
                 </div>
             </div>
             
@@ -1066,7 +1073,7 @@
                     </button>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="buscar-askbot-menu" placeholder="🔍 Buscar consulta, tasa, deuda, PIN, meta..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" oninput="filtrarMenuAskBotEnVivo()">
+                    <input type="text" id="buscar-askbot-menu" placeholder="Buscar consulta, tasa, deuda, PIN, meta..." style="flex: 1; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--border-light); background: var(--input-bg); color: var(--text-primary); outline: none;" oninput="filtrarMenuAskBotEnVivo()">
                 </div>
             </div>
 
@@ -1085,8 +1092,8 @@
                 <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--bg-dark) 100%); z-index: 1;"></div>
                 
                 <!-- Botón Eliminar Meta (Izquierda) -->
-                <button class="btn-close-modal" style="position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 69, 58, 0.85); color: #fff; width: 40px; height: 40px;" onclick="eliminarMeta(metaAbonoActualIndex)">
-                    🗑️
+                <button class="btn-close-modal" style="position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 69, 58, 0.85); color: #fff; width: 40px; height: 40px;" onclick="eliminarMeta(metaAbonoActualIndex)" aria-label="Eliminar meta">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
                 
                 <!-- Botón Cerrar (Derecha) -->
@@ -1249,7 +1256,7 @@
 
             <!-- Cuerpo del Paso -->
             <div class="tut-slide" id="tut-slide-body">
-                <div id="tut-icono" class="tut-icon-box">🚀</div>
+                <div id="tut-icono" class="tut-icon-box" style="font-size: 22px; font-weight: 800;">A$</div>
                 <h2 id="tut-titulo" style="font-size: 22px; font-weight: 800; margin-bottom: 8px; color: var(--text-primary); letter-spacing: -0.5px;">Bienvenido a A$$IST 4.0</h2>
                 <p id="tut-desc" style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;"></p>
                 <div id="tut-detalle" class="tut-tip-box"></div>
@@ -1297,8 +1304,8 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 14px;">
-                <button type="button" class="btn-secundario" style="flex: 1; padding: 11px 12px; font-size: 13.5px;" onclick="seleccionarDiaCalendarioCalc(getLocalYYYYMMDD())">📍 Ir a Hoy</button>
-                <button type="button" id="btn-calc-cal-ir-manana" class="btn-primario oculto" style="flex: 1; padding: 11px 12px; font-size: 13.5px; display: none;" onclick="irAFechaPosteriorDesdeCalCalc()">📅→ Tasa Siguiente</button>
+                <button type="button" class="btn-secundario" style="flex: 1; padding: 11px 12px; font-size: 13.5px;" onclick="seleccionarDiaCalendarioCalc(getLocalYYYYMMDD())">Ir a Hoy</button>
+                <button type="button" id="btn-calc-cal-ir-manana" class="btn-primario oculto" style="flex: 1; padding: 11px 12px; font-size: 13.5px; display: none;" onclick="irAFechaPosteriorDesdeCalCalc()">→ Tasa Siguiente</button>
             </div>
         </div>
     </div>
@@ -1308,7 +1315,9 @@
         <div class="glass-modal-content iphone-calc-modal-content" onclick="event.stopPropagation()">
             <div class="iphone-calc-top-bar">
                 <div class="iphone-calc-title-group">
-                    <span class="iphone-calc-badge-icon">🧮</span>
+                    <span class="iphone-calc-badge-icon">
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="3.5"></rect><rect x="7.5" y="5.2" width="9" height="3.8" rx="1"></rect><circle cx="8.5" cy="13" r="1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="13" r="1" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="13" r="1" fill="currentColor" stroke="none"></circle><circle cx="8.5" cy="17" r="1" fill="currentColor" stroke="none"></circle><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="17" r="1" fill="currentColor" stroke="none"></circle></svg>
+                    </span>
                     <div>
                         <strong style="font-size: 15px; color: var(--text-primary); display: block; line-height: 1.1;">Calculadora Rápida</strong>
                         <small style="font-size: 11px; color: var(--text-secondary);">Cuentas al instante</small>
@@ -1391,15 +1400,22 @@
             <span class="nav-text">Ajustes</span>
         </div>
     </nav>
-    <!-- LIBRERÍAS EXTERNAS Y ARQUITECTURA MODULAR DE A$$IST V4.0 (ORDEN ESTRICTO DE CARGA) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="estado-nube.js?v=20261019c"></script>
-    <script src="seguridad-modales.js?v=20261019c"></script>
-    <script src="tasas-calculadora.js?v=20261019c"></script>
-    <script src="cuentas-movimientos.js?v=20261019c"></script>
-    <script src="metas-agenda.js?v=20261019c"></script>
-    <script src="askbot-guia.js?v=20261019c"></script>
-    <script src="gestion-arranque.js?v=20261019c"></script>
+    <!-- LIBRERÍAS EXTERNAS Y ARQUITECTURA MODULAR DE A$$IST V4.0 (ORDEN ESTRICTO DE CARGA + SOPORTE OFFLINE) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="console.warn('Modo offline: Chart.js no disponible en red')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="console.warn('Modo offline: Supabase SDK no disponible en red')"></script>
+    <script src="estado-nube.js?v=20261019d"></script>
+    <script src="seguridad-modales.js?v=20261019d"></script>
+    <script src="tasas-calculadora.js?v=20261019d"></script>
+    <script src="cuentas-movimientos.js?v=20261019d"></script>
+    <script src="metas-agenda.js?v=20261019d"></script>
+    <script src="askbot-guia.js?v=20261019d"></script>
+    <script src="gestion-arranque.js?v=20261019d"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js?v=20261019d').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>
