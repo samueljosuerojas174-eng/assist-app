@@ -896,15 +896,23 @@ let calcIphoneEstado = {
     valorPrevio: null,
     operador: null,
     esperandoSegundoOperando: false,
+    ultimoOperador: null,
+    ultimoOperando: null,
     expresionTexto: ''
 };
 
 function formatearNumeroCalcIphone(strNum) {
     if (strNum === 'Error' || strNum === '∞') return strNum;
-    const negativo = strNum.startsWith('-');
-    const limpio = negativo ? strNum.slice(1) : strNum;
+    const texto = String(strNum);
+    if (texto.includes('e') || texto.includes('E')) {
+        const n = Number(texto);
+        return isFinite(n) ? n.toExponential(4).replace('.', ',') : 'Error';
+    }
+    const negativo = texto.startsWith('-');
+    const limpio = negativo ? texto.slice(1) : texto;
     const partes = limpio.split('.');
-    const enteroNum = parseInt(partes[0] || '0', 10);
+    const enteroStr = partes[0] || '0';
+    const enteroNum = parseInt(enteroStr, 10);
     const enteroFormateado = isNaN(enteroNum) ? '0' : enteroNum.toLocaleString('es-VE');
     let resultado = (negativo ? '-' : '') + enteroFormateado;
     if (partes.length > 1) {
@@ -922,15 +930,15 @@ function simboloOperadorCalcIphone(op) {
 }
 
 function actualizarPantallaCalcIphone() {
-    const elVal = document.getElementById('calc-iphone-val');
-    const elExpr = document.getElementById('calc-iphone-expr');
-    const btnAc = document.getElementById('calc-btn-ac');
+    const elVal = document.getElementById('iphone-calc-display') || document.getElementById('calc-iphone-val');
+    const elExpr = document.getElementById('iphone-calc-expr') || document.getElementById('calc-iphone-expr');
+    const btnAc = document.getElementById('btn-ic-clear') || document.getElementById('calc-btn-ac');
 
     if (elVal) {
         const textoMostrar = formatearNumeroCalcIphone(calcIphoneEstado.valorActual);
         elVal.innerText = textoMostrar;
         const len = textoMostrar.length;
-        if (len > 12) elVal.style.fontSize = '28px';
+        if (len > 11) elVal.style.fontSize = '30px';
         else if (len > 9) elVal.style.fontSize = '36px';
         else if (len > 7) elVal.style.fontSize = '44px';
         else elVal.style.fontSize = '54px';
@@ -945,20 +953,46 @@ function actualizarPantallaCalcIphone() {
         btnAc.innerText = mostrarC ? 'C' : 'AC';
     }
 
-    document.querySelectorAll('.calc-iphone-btn.calc-btn-op').forEach(btn => {
+    document.querySelectorAll('.ic-btn.ic-btn-op, .calc-iphone-btn.calc-btn-op').forEach(btn => {
         const opBtn = btn.getAttribute('data-op');
-        if (opBtn && opBtn === calcIphoneEstado.operador && calcIphoneEstado.esperandoSegundoOperando) {
-            btn.classList.add('calc-op-activo');
-        } else {
-            btn.classList.remove('calc-op-activo');
-        }
+        const activo = Boolean(opBtn && opBtn === calcIphoneEstado.operador && calcIphoneEstado.esperandoSegundoOperando);
+        btn.classList.toggle('ic-op-activa', activo);
+        btn.classList.toggle('calc-op-activo', activo);
     });
+}
+
+function inicializarSwipePantallaCalcIphone() {
+    const screenEl = document.getElementById('iphone-calc-screen');
+    if (!screenEl || screenEl.dataset.swipeReady === '1') return;
+    screenEl.dataset.swipeReady = '1';
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let swiped = false;
+
+    screenEl.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        swiped = false;
+    }, { passive: true });
+
+    screenEl.addEventListener('touchmove', (e) => {
+        if (swiped || !e.touches || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+            swiped = true;
+            calcIphoneBorrarDigito();
+        }
+    }, { passive: true });
 }
 
 function abrirCalculadoraRapida() {
     const modal = document.getElementById('modal-calc-iphone');
     if (!modal) return;
     modal.classList.remove('oculto');
+    inicializarSwipePantallaCalcIphone();
     actualizarPantallaCalcIphone();
     if (typeof actualizarCandadoScrollModales === 'function') actualizarCandadoScrollModales();
 }
@@ -968,14 +1002,23 @@ function calcIphoneDigito(digito) {
         calcIphoneEstado.valorActual = '0';
     }
     if (calcIphoneEstado.esperandoSegundoOperando) {
+        if (calcIphoneEstado.operador === null) {
+            calcIphoneEstado.expresionTexto = '';
+            calcIphoneEstado.ultimoOperador = null;
+            calcIphoneEstado.ultimoOperando = null;
+        }
         calcIphoneEstado.valorActual = String(digito);
         calcIphoneEstado.esperandoSegundoOperando = false;
     } else {
         const sinSigno = calcIphoneEstado.valorActual.replace('-', '').replace('.', '');
-        if (sinSigno.length >= 12) return;
-        calcIphoneEstado.valorActual = calcIphoneEstado.valorActual === '0'
-            ? String(digito)
-            : calcIphoneEstado.valorActual + String(digito);
+        if (sinSigno.length >= 9) return;
+        if (calcIphoneEstado.valorActual === '0') {
+            calcIphoneEstado.valorActual = String(digito);
+        } else if (calcIphoneEstado.valorActual === '-0') {
+            calcIphoneEstado.valorActual = '-' + String(digito);
+        } else {
+            calcIphoneEstado.valorActual += String(digito);
+        }
     }
     actualizarPantallaCalcIphone();
 }
@@ -985,6 +1028,11 @@ function calcIphoneDecimal() {
         calcIphoneEstado.valorActual = '0';
     }
     if (calcIphoneEstado.esperandoSegundoOperando) {
+        if (calcIphoneEstado.operador === null) {
+            calcIphoneEstado.expresionTexto = '';
+            calcIphoneEstado.ultimoOperador = null;
+            calcIphoneEstado.ultimoOperando = null;
+        }
         calcIphoneEstado.valorActual = '0.';
         calcIphoneEstado.esperandoSegundoOperando = false;
         actualizarPantallaCalcIphone();
@@ -1004,6 +1052,8 @@ function calcIphoneClear() {
         calcIphoneEstado.valorPrevio = null;
         calcIphoneEstado.operador = null;
         calcIphoneEstado.esperandoSegundoOperando = false;
+        calcIphoneEstado.ultimoOperador = null;
+        calcIphoneEstado.ultimoOperando = null;
         calcIphoneEstado.expresionTexto = '';
     }
     actualizarPantallaCalcIphone();
@@ -1023,8 +1073,18 @@ function calcIphoneBorrarDigito() {
 }
 
 function calcIphoneSigno() {
-    if (calcIphoneEstado.valorActual === '0' || calcIphoneEstado.valorActual === 'Error') return;
-    if (calcIphoneEstado.valorActual.startsWith('-')) {
+    if (calcIphoneEstado.valorActual === 'Error') return;
+    if (calcIphoneEstado.esperandoSegundoOperando && calcIphoneEstado.operador !== null) {
+        calcIphoneEstado.valorActual = '-0';
+        calcIphoneEstado.esperandoSegundoOperando = false;
+        actualizarPantallaCalcIphone();
+        return;
+    }
+    if (calcIphoneEstado.valorActual === '0') {
+        calcIphoneEstado.valorActual = '-0';
+    } else if (calcIphoneEstado.valorActual === '-0') {
+        calcIphoneEstado.valorActual = '0';
+    } else if (calcIphoneEstado.valorActual.startsWith('-')) {
         calcIphoneEstado.valorActual = calcIphoneEstado.valorActual.slice(1);
     } else {
         calcIphoneEstado.valorActual = '-' + calcIphoneEstado.valorActual;
@@ -1040,6 +1100,7 @@ function calcIphonePorcentaje() {
         res = calcIphoneEstado.valorPrevio * (val / 100);
     }
     calcIphoneEstado.valorActual = Number(res.toPrecision(10)).toString();
+    calcIphoneEstado.esperandoSegundoOperando = false;
     actualizarPantallaCalcIphone();
 }
 
@@ -1049,6 +1110,12 @@ function ejecutarCalculoIphone(a, b, op) {
     if (op === '*') return a * b;
     if (op === '/') return b === 0 ? NaN : a / b;
     return b;
+}
+
+function normalizarResultadoCalcIphone(num) {
+    if (!isFinite(num)) return null;
+    const redondeado = Number(parseFloat(Number(num).toPrecision(12)));
+    return String(redondeado);
 }
 
 function calcIphoneOperador(siguienteOp) {
@@ -1066,7 +1133,8 @@ function calcIphoneOperador(siguienteOp) {
         calcIphoneEstado.valorPrevio = valorInput;
     } else if (calcIphoneEstado.operador) {
         const resultado = ejecutarCalculoIphone(calcIphoneEstado.valorPrevio, valorInput, calcIphoneEstado.operador);
-        if (!isFinite(resultado)) {
+        const norm = normalizarResultadoCalcIphone(resultado);
+        if (norm === null) {
             calcIphoneEstado.valorActual = 'Error';
             calcIphoneEstado.valorPrevio = null;
             calcIphoneEstado.operador = null;
@@ -1075,32 +1143,48 @@ function calcIphoneOperador(siguienteOp) {
             actualizarPantallaCalcIphone();
             return;
         }
-        const redondeado = Number(Math.round(Number(resultado + 'e10')) + 'e-10');
-        calcIphoneEstado.valorActual = String(redondeado);
-        calcIphoneEstado.valorPrevio = redondeado;
+        calcIphoneEstado.valorActual = norm;
+        calcIphoneEstado.valorPrevio = parseFloat(norm);
     }
 
     calcIphoneEstado.esperandoSegundoOperando = true;
     calcIphoneEstado.operador = siguienteOp;
+    calcIphoneEstado.ultimoOperador = null;
+    calcIphoneEstado.ultimoOperando = null;
     calcIphoneEstado.expresionTexto = `${formatearNumeroCalcIphone(String(calcIphoneEstado.valorPrevio))} ${simboloOperadorCalcIphone(siguienteOp)}`;
     actualizarPantallaCalcIphone();
 }
 
 function calcIphoneIgual() {
     const valorInput = parseFloat(calcIphoneEstado.valorActual);
-    if (calcIphoneEstado.operador === null || calcIphoneEstado.valorPrevio === null || isNaN(valorInput)) return;
+    if (isNaN(valorInput)) return;
 
-    const previoStr = formatearNumeroCalcIphone(String(calcIphoneEstado.valorPrevio));
-    const actualStr = formatearNumeroCalcIphone(String(valorInput));
-    const opSimbolo = simboloOperadorCalcIphone(calcIphoneEstado.operador);
+    let a = calcIphoneEstado.valorPrevio;
+    let b = valorInput;
+    let op = calcIphoneEstado.operador;
 
-    const resultado = ejecutarCalculoIphone(calcIphoneEstado.valorPrevio, valorInput, calcIphoneEstado.operador);
-    if (!isFinite(resultado)) {
+    if (op !== null && a !== null) {
+        calcIphoneEstado.ultimoOperador = op;
+        calcIphoneEstado.ultimoOperando = b;
+    } else if (calcIphoneEstado.ultimoOperador !== null && calcIphoneEstado.ultimoOperando !== null) {
+        a = valorInput;
+        op = calcIphoneEstado.ultimoOperador;
+        b = calcIphoneEstado.ultimoOperando;
+    } else {
+        return;
+    }
+
+    const previoStr = formatearNumeroCalcIphone(String(a));
+    const actualStr = formatearNumeroCalcIphone(String(b));
+    const opSimbolo = simboloOperadorCalcIphone(op);
+
+    const resultado = ejecutarCalculoIphone(a, b, op);
+    const norm = normalizarResultadoCalcIphone(resultado);
+    if (norm === null) {
         calcIphoneEstado.valorActual = 'Error';
         calcIphoneEstado.expresionTexto = `${previoStr} ${opSimbolo} ${actualStr} =`;
     } else {
-        const redondeado = Number(Math.round(Number(resultado + 'e10')) + 'e-10');
-        calcIphoneEstado.valorActual = String(redondeado);
+        calcIphoneEstado.valorActual = norm;
         calcIphoneEstado.expresionTexto = `${previoStr} ${opSimbolo} ${actualStr} =`;
     }
 
@@ -1113,15 +1197,19 @@ function calcIphoneIgual() {
 function copiarResultadoCalcIphone() {
     const val = parseFloat(calcIphoneEstado.valorActual);
     if (isNaN(val)) return;
-    const texto = Number.isInteger(val) ? String(val) : val.toFixed(2);
+    const texto = Number.isInteger(val) ? String(val) : String(Number(val.toFixed(2)));
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(texto).catch(() => {});
     }
-    const expr = document.getElementById('calc-iphone-expr');
-    if (expr) {
-        const prev = expr.innerText;
-        expr.innerText = '✓ Copiado al portapapeles';
-        setTimeout(() => { expr.innerText = prev; }, 1200);
+    const hint = document.getElementById('iphone-calc-copy-hint') || document.getElementById('iphone-calc-expr');
+    if (hint) {
+        const prev = hint.innerText;
+        hint.innerText = '✓ Copiado al portapapeles';
+        hint.classList.add('copiado-activo');
+        setTimeout(() => {
+            hint.innerText = prev;
+            hint.classList.remove('copiado-activo');
+        }, 1200);
     }
 }
 
@@ -1152,6 +1240,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key >= '0' && e.key <= '9') { e.preventDefault(); calcIphoneDigito(e.key); }
     else if (e.key === '.' || e.key === ',') { e.preventDefault(); calcIphoneDecimal(); }
     else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') { e.preventDefault(); calcIphoneOperador(e.key); }
+    else if (e.key === '%') { e.preventDefault(); calcIphonePorcentaje(); }
     else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calcIphoneIgual(); }
     else if (e.key === 'Backspace') { e.preventDefault(); calcIphoneBorrarDigito(); }
     else if (e.key === 'Escape') { e.preventDefault(); cerrarModal('modal-calc-iphone'); }

@@ -213,11 +213,6 @@ function cambiarPestana(idPestana, elementoNav) {
     });
 
     tabDestino.className = `vista-activa ${claseDireccion}`;
-    const limpiarClaseAnim = () => {
-        tabDestino.classList.remove('tab-anim-left', 'tab-anim-right');
-        tabDestino.removeEventListener('animationend', limpiarClaseAnim);
-    };
-    tabDestino.addEventListener('animationend', limpiarClaseAnim);
 
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('activo', 'nav-tap-bounce');
@@ -533,7 +528,7 @@ function importarDatos(e) {
     e.target.value = '';
 }
 
-// ================= SCROLL DE PANTALLA SEDOSO CON MICRO-REBOTE ELÁSTICO EN EXTREMOS =================
+// ================= SCROLL DE PANTALLA ELÁSTICO (~10% OVERSCROLL TIPO HISTORIAL iOS) =================
 let _scrollBounceConfigurado = false;
 function configurarLimitadorScrollApp() {
     if (_scrollBounceConfigurado) return;
@@ -541,23 +536,43 @@ function configurarLimitadorScrollApp() {
 
     let startY = 0;
     let startX = 0;
+    let anchorY = 0;
     let pullingOverscroll = false;
+    let pullDirection = 0; // 1 = tope (hacia abajo), -1 = fondo (hacia arriba)
     let currentOffset = 0;
+    let wheelOffset = 0;
     let lastScrollY = window.scrollY || 0;
     let lastScrollTime = performance.now();
     let scrollVelocity = 0;
     let bounceTimer = null;
+    let wheelResetTimer = null;
     let touchActivo = false;
 
     const obtenerVistaRebote = () => {
         if (document.body.classList.contains('modal-open') || document.body.classList.contains('askbot-tab-open')) return null;
-        const v = document.querySelector('.vista-activa');
-        if (!v || v.classList.contains('tab-anim-left') || v.classList.contains('tab-anim-right')) return null;
-        return v;
+        return document.querySelector('.vista-activa');
     };
 
     const obtenerMaxScroll = () => {
         return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    };
+
+    const obtenerMaxOverscrollPx = () => {
+        const vh = window.innerHeight || 800;
+        return Math.max(68, Math.min(115, Math.round(vh * 0.105)));
+    };
+
+    const retornarAPosicionOriginal = (vista, duracionMs = 420) => {
+        if (!vista) return;
+        if (bounceTimer) clearTimeout(bounceTimer);
+        vista.style.transition = `transform ${duracionMs}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+        vista.style.transform = 'translate3d(0, 0px, 0)';
+        bounceTimer = setTimeout(() => {
+            if (!pullingOverscroll) {
+                vista.style.transition = '';
+                vista.style.transform = '';
+            }
+        }, duracionMs + 20);
     };
 
     const aplicarReboteInercial = (desplazamientoPx) => {
@@ -565,28 +580,23 @@ function configurarLimitadorScrollApp() {
         if (!vista) return;
         if (bounceTimer) clearTimeout(bounceTimer);
 
-        vista.style.transition = 'transform 0.14s cubic-bezier(0.2, 0.85, 0.4, 1)';
+        vista.style.transition = 'transform 0.16s cubic-bezier(0.2, 0.85, 0.4, 1)';
         vista.style.transform = `translate3d(0, ${desplazamientoPx.toFixed(1)}px, 0)`;
 
         bounceTimer = setTimeout(() => {
-            vista.style.transition = 'transform 0.42s cubic-bezier(0.22, 1.25, 0.36, 1)';
-            vista.style.transform = 'translate3d(0, 0px, 0)';
-            bounceTimer = setTimeout(() => {
-                if (!pullingOverscroll) {
-                    vista.style.transition = '';
-                    vista.style.transform = '';
-                }
-            }, 430);
-        }, 125);
+            retornarAPosicionOriginal(vista, 400);
+        }, 145);
     };
 
     window.addEventListener('touchstart', (e) => {
         if (!e.touches || e.touches.length !== 1) return;
-        if (e.target.closest('.accounts-slider, .palette-container, .cat-palette-row, .swipe-content')) return;
+        if (e.target.closest('.slider-cuentas, .accounts-slider, .palette-container, .cat-palette-row, .swipe-content, .lista-gestion, #lista-transacciones, #lista-historial-meta')) return;
         touchActivo = true;
         startY = e.touches[0].clientY;
         startX = e.touches[0].clientX;
+        anchorY = startY;
         pullingOverscroll = false;
+        pullDirection = 0;
         currentOffset = 0;
         const vista = obtenerVistaRebote();
         if (vista && bounceTimer) {
@@ -604,29 +614,41 @@ function configurarLimitadorScrollApp() {
 
         const curY = e.touches[0].clientY;
         const curX = e.touches[0].clientX;
-        const dy = curY - startY;
-        const dx = curX - startX;
+        const totalDy = curY - startY;
+        const totalDx = curX - startX;
 
-        if (Math.abs(dx) > Math.abs(dy) * 0.85) return;
+        if (!pullingOverscroll && Math.abs(totalDx) > Math.abs(totalDy) * 0.85) return;
 
         const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
         const maxScroll = obtenerMaxScroll();
 
-        const enTope = scrollY <= 1 && dy > 6;
-        const enFondo = scrollY >= maxScroll - 1 && dy < -6;
+        if (!pullingOverscroll) {
+            if (scrollY <= 2 && totalDy > 5) {
+                pullingOverscroll = true;
+                pullDirection = 1;
+                anchorY = curY;
+            } else if (scrollY >= maxScroll - 2 && totalDy < -5) {
+                pullingOverscroll = true;
+                pullDirection = -1;
+                anchorY = curY;
+            }
+        }
 
-        if (enTope || enFondo) {
-            pullingOverscroll = true;
-            const rawDelta = enTope ? (dy - 6) : (dy + 6);
-            // Amortiguación logarítmica sutil (máximo ~14px de elongación) para dar dinamismo sin exagerar
-            currentOffset = Math.tanh(rawDelta / 150) * 14;
+        if (pullingOverscroll) {
+            const rawDelta = curY - anchorY;
+            if ((pullDirection === 1 && rawDelta <= 0) || (pullDirection === -1 && rawDelta >= 0)) {
+                pullingOverscroll = false;
+                pullDirection = 0;
+                currentOffset = 0;
+                vista.style.transition = 'transform 0.2s ease-out';
+                vista.style.transform = 'translate3d(0, 0px, 0)';
+                return;
+            }
+            const maxOverscroll = obtenerMaxOverscrollPx();
+            const resistencia = (window.innerHeight || 800) * 0.28;
+            currentOffset = Math.tanh(rawDelta / resistencia) * maxOverscroll;
             vista.style.transition = 'none';
             vista.style.transform = `translate3d(0, ${currentOffset.toFixed(1)}px, 0)`;
-        } else if (pullingOverscroll) {
-            pullingOverscroll = false;
-            currentOffset = 0;
-            vista.style.transition = 'transform 0.25s ease-out';
-            vista.style.transform = '';
         }
     }, { passive: true });
 
@@ -634,17 +656,10 @@ function configurarLimitadorScrollApp() {
         touchActivo = false;
         if (!pullingOverscroll) return;
         pullingOverscroll = false;
+        pullDirection = 0;
+        currentOffset = 0;
         const vista = obtenerVistaRebote();
-        if (!vista) return;
-
-        vista.style.transition = 'transform 0.44s cubic-bezier(0.22, 1.28, 0.36, 1)';
-        vista.style.transform = 'translate3d(0, 0px, 0)';
-        bounceTimer = setTimeout(() => {
-            if (!pullingOverscroll) {
-                vista.style.transition = '';
-                vista.style.transform = '';
-            }
-        }, 450);
+        retornarAPosicionOriginal(vista, 420);
     };
 
     window.addEventListener('touchend', finalizarPull, { passive: true });
@@ -658,13 +673,14 @@ function configurarLimitadorScrollApp() {
         scrollVelocity = dy / dt; // px por ms
 
         const maxScroll = obtenerMaxScroll();
+        const maxOverscroll = obtenerMaxOverscrollPx();
 
-        if (!pullingOverscroll && maxScroll > 20) {
-            if (curY <= 0 && lastScrollY > 2 && scrollVelocity < -0.15) {
-                const impulso = Math.min(9.5, Math.max(3, Math.abs(scrollVelocity) * 4.2));
+        if (!pullingOverscroll && !touchActivo && maxScroll > 15) {
+            if (curY <= 0 && lastScrollY > 2 && scrollVelocity < -0.12) {
+                const impulso = Math.min(maxOverscroll * 0.42, Math.max(8, Math.abs(scrollVelocity) * 14));
                 aplicarReboteInercial(impulso);
-            } else if (curY >= maxScroll && lastScrollY < maxScroll - 2 && scrollVelocity > 0.15) {
-                const impulso = Math.min(9.5, Math.max(3, Math.abs(scrollVelocity) * 4.2));
+            } else if (curY >= maxScroll - 1 && lastScrollY < maxScroll - 3 && scrollVelocity > 0.12) {
+                const impulso = Math.min(maxOverscroll * 0.42, Math.max(8, Math.abs(scrollVelocity) * 14));
                 aplicarReboteInercial(-impulso);
             }
         }
@@ -679,12 +695,22 @@ function configurarLimitadorScrollApp() {
         if (!vista) return;
         const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
         const maxScroll = obtenerMaxScroll();
-        if (scrollY <= 0 && e.deltaY < -18) {
-            const impulso = Math.min(7.5, Math.max(2.5, Math.abs(e.deltaY) * 0.06));
-            aplicarReboteInercial(impulso);
-        } else if (scrollY >= maxScroll - 1 && e.deltaY > 18) {
-            const impulso = Math.min(7.5, Math.max(2.5, Math.abs(e.deltaY) * 0.06));
-            aplicarReboteInercial(-impulso);
+        const maxOverscroll = obtenerMaxOverscrollPx();
+
+        const enTopeWheel = scrollY <= 1 && e.deltaY < 0;
+        const enFondoWheel = scrollY >= maxScroll - 1 && e.deltaY > 0;
+
+        if (enTopeWheel || enFondoWheel) {
+            if (bounceTimer) clearTimeout(bounceTimer);
+            if (wheelResetTimer) clearTimeout(wheelResetTimer);
+            wheelOffset += (-e.deltaY * 0.35);
+            const clamped = Math.tanh(wheelOffset / (maxOverscroll * 1.3)) * maxOverscroll;
+            vista.style.transition = 'transform 0.08s ease-out';
+            vista.style.transform = `translate3d(0, ${clamped.toFixed(1)}px, 0)`;
+            wheelResetTimer = setTimeout(() => {
+                wheelOffset = 0;
+                retornarAPosicionOriginal(vista, 380);
+            }, 130);
         }
     }, { passive: true });
 }

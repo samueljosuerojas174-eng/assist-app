@@ -45,12 +45,12 @@ html[data-font="outfit"], body[data-font="outfit"] {
 
 [data-theme="dark"] {
     --bg-dark: #000000;
-    --card-dark: #121216;
-    --border-light: rgba(255, 255, 255, 0.075);
+    --card-dark: #09090D;
+    --border-light: rgba(255, 255, 255, 0.13);
     --text-primary: #FFFFFF;
-    --text-secondary: #94949C;
-    --input-bg: rgba(255, 255, 255, 0.05);
-    --card-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.72), 0 4px 12px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --text-secondary: #9898A2;
+    --input-bg: #14141B;
+    --card-shadow: 0 16px 38px -10px rgba(0, 0, 0, 0.88), 0 4px 12px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 [data-theme="light"] {
@@ -63,15 +63,15 @@ html[data-font="outfit"], body[data-font="outfit"] {
     --card-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.07), 0 2px 6px -1px rgba(15, 23, 42, 0.035), inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-/* 1. Actualización de variables Liquid Glass (Cristal Extremo) */
+/* 1. Actualización de variables Liquid Glass (Cristal Oscuro Ejecutivo) */
 [data-theme="glass"] {
     --bg-dark: #000000; 
-    --card-dark: rgba(255, 255, 255, 0.042); 
-    --border-light: rgba(255, 255, 255, 0.13); 
+    --card-dark: rgba(12, 12, 16, 0.76); 
+    --border-light: rgba(255, 255, 255, 0.15); 
     --text-primary: #FFFFFF;
-    --text-secondary: rgba(255, 255, 255, 0.72);
-    --input-bg: rgba(255, 255, 255, 0.055);
-    --card-shadow: 0 16px 38px -10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    --text-secondary: rgba(255, 255, 255, 0.74);
+    --input-bg: rgba(255, 255, 255, 0.075);
+    --card-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--app-font); font-variant-numeric: lining-nums; -webkit-tap-highlight-color: transparent; }
@@ -675,19 +675,19 @@ body.modal-open .app-container {
 .section-subtitle { font-size: 12.5px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; margin-bottom: 12px; }
 .blur-effect { background: var(--card-dark); backdrop-filter: blur(24px) saturate(190%); -webkit-backdrop-filter: blur(24px) saturate(190%); }
 
-.vista-activa { display: block; animation: scaleFadeIn 0.34s var(--ios-spring) forwards; will-change: transform, opacity; }
-.vista-activa.tab-anim-right { animation: tabEnterFromRight 0.32s var(--ios-spring) forwards; }
-.vista-activa.tab-anim-left { animation: tabEnterFromLeft 0.32s var(--ios-spring) forwards; }
+.vista-activa { display: block; animation: scaleFadeIn 0.28s var(--ios-spring); }
+.vista-activa.tab-anim-right { animation: tabEnterFromRight 0.26s var(--ios-spring); }
+.vista-activa.tab-anim-left { animation: tabEnterFromLeft 0.26s var(--ios-spring); }
 .vista-oculta { display: none; }
-@keyframes scaleFadeIn { 0% { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.988); } 100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } }
+@keyframes scaleFadeIn { 0% { transform: translate3d(0, 6px, 0) scale(0.992); } 100% { transform: translate3d(0, 0, 0) scale(1); } }
 @keyframes slideInRight { 0% { opacity: 0; transform: translate3d(16px, 0, 0); } 100% { opacity: 1; transform: translate3d(0, 0, 0); } }
 @keyframes tabEnterFromRight {
-    0% { opacity: 0; transform: translate3d(14px, 0, 0) scale(0.992); }
-    100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    0% { transform: translate3d(14px, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
 }
 @keyframes tabEnterFromLeft {
-    0% { opacity: 0; transform: translate3d(-14px, 0, 0) scale(0.992); }
-    100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+    0% { transform: translate3d(-14px, 0, 0); }
+    100% { transform: translate3d(0, 0, 0); }
 }
 @keyframes navIconSpring {
     0% { transform: scale(1); }
@@ -2790,8 +2790,8 @@ body[data-theme="glass"]::before {
     z-index: -1;
     pointer-events: none;
     background:
-        radial-gradient(circle at 22% 16%, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 56%),
-        radial-gradient(circle at 80% 84%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 52%);
+        radial-gradient(circle at 22% 16%, color-mix(in srgb, var(--accent) 11%, transparent) 0%, transparent 54%),
+        radial-gradient(circle at 80% 84%, color-mix(in srgb, var(--accent) 6.5%, transparent) 0%, transparent 50%);
     filter: blur(55px);
     -webkit-filter: blur(55px);
     transform: translate3d(0, 0, 0);
@@ -2810,23 +2810,23 @@ body[data-theme="glass"]::before {
 }
 
 [data-theme="glass"] .vista-activa {
-    animation: glassTabSlideRight 0.24s var(--ios-spring) forwards !important;
+    animation: glassTabSlideRight 0.22s var(--ios-spring) !important;
     will-change: auto !important;
 }
 [data-theme="glass"] .vista-activa.tab-anim-right,
 [data-theme="glass"] .dock-anim-right,
 [data-theme="glass"] .subview-anim-right {
-    animation: glassTabSlideRight 0.24s var(--ios-spring) forwards !important;
+    animation: glassTabSlideRight 0.22s var(--ios-spring) !important;
     will-change: auto !important;
 }
 [data-theme="glass"] .vista-activa.tab-anim-left,
 [data-theme="glass"] .dock-anim-left,
 [data-theme="glass"] .subview-anim-left {
-    animation: glassTabSlideLeft 0.24s var(--ios-spring) forwards !important;
+    animation: glassTabSlideLeft 0.22s var(--ios-spring) !important;
     will-change: auto !important;
 }
 [data-theme="glass"] .nav-item {
-    transition: color 0.18s ease, transform 0.22s var(--ios-spring) !important;
+    transition: transform 0.22s var(--ios-spring) !important;
 }
 
 /* Tarjetas Principales: Cristal único por nivel (sin anidar backdrop-filter) con recorte limpio padding-box */
@@ -3391,7 +3391,7 @@ html[data-font="minecraft"] .nav-item span:last-child {
     100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* Rebote elástico tipo iOS 26 en botones, tarjetas, chips y segmentos */
+/* Rebote elástico tipo iOS 26 sin retraso de carga de color al cambiar de pestaña */
 .btn-primario,
 .btn-secundario,
 .segment,
@@ -3402,7 +3402,7 @@ html[data-font="minecraft"] .nav-item span:last-child {
 .meta-card,
 .agenda-item,
 .transaccion-wrapper {
-    transition: transform 0.34s var(--ios-bounce), background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, color 0.25s ease;
+    transition: transform 0.28s var(--ios-bounce), opacity 0.2s ease;
 }
 .tasa-item:active,
 .chip-filtro:active,
@@ -3417,25 +3417,15 @@ html[data-font="minecraft"] .nav-item span:last-child {
 .font-pill-btn .font-pill-info { flex: 1 1 auto; overflow: hidden; }
 .font-pill-btn .font-pill-preview { width: 34px; height: 34px; min-width: 34px; overflow: hidden; letter-spacing: 0 !important; }
 
-/* ================= MEJORAS PREMIUM DE TEMAS (OSCURO, LIQUID GLASS, CLARO) Y TRANSICIONES DE PÁGINA ================= */
+/* ================= BLACK PREMIUM EMPRESARIAL (MODO OSCURO) Y LIQUID GLASS OSCURO EJECUTIVO ================= */
 
-/* Halo ambiental superior sutil en Modo Oscuro para profundidad OLED de lujo */
-body[data-theme="dark"]::before {
-    content: "";
-    position: fixed;
-    top: -18%;
-    left: -10%;
-    right: -10%;
-    height: 52vh;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--accent) 11%, transparent) 0%, transparent 72%);
-    filter: blur(42px);
-    -webkit-filter: blur(42px);
-    transform: translate3d(0, 0, 0);
+/* Modo Oscuro Black Premium Empresarial: Fondo Negro Puro y Tarjetas Obsidiana Carbono */
+html[data-theme="dark"],
+body[data-theme="dark"] {
+    background-color: #000000 !important;
+    background-image: none !important;
 }
 
-/* Superficies multicapa con borde especular superior en Modo Oscuro */
 [data-theme="dark"] .balance-section,
 [data-theme="dark"] .tasas-widget,
 [data-theme="dark"] .add-transaction,
@@ -3444,18 +3434,60 @@ body[data-theme="dark"]::before {
 [data-theme="dark"] .askbot-container,
 [data-theme="dark"] .agenda-stat-card,
 [data-theme="dark"] .agenda-item-card,
-[data-theme="dark"] .meta-item-card {
-    background: linear-gradient(165deg, #16161C 0%, #101014 100%);
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    border-top: 1px solid rgba(255, 255, 255, 0.13);
-    box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.72), 0 4px 12px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.065);
+[data-theme="dark"] .meta-item-card,
+[data-theme="dark"] .auth-box,
+[data-theme="dark"] .pin-box-card {
+    background: linear-gradient(180deg, #0B0B0F 0%, #060609 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.11) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 16px 38px -10px rgba(0, 0, 0, 0.9), 0 4px 12px -2px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Refinamiento de Liquid Glass: refracción especular más rica conservando 120 FPS */
+/* Botones y Controles en Modo Oscuro Empresarial: Superficie Grafito Elevada para que NUNCA se pierdan en el negro */
+[data-theme="dark"] .btn-secundario,
+[data-theme="dark"] .btn-calc-header-icon,
+[data-theme="dark"] .chip-filtro:not(.activo),
+[data-theme="dark"] .btn-mover,
+[data-theme="dark"] .askbot-chip,
+[data-theme="dark"] .askbot-launcher-btn,
+[data-theme="dark"] .askbot-header-badge,
+[data-theme="dark"] .btn-askbot-clear-header {
+    background: linear-gradient(180deg, #191922 0%, #121218 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.24) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+[data-theme="dark"] .input-wrapper,
+[data-theme="dark"] select.custom-select-btn,
+[data-theme="dark"] select.custom-select-inline,
+[data-theme="dark"] input:not([type="hidden"]):not(#monto):not(#askbot-input):not(#input-pin):not([type="date"]):not([type="file"]):not([type="color"]),
+[data-theme="dark"] .segmented-control,
+[data-theme="dark"] .transaccion-item,
+[data-theme="dark"] .swipe-content,
+[data-theme="dark"] .swipe-container,
+[data-theme="dark"] .historial-chart-card,
+[data-theme="dark"] .cat-new-box {
+    background-color: #13131A !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-theme="dark"] .btn-primario,
+[data-theme="glass"] .btn-primario {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="dark"] .bottom-nav {
+    background: rgba(6, 6, 9, 0.92) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Liquid Glass Oscuro Ejecutivo: Cristal Ahumado Profundo con Bordes Especulares Definidos */
 body[data-theme="glass"]::before {
     background:
-        radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent) 24%, transparent) 0%, transparent 56%),
-        radial-gradient(circle at 82% 84%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 54%) !important;
+        radial-gradient(circle at 20% 15%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 52%),
+        radial-gradient(circle at 82% 84%, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 48%) !important;
 }
 
 [data-theme="glass"] .balance-section,
@@ -3466,11 +3498,32 @@ body[data-theme="glass"]::before {
 [data-theme="glass"] .calc-cambio-container,
 [data-theme="glass"] .askbot-container,
 [data-theme="glass"] .agenda-stat-card,
-[data-theme="glass"] .agenda-item-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, color-mix(in srgb, var(--accent) 5%, rgba(255, 255, 255, 0.022)) 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.22) !important;
-    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+[data-theme="glass"] .agenda-item-card,
+[data-theme="glass"] .agenda-home-banner,
+[data-theme="glass"] .auth-box,
+[data-theme="glass"] .pin-box-card {
+    background: linear-gradient(145deg, rgba(16, 16, 22, 0.78) 0%, rgba(7, 7, 11, 0.88) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.24) !important;
+    box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="glass"] .btn-secundario,
+[data-theme="glass"] .btn-calc-header-icon,
+[data-theme="glass"] .chip-filtro:not(.activo),
+[data-theme="glass"] .btn-mover,
+[data-theme="glass"] .askbot-chip,
+[data-theme="glass"] .askbot-launcher-btn {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.045) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.17) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.26) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="glass"] .bottom-nav {
+    background: rgba(6, 6, 10, 0.82) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Refinamiento de Modo Claro: Porcelana editorial con contraste impecable */
@@ -3526,70 +3579,10 @@ body[data-theme="light"]::before {
 /* Indicador activo en los botones de Modo (Oscuro / Liquid Glass / Claro) */
 .btn-secundario.modo-activo {
     border-color: var(--accent) !important;
-    background: color-mix(in srgb, var(--accent) 13%, var(--input-bg)) !important;
+    background: color-mix(in srgb, var(--accent) 16%, var(--input-bg)) !important;
     color: var(--text-primary) !important;
     font-weight: 800 !important;
-    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 36%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-}
-
-/* Transiciones direccionales entre páginas con física fluida y cascada sutil */
-@keyframes tabEnterFromRight {
-    0% {
-        opacity: 0;
-        transform: translate3d(22px, 0, 0) scale(0.986);
-    }
-    65% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-}
-
-@keyframes tabEnterFromLeft {
-    0% {
-        opacity: 0;
-        transform: translate3d(-22px, 0, 0) scale(0.986);
-    }
-    65% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-}
-
-@keyframes tabChildCascade {
-    0% {
-        opacity: 0.65;
-        transform: translate3d(0, 8px, 0);
-    }
-    100% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
-}
-
-.vista-activa.tab-anim-right {
-    animation: tabEnterFromRight 0.36s cubic-bezier(0.22, 1.08, 0.36, 1) forwards;
-}
-.vista-activa.tab-anim-left {
-    animation: tabEnterFromLeft 0.36s cubic-bezier(0.22, 1.08, 0.36, 1) forwards;
-}
-
-.vista-activa.tab-anim-right > *:nth-child(2),
-.vista-activa.tab-anim-left > *:nth-child(2) {
-    animation: tabChildCascade 0.34s cubic-bezier(0.22, 1, 0.36, 1) 0.02s both;
-}
-.vista-activa.tab-anim-right > *:nth-child(3),
-.vista-activa.tab-anim-left > *:nth-child(3) {
-    animation: tabChildCascade 0.36s cubic-bezier(0.22, 1, 0.36, 1) 0.045s both;
-}
-.vista-activa.tab-anim-right > *:nth-child(4),
-.vista-activa.tab-anim-left > *:nth-child(4) {
-    animation: tabChildCascade 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 38%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
 }
 
 /* ================= BOTÓN DE CALCULADORA RÁPIDA EN CABECERA PRINCIPAL ================= */
@@ -3605,13 +3598,12 @@ body[data-theme="light"]::before {
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-    transition: transform 0.28s var(--ios-bounce), border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transition: transform 0.26s var(--ios-bounce);
 }
 .btn-calc-header-icon:active {
     transform: scale(0.88);
     border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 14%, var(--input-bg));
 }
 [data-theme="light"] .btn-calc-header-icon {
     background: #FFFFFF;
@@ -3619,6 +3611,36 @@ body[data-theme="light"]::before {
 }
 
 /* ================= CALENDARIO DE CONVERSIÓN (BLOQUEO DE DÍAS FUTUROS) ================= */
+.calc-cal-leyenda {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.calc-cal-leyenda span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.calc-cal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.calc-cal-dot.hoy {
+    background: var(--accent);
+}
+.calc-cal-dot.manana {
+    background: #FFD60A;
+}
+.calc-cal-dot.bloqueado {
+    background: rgba(150, 150, 160, 0.35);
+}
+
 .agenda-cal-day.cal-day-disabled {
     opacity: 0.22 !important;
     pointer-events: none !important;
@@ -3636,117 +3658,170 @@ body[data-theme="light"]::before {
     background: rgba(245, 158, 11, 0.08);
 }
 
-/* ================= MODAL CALCULADORA BÁSICA TIPO IPHONE ================= */
-.calc-iphone-sheet {
-    max-width: 390px !important;
-    padding: 16px 20px calc(22px + env(safe-area-inset-bottom)) !important;
-    border-radius: 38px 38px 0 0 !important;
-    background: linear-gradient(180deg, #141418 0%, #070709 100%) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
-    box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-}
-
-[data-theme="light"] .calc-iphone-sheet {
-    background: linear-gradient(180deg, #18181E 0%, #0B0B0F 100%) !important;
+/* ================= VENTANA EMERGENTE CALCULADORA ESTILO IPHONE + ESTÉTICA DE LA APP ================= */
+.iphone-calc-modal-content {
+    width: 92% !important;
+    max-width: 348px !important;
+    padding: 18px 18px 20px !important;
+    border-radius: 36px !important;
+    background: linear-gradient(180deg, #0D0D12 0%, #040406 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.26) !important;
+    box-shadow: 0 28px 65px -10px rgba(0, 0, 0, 0.92), 0 0 0 1px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
     color: #FFFFFF !important;
 }
 
-.calc-iphone-top-bar {
+[data-theme="glass"] .iphone-calc-modal-content {
+    background: linear-gradient(160deg, rgba(16, 16, 22, 0.88) 0%, rgba(5, 5, 8, 0.94) 100%) !important;
+    backdrop-filter: blur(34px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(34px) saturate(190%) !important;
+}
+
+[data-theme="light"] .iphone-calc-modal-content {
+    background: linear-gradient(180deg, #111116 0%, #050508 100%) !important;
+    border: 1px solid rgba(15, 23, 42, 0.18) !important;
+    box-shadow: 0 26px 60px -12px rgba(15, 23, 42, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.iphone-calc-top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.calc-iphone-title {
+.iphone-calc-title-group {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.iphone-calc-badge-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255, 159, 10, 0.16);
+    border: 1px solid rgba(255, 159, 10, 0.38);
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    font-size: 13px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.65);
-    letter-spacing: -0.2px;
+    justify-content: center;
+    font-size: 16px;
 }
 
-.calc-iphone-sheet .btn-close-modal {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+.iphone-calc-top-bar strong {
     color: #FFFFFF !important;
 }
 
-.calc-iphone-display {
+.iphone-calc-top-bar small {
+    color: rgba(255, 255, 255, 0.56) !important;
+}
+
+.btn-iphone-calc-action-pill {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.22s var(--ios-bounce);
+}
+.btn-iphone-calc-action-pill:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.iphone-calc-modal-content .btn-close-modal {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    color: #FFFFFF !important;
+}
+
+.iphone-calc-screen {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     justify-content: flex-end;
-    min-height: 98px;
+    min-height: 104px;
     padding: 8px 6px 10px;
+    margin-bottom: 8px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
     overflow: hidden;
 }
 
-.calc-iphone-expr {
+.iphone-calc-expr-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 24px;
+    margin-bottom: 2px;
+    gap: 8px;
+}
+
+.iphone-calc-expr {
+    flex: 1;
     font-size: 15px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.48);
-    min-height: 20px;
-    margin-bottom: 2px;
-    letter-spacing: -0.2px;
+    color: rgba(255, 255, 255, 0.5);
     text-align: right;
-    width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.calc-iphone-val {
+.btn-iphone-calc-backspace {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.85);
+    border-radius: 8px;
+    padding: 2px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.18s var(--ios-spring);
+}
+.btn-iphone-calc-backspace:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.iphone-calc-display {
     font-size: 54px;
     font-weight: 300;
     color: #FFFFFF;
-    line-height: 1.05;
+    line-height: 1.04;
     letter-spacing: -1.5px;
     text-align: right;
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: font-size 0.12s ease;
+    transition: font-size 0.1s ease;
 }
 
-.calc-iphone-actions-bar {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 14px;
+.iphone-calc-copy-hint {
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, 0.36);
+    margin-top: 3px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+.iphone-calc-copy-hint.copiado-activo {
+    color: #32D74B !important;
 }
 
-.btn-calc-iphone-pill {
-    flex: 1;
-    height: 36px;
-    border-radius: 13px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.08);
-    color: #FFFFFF;
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    transition: transform 0.24s var(--ios-bounce), background-color 0.2s ease;
-}
-.btn-calc-iphone-pill:active {
-    transform: scale(0.94);
-    background: rgba(255, 255, 255, 0.18);
-}
-.btn-calc-iphone-pill.sec {
-    flex: 0 0 auto;
-    padding: 0 14px;
-    color: rgba(255, 255, 255, 0.8);
-}
-
-.calc-iphone-grid {
+.iphone-calc-keypad {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 11px;
@@ -3754,7 +3829,7 @@ body[data-theme="light"]::before {
     -webkit-user-select: none;
 }
 
-.calc-iphone-btn {
+.ic-btn {
     aspect-ratio: 1 / 1;
     border-radius: 50%;
     border: none;
@@ -3765,47 +3840,51 @@ body[data-theme="light"]::before {
     justify-content: center;
     cursor: pointer;
     outline: none;
-    transition: transform 0.16s var(--ios-spring), filter 0.16s ease, background-color 0.18s ease, color 0.18s ease;
+    transition: transform 0.15s var(--ios-spring), filter 0.15s ease;
 }
 
-.calc-iphone-btn:active {
+.ic-btn:active {
     transform: scale(0.9);
-    filter: brightness(1.28);
+    filter: brightness(1.3);
 }
 
-.calc-iphone-btn.calc-btn-fn {
-    background: #A5A5A5;
+.ic-btn.ic-btn-func {
+    background: #A5A5AD;
     color: #000000;
     font-size: 21px;
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 
-.calc-iphone-btn.calc-btn-num {
-    background: #2C2C30;
+.ic-btn.ic-btn-num {
+    background: #24242C;
     color: #FFFFFF;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-.calc-iphone-btn.calc-btn-op,
-.calc-iphone-btn.calc-btn-eq {
+.ic-btn.ic-btn-op {
     background: #FF9F0A;
     color: #FFFFFF;
     font-size: 30px;
     font-weight: 600;
-    box-shadow: 0 4px 14px rgba(255, 159, 10, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 14px rgba(255, 159, 10, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
-.calc-iphone-btn.calc-btn-op.calc-op-activo {
+.ic-btn.ic-btn-op.ic-op-activa {
     background: #FFFFFF !important;
     color: #FF9F0A !important;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
 }
 
-.calc-iphone-btn.calc-btn-zero {
+.ic-btn.ic-btn-zero {
     grid-column: span 2;
     aspect-ratio: auto;
     height: 100%;
     border-radius: 999px;
     justify-content: flex-start;
-    padding-left: 28px;
+    padding-left: 26px;
 }
+
 
