@@ -1,5 +1,5 @@
 // ================= A$$IST V4.0 — SERVICE WORKER OFFLINE-FIRST =================
-const CACHE_NAME = 'assist-app-shell-v20261019d';
+const CACHE_NAME = 'assist-app-shell-v20261019e';
 
 const LOCAL_ASSETS = [
     './',
@@ -21,7 +21,7 @@ const LOCAL_ASSETS = [
     './askbot-guia.js',
     './askbot-guia.js?v=20261019d',
     './gestion-arranque.js',
-    './gestion-arranque.js?v=20261019d'
+    './gestion-arranque.js?v=20261019e'
 ];
 
 const CDN_ASSETS = [
