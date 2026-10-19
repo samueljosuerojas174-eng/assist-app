@@ -161,13 +161,15 @@ window.addEventListener('keydown', (e) => {
 
 function cambiarColorAcento(color, omitirSync = false) {
     const colorSeguro = (!color || String(color).toUpperCase() === '#000000') ? '#FFFFFF' : color;
-    document.documentElement.style.setProperty('--accent', colorSeguro);
+    const modoActual = document.documentElement.getAttribute('data-theme') || localStorage.getItem('app_theme_mode') || 'dark';
+    const accentEfectivo = (modoActual === 'light' && colorSeguro.toUpperCase() === '#FFFFFF') ? '#111116' : colorSeguro;
+    document.documentElement.style.setProperty('--accent', accentEfectivo);
     localStorage.setItem('app_theme_color', colorSeguro);
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 function cambiarModo(modo, omitirSync = false) {
-    const bgHex = (modo === 'light') ? '#F4F4F9' : '#000000';
+    const bgHex = (modo === 'light') ? '#F3F4F8' : '#000000';
     document.documentElement.setAttribute('data-theme', modo);
     document.body.setAttribute('data-theme', modo);
     document.documentElement.style.setProperty('--bg-dark', bgHex);
@@ -176,11 +178,23 @@ function cambiarModo(modo, omitirSync = false) {
     const metaTheme = document.getElementById('meta-theme-color');
     if (metaTheme) metaTheme.setAttribute('content', bgHex);
     localStorage.setItem('app_theme_mode', modo);
+
+    const savedColor = localStorage.getItem('app_theme_color') || '#FFFFFF';
+    const accentEfectivo = (modo === 'light' && savedColor.toUpperCase() === '#FFFFFF') ? '#111116' : savedColor;
+    document.documentElement.style.setProperty('--accent', accentEfectivo);
+
+    const btnDark = document.getElementById('btn-modo-dark');
+    const btnGlass = document.getElementById('btn-modo-glass');
+    const btnLight = document.getElementById('btn-modo-light');
+    if (btnDark) btnDark.classList.toggle('modo-activo', modo === 'dark');
+    if (btnGlass) btnGlass.classList.toggle('modo-activo', modo === 'glass');
+    if (btnLight) btnLight.classList.toggle('modo-activo', modo === 'light');
+
     if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
-function cambiarFuenteApp(fontKey, omitirAnim = false) {
-    const fuentesValidas = ['ios26', 'claude', 'windows', 'minecraft', '8bit', 'fredoka', 'jetbrains', 'outfit'];
+function cambiarFuenteApp(fontKey, omitirAnim = false, omitirSync = false) {
+    const fuentesValidas = ['outfit', 'claude', 'windows', 'minecraft', '8bit', 'fredoka', 'jetbrains', 'ios26'];
     const elegida = fuentesValidas.includes(fontKey) ? fontKey : 'outfit';
     document.documentElement.setAttribute('data-font', elegida);
     if (document.body) document.body.setAttribute('data-font', elegida);
@@ -200,6 +214,7 @@ function cambiarFuenteApp(fontKey, omitirAnim = false) {
             }, 140);
         }
     }
+    if (!omitirSync && usuarioActual) sincronizarHaciaNube().catch(e => console.error(e));
 }
 
 function animarYQuitarElementoDOM(elemento, callbackFinal) {
@@ -639,7 +654,7 @@ const MODALES_IDS = [
     'modal-perfil', 'modal-historial', 'modal-detalle-meta', 'modal-accion-meta',
     'modal-cuentas', 'modal-categorias', 'modal-nueva-meta', 'modal-tutorial',
     'modal-config-pin', 'modal-recuperar-pin', 'modal-nueva-agenda', 'modal-pagar-agenda',
-    'modal-askbot-menu'
+    'modal-askbot-menu', 'modal-calendario-calc', 'modal-calc-iphone'
 ];
 
 let scrollGuardadoModal = 0;
@@ -649,6 +664,11 @@ function hayModalAbierto() {
         const el = document.getElementById(id);
         return el && !el.classList.contains('oculto');
     });
+}
+
+function actualizarCandadoScrollModales() {
+    if (hayModalAbierto()) bloquearScrollFondo();
+    else desbloquearScrollFondo();
 }
 
 function bloquearScrollFondo() {

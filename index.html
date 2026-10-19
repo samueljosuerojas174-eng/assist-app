@@ -21,10 +21,11 @@
             tColor = '#FFFFFF';
             localStorage.setItem('app_theme_color', '#FFFFFF');
         }
-        const bgInit = (tMode === 'light') ? '#F4F4F9' : '#000000';
+        const accentInit = (tMode === 'light' && tColor.toUpperCase() === '#FFFFFF') ? '#111116' : tColor;
+        const bgInit = (tMode === 'light') ? '#F2F4F8' : '#000000';
         document.documentElement.setAttribute('data-theme', tMode);
         document.documentElement.setAttribute('data-font', tFont);
-        document.documentElement.style.setProperty('--accent', tColor);
+        document.documentElement.style.setProperty('--accent', accentInit);
         document.documentElement.style.setProperty('--bg-dark', bgInit);
         document.documentElement.style.backgroundColor = bgInit;
         const metaTheme = document.getElementById('meta-theme-color');
@@ -184,11 +185,28 @@
                     </div>
                     <button id="btn-tutorial-header" class="btn-tutorial-pill oculto" onclick="iniciarTutorial()">🎓 Tutorial</button>
                 </div>
-                <!-- Botón Interactivo de Avatar / Perfil -->
-                <button id="btn-avatar-header" class="avatar-header-btn" onclick="abrirModal('modal-perfil')" aria-label="Abrir Mi Perfil">
-                    <img src="logo.jpg" alt="Perfil" id="header-user-avatar" class="app-logo avatar-header-img">
-                    <span class="avatar-online-dot" id="header-avatar-dot"></span>
-                </button>
+                <!-- Acciones de Cabecera: Calculadora Rápida tipo iPhone + Avatar/Logo -->
+                <div class="header-right-actions">
+                    <button id="btn-calc-rapida-header" type="button" class="btn-calc-header-mini" onclick="abrirCalculadoraRapida()" title="Calculadora rápida" aria-label="Abrir Calculadora Rápida">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="3"></rect>
+                            <rect x="7.5" y="5" width="9" height="3.5" rx="1"></rect>
+                            <circle cx="8.5" cy="12" r="0.8" fill="currentColor"></circle>
+                            <circle cx="12" cy="12" r="0.8" fill="currentColor"></circle>
+                            <circle cx="15.5" cy="12" r="0.8" fill="currentColor"></circle>
+                            <circle cx="8.5" cy="15.2" r="0.8" fill="currentColor"></circle>
+                            <circle cx="12" cy="15.2" r="0.8" fill="currentColor"></circle>
+                            <circle cx="15.5" cy="15.2" r="0.8" fill="currentColor"></circle>
+                            <circle cx="8.5" cy="18.4" r="0.8" fill="currentColor"></circle>
+                            <circle cx="12" cy="18.4" r="0.8" fill="currentColor"></circle>
+                            <circle cx="15.5" cy="18.4" r="0.8" fill="currentColor"></circle>
+                        </svg>
+                    </button>
+                    <button id="btn-avatar-header" class="avatar-header-btn" onclick="abrirModal('modal-perfil')" aria-label="Abrir Mi Perfil">
+                        <img src="logo.jpg" alt="Perfil" id="header-user-avatar" class="app-logo avatar-header-img">
+                        <span class="avatar-online-dot" id="header-avatar-dot"></span>
+                    </button>
+                </div>
             </div>
 
             <!-- Tarjeta de Balance -->
@@ -436,12 +454,12 @@
 
                 <!-- Barra de Fecha Interactiva + Calendario Histórico + Alternador Fecha Posterior (Estilo Al Cambio) -->
                 <div class="calc-date-bar-alcambio" id="calc-date-bar-alcambio">
-                    <div id="calc-fecha-badge" class="calc-date-pill-main">Cargando fecha...</div>
+                    <div id="calc-fecha-badge" class="calc-date-pill-main" onclick="abrirCalendarioCalculadora()" style="cursor: pointer;" title="Toca para elegir fecha en el calendario">Cargando fecha...</div>
 
-                    <!-- Botón de Calendario Histórico (con input date nativo superpuesto para iOS Safari) -->
-                    <div class="calc-date-action-wrap" id="wrap-calc-calendario" title="Consultar tasa de una fecha anterior">
-                        <input type="date" id="input-calc-fecha-hist" onchange="seleccionarFechaHistoricaCalc(this.value)" aria-label="Elegir fecha histórica">
-                        <button type="button" id="btn-calc-cal-icon" class="btn-calc-date-icon">
+                    <!-- Botón de Calendario Histórico (con bloqueo estricto de días futuros no publicados) -->
+                    <div class="calc-date-action-wrap" id="wrap-calc-calendario" title="Consultar tasa en el calendario">
+                        <input type="hidden" id="input-calc-fecha-hist" value="">
+                        <button type="button" id="btn-calc-cal-icon" class="btn-calc-date-icon" onclick="abrirCalendarioCalculadora()" aria-label="Elegir fecha en el calendario">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path></svg>
                         </button>
                     </div>
@@ -587,10 +605,10 @@
             <!-- Modos y Temas Ampliados -->
             <section class="gestion-seccion" style="padding: 15px;">
                 <h3 class="section-subtitle" style="text-align: center;">Modo de Visualización</h3>
-                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
-                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('dark')">Oscuro</button>
-                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('glass')">Liquid Glass</button>
-                    <button class="btn-secundario" style="font-size: 13px; padding: 8px;" onclick="cambiarModo('light')">Claro</button>
+                <div class="theme-mode-selector" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
+                    <button id="btn-modo-dark" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('dark')">🌙 Oscuro</button>
+                    <button id="btn-modo-glass" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('glass')">✨ Liquid Glass</button>
+                    <button id="btn-modo-light" class="btn-secundario btn-theme-mode" style="font-size: 13px; padding: 10px 8px;" onclick="cambiarModo('light')">☀️ Claro</button>
                 </div>
                 
                 <h3 class="section-subtitle" style="text-align: center;">Color de Acento</h3>
@@ -620,11 +638,11 @@
                 <h3 class="section-subtitle" style="text-align: center; margin-top: 22px;">Tipografía de la App</h3>
                 <p style="text-align: center; font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">Personaliza el estilo visual de las letras en toda la interfaz</p>
                 <div class="font-selector-grid" id="font-selector-grid">
-                    <button type="button" class="font-pill-btn" data-font-opt="ios26" onclick="cambiarFuenteApp('ios26')">
-                        <span class="font-pill-preview" style="font-family: ui-rounded, 'SF Pro Rounded', 'Fredoka', 'Plus Jakarta Sans', sans-serif; font-weight: 700;">Aa</span>
+                    <button type="button" class="font-pill-btn activo" data-font-opt="outfit" onclick="cambiarFuenteApp('outfit')">
+                        <span class="font-pill-preview" style="font-family: 'Outfit', sans-serif; font-weight: 700;">Aa</span>
                         <div class="font-pill-info">
-                            <strong>iOS 26 Bouncy</strong>
-                            <small>Apple Gordita (Predet.)</small>
+                            <strong>Minimal Pro</strong>
+                            <small>Geométrica (Predet.)</small>
                         </div>
                     </button>
                     <button type="button" class="font-pill-btn" data-font-opt="claude" onclick="cambiarFuenteApp('claude')">
@@ -669,11 +687,11 @@
                             <small>Terminal Financiera</small>
                         </div>
                     </button>
-                    <button type="button" class="font-pill-btn activo" data-font-opt="outfit" onclick="cambiarFuenteApp('outfit')">
-                        <span class="font-pill-preview" style="font-family: 'Outfit', sans-serif; font-weight: 700;">Aa</span>
+                    <button type="button" class="font-pill-btn" data-font-opt="ios26" onclick="cambiarFuenteApp('ios26')">
+                        <span class="font-pill-preview" style="font-family: ui-rounded, 'SF Pro Rounded', 'Fredoka', 'Plus Jakarta Sans', sans-serif; font-weight: 700;">Aa</span>
                         <div class="font-pill-info">
-                            <strong>Minimal Pro</strong>
-                            <small>Geométrica Pura</small>
+                            <strong>iOS 26 Bouncy</strong>
+                            <small>Apple Gordita</small>
                         </div>
                     </button>
                 </div>
@@ -1241,6 +1259,101 @@
                     <button id="btn-tut-prev" class="btn-secundario" style="width: auto; padding: 10px 16px; font-size: 14px;" onclick="moverPasoTutorial(-1)">Atrás</button>
                     <button id="btn-tut-next" class="btn-primario" style="width: auto; padding: 10px 20px; font-size: 14px;" onclick="moverPasoTutorial(1)">Siguiente</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Calendario de Tasas en Conversión (Bloqueo estricto de días posteriores al actual salvo tasa del día siguiente) -->
+    <div id="modal-calendario-calc" class="glass-modal oculto" style="z-index: 100006;" onclick="cerrarModal('modal-calendario-calc')">
+        <div class="glass-modal-content calc-cal-modal-content" onclick="event.stopPropagation()">
+            <div class="glass-modal-header" style="margin-bottom: 12px;">
+                <div>
+                    <h2 style="font-size: 20px;">Calendario de Tasas</h2>
+                    <small id="calc-cal-subtitulo" style="font-size: 11.5px; color: var(--text-secondary); font-weight: 600;">Selecciona una fecha disponible</small>
+                </div>
+                <button class="btn-close-modal" onclick="cerrarModal('modal-calendario-calc')">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="agenda-cal-header" style="margin-bottom: 12px;">
+                <button type="button" class="btn-cal-nav" onclick="cambiarMesCalendarioCalc(-1)">‹</button>
+                <strong id="calc-cal-mes-titulo" style="font-size: 15.5px;">Octubre 2026</strong>
+                <button type="button" id="btn-calc-cal-next-mes" class="btn-cal-nav" onclick="cambiarMesCalendarioCalc(1)">›</button>
+            </div>
+
+            <div class="agenda-cal-weekdays">
+                <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+            </div>
+
+            <div id="calc-cal-grid" class="agenda-cal-grid calc-cal-grid"></div>
+
+            <div id="calc-cal-leyenda-futura" class="calc-cal-leyenda oculto" style="display: none;">
+                <span class="calc-cal-dot-futura"></span>
+                <span id="calc-cal-leyenda-texto">Fecha Valor BCV disponible</span>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn-secundario" style="flex: 1; padding: 11px 12px; font-size: 13.5px;" onclick="seleccionarDiaCalendarioCalc(getLocalYYYYMMDD())">📍 Ir a Hoy</button>
+                <button type="button" id="btn-calc-cal-ir-manana" class="btn-primario oculto" style="flex: 1; padding: 11px 12px; font-size: 13.5px; display: none;" onclick="irAFechaPosteriorDesdeCalCalc()">📅→ Tasa Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Calculadora Básica Rápida estilo iPhone -->
+    <div id="modal-calc-iphone" class="glass-modal oculto" style="z-index: 100007;" onclick="cerrarModal('modal-calc-iphone')">
+        <div class="glass-modal-content iphone-calc-modal-content" onclick="event.stopPropagation()">
+            <div class="iphone-calc-top-bar">
+                <div class="iphone-calc-title-group">
+                    <span class="iphone-calc-badge-icon">🧮</span>
+                    <div>
+                        <strong style="font-size: 15px; color: var(--text-primary); display: block; line-height: 1.1;">Calculadora Rápida</strong>
+                        <small style="font-size: 11px; color: var(--text-secondary);">Cuentas al instante</small>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" class="btn-iphone-calc-action-pill" onclick="usarResultadoEnRegistro()" title="Pasar monto al formulario de Inicio">Usar monto</button>
+                    <button class="btn-close-modal" onclick="cerrarModal('modal-calc-iphone')">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pantalla Digital tipo iPhone (soporta deslizar para borrar dígito) -->
+            <div class="iphone-calc-screen" id="iphone-calc-screen" onclick="copiarResultadoCalcIphone()">
+                <div class="iphone-calc-expr-row">
+                    <span id="iphone-calc-expr" class="iphone-calc-expr">&nbsp;</span>
+                    <button type="button" class="btn-iphone-calc-backspace" onclick="event.stopPropagation(); calcIphoneBorrarDigito();" aria-label="Borrar último dígito" title="Borrar dígito">⌫</button>
+                </div>
+                <div id="iphone-calc-display" class="iphone-calc-display">0</div>
+                <small id="iphone-calc-copy-hint" class="iphone-calc-copy-hint">Toca el número para copiar</small>
+            </div>
+
+            <!-- Teclado Clásico 4x5 Estilo iOS / iPhone -->
+            <div class="iphone-calc-keypad">
+                <button type="button" id="btn-ic-clear" class="ic-btn ic-btn-func" onclick="calcIphoneClear()">AC</button>
+                <button type="button" class="ic-btn ic-btn-func" onclick="calcIphoneSigno()">±</button>
+                <button type="button" class="ic-btn ic-btn-func" onclick="calcIphonePorcentaje()">%</button>
+                <button type="button" id="btn-ic-op-div" class="ic-btn ic-btn-op" data-op="/" onclick="calcIphoneOperador('/')">÷</button>
+
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('7')">7</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('8')">8</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('9')">9</button>
+                <button type="button" id="btn-ic-op-mul" class="ic-btn ic-btn-op" data-op="*" onclick="calcIphoneOperador('*')">×</button>
+
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('4')">4</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('5')">5</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('6')">6</button>
+                <button type="button" id="btn-ic-op-sub" class="ic-btn ic-btn-op" data-op="-" onclick="calcIphoneOperador('-')">−</button>
+
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('1')">1</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('2')">2</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDigito('3')">3</button>
+                <button type="button" id="btn-ic-op-add" class="ic-btn ic-btn-op" data-op="+" onclick="calcIphoneOperador('+')">+</button>
+
+                <button type="button" class="ic-btn ic-btn-num ic-btn-zero" onclick="calcIphoneDigito('0')">0</button>
+                <button type="button" class="ic-btn ic-btn-num" onclick="calcIphoneDecimal()">.</button>
+                <button type="button" class="ic-btn ic-btn-op ic-btn-eq" onclick="calcIphoneIgual()">=</button>
             </div>
         </div>
     </div>

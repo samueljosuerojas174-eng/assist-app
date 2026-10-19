@@ -157,7 +157,11 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
 
     const meta = metas[metaAbonoActualIndex];
     let montoUSD = monto;
-    if (monedaAccion === 'VES') montoUSD = monto / tasaBCV;
+    let montoVES = Number((monto * (tasaBCV || 1)).toFixed(2));
+    if (monedaAccion === 'VES') {
+        montoUSD = monto / tasaBCV;
+        montoVES = Number(monto.toFixed(2));
+    }
     if (metaAccionTipo === 'retirar' && montoUSD > meta.acumulado) return alert("No puedes retirar más de lo ahorrado.");
 
     const valFecha = document.getElementById('fecha-accion-meta').value; 
@@ -173,6 +177,7 @@ document.getElementById('btn-ejecutar-meta').addEventListener('click', () => {
         id: dateObj.getTime() + Math.random(),
         cuentaId: cuentaId,
         montoUSD: montoUSD,
+        montoVES: montoVES,
         tipo: tTipo,
         categoria: 'Ahorro',
         nota: notaUser ? `${baseNota} - ${notaUser}` : baseNota,
@@ -237,6 +242,7 @@ function eliminarMeta(index) {
             id: dateObj.getTime() + Math.random(),
             cuentaId: cuentaDestinoId,
             montoUSD: montoAcumulado,
+            montoVES: Number((montoAcumulado * (tasaBCV || 1)).toFixed(2)),
             tipo: 'ingreso',
             categoria: 'Ahorro',
             nota: "Reembolso por cierre de meta: " + meta.nombre,
@@ -977,28 +983,42 @@ function calcularDatosConversionPagoAgenda() {
     const montoTotalOperacion = montoBase + comisionBs;
     const tasaUsdtInput = parseFloat(document.getElementById('input-tasa-agenda-usdt')?.value) || tasaParalelo || tasaBCV || 1;
     let montoUSD = montoTotalOperacion;
+    let montoVES = 0;
     let detalleTasaUsdt = '';
 
     if (cuenta && cuenta.moneda === 'USDT') {
-        if (monedaPago === 'USDT' || monedaPago === 'USD') montoUSD = montoTotalOperacion;
-        else if (monedaPago === 'VES') {
+        if (monedaPago === 'USDT' || monedaPago === 'USD') {
+            montoUSD = montoTotalOperacion;
+            montoVES = Number((montoTotalOperacion * (tasaParalelo || tasaBCV || 1)).toFixed(2));
+        } else if (monedaPago === 'VES') {
             montoUSD = tasaUsdtInput > 0 ? (montoTotalOperacion / tasaUsdtInput) : 0;
+            montoVES = Number(montoTotalOperacion.toFixed(2));
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
         } else if (monedaPago === 'EUR') {
             const enBs = montoTotalOperacion * (tasaEUR || 1);
+            montoVES = Number(enBs.toFixed(2));
             montoUSD = tasaUsdtInput > 0 ? (enBs / tasaUsdtInput) : 0;
         }
     } else {
-        if (monedaPago === 'VES') montoUSD = montoTotalOperacion / (tasaBCV || 1);
-        else if (monedaPago === 'EUR') montoUSD = (montoTotalOperacion * (tasaEUR || 1)) / (tasaBCV || 1);
-        else if (monedaPago === 'USDT' && cuenta && cuenta.moneda === 'VES') {
+        if (monedaPago === 'VES') {
+            montoUSD = montoTotalOperacion / (tasaBCV || 1);
+            montoVES = Number(montoTotalOperacion.toFixed(2));
+        } else if (monedaPago === 'EUR') {
+            const enBs = montoTotalOperacion * (tasaEUR || 1);
+            montoVES = Number(enBs.toFixed(2));
+            montoUSD = enBs / (tasaBCV || 1);
+        } else if (monedaPago === 'USDT' && cuenta && cuenta.moneda === 'VES') {
             const enBs = montoTotalOperacion * tasaUsdtInput;
+            montoVES = Number(enBs.toFixed(2));
             montoUSD = enBs / (tasaBCV || 1);
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtInput.toFixed(2)}`;
-        } else montoUSD = montoTotalOperacion;
+        } else {
+            montoUSD = montoTotalOperacion;
+            montoVES = Number((montoTotalOperacion * (tasaBCV || 1)).toFixed(2));
+        }
     }
 
-    return { cuenta, montoBase, monedaPago, comisionBs, montoTotalOperacion, montoUSD, detalleTasaUsdt };
+    return { cuenta, montoBase, monedaPago, comisionBs, montoTotalOperacion, montoUSD, montoVES, detalleTasaUsdt };
 }
 
 function calcularPreviewModalPagarAgenda() {
@@ -1008,7 +1028,7 @@ function calcularPreviewModalPagarAgenda() {
     if (!datos.cuenta) { lblPreview.innerText = '$0.00'; return; }
 
     if (datos.cuenta.moneda === 'VES') {
-        const totalBsCuenta = datos.montoUSD * (tasaBCV || 1);
+        const totalBsCuenta = datos.montoVES;
         lblPreview.innerText = `-Bs ${totalBsCuenta.toFixed(2)} ($${datos.montoUSD.toFixed(2)})`;
     } else if (datos.cuenta.moneda === 'USDT') {
         lblPreview.innerText = `-${datos.montoUSD.toFixed(2)} USDT`;
@@ -1052,6 +1072,7 @@ function confirmarPagoAgenda() {
         id: nuevoIdTrans,
         cuentaId: datos.cuenta.id,
         montoUSD: datos.montoUSD,
+        montoVES: datos.montoVES,
         tipo: 'gasto',
         categoria: categoriaElegida,
         nota: notaFinal,
@@ -1090,6 +1111,10 @@ function confirmarPagoAgenda() {
 
 function obtenerRadiografiaFinanciera() {
     const balancesPorCuenta = cuentas.map(c => {
+        if (typeof calcularSaldoCuenta === 'function') {
+            const saldos = calcularSaldoCuenta(c);
+            return { ...c, balanceUSD: saldos.balanceUSD, balanceVES: saldos.balanceVES };
+        }
         let balUSD = 0;
         transacciones.forEach(t => {
             if (t.cuentaId == c.id) balUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);

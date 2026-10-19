@@ -6,6 +6,40 @@ const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_U
 let usuarioActual = null;
 let authModoActual = 'login';
 let sincronizandoNube = false;
+let syncPendienteEnCola = false;
+
+function serializarMonedaYMetadatosTransaccion(t) {
+    const monedaLimpia = String((t && t.monedaInputOriginal) || 'USD').split('|')[0] || 'USD';
+    const mVes = (t && t.montoVES !== undefined && t.montoVES !== null && !isNaN(Number(t.montoVES)) && Number(t.montoVES) > 0)
+        ? Number(t.montoVES).toFixed(2)
+        : '';
+    const agId = (t && t.agendaId !== undefined && t.agendaId !== null) ? String(t.agendaId) : '';
+    const agFecha = (t && t.agendaFechaPrevia) ? String(t.agendaFechaPrevia) : '';
+    const agFrec = (t && t.agendaFrecuencia) ? String(t.agendaFrecuencia) : '';
+
+    if (agId || agFecha || agFrec) {
+        return `${monedaLimpia}|${mVes}|${agId}|${agFecha}|${agFrec}`;
+    }
+    if (mVes) {
+        return `${monedaLimpia}|${mVes}`;
+    }
+    return monedaLimpia;
+}
+
+function deserializarMonedaYMetadatosTransaccion(rawStr) {
+    const partes = String(rawStr || 'USD').split('|');
+    const monedaInputOriginal = partes[0] || 'USD';
+    const montoVES = (partes[1] !== undefined && partes[1] !== '' && !isNaN(Number(partes[1])) && Number(partes[1]) > 0)
+        ? Number(partes[1])
+        : undefined;
+    const agendaId = (partes[2] !== undefined && partes[2] !== '')
+        ? (isNaN(Number(partes[2])) ? partes[2] : Number(partes[2]))
+        : undefined;
+    const agendaFechaPrevia = (partes[3] !== undefined && partes[3] !== '') ? partes[3] : undefined;
+    const agendaFrecuencia = (partes[4] !== undefined && partes[4] !== '') ? partes[4] : undefined;
+
+    return { monedaInputOriginal, montoVES, agendaId, agendaFechaPrevia, agendaFrecuencia };
+}
 
 // Base de Datos Local
 let transacciones = JSON.parse(localStorage.getItem('transacciones')) || [];
@@ -425,13 +459,16 @@ async function procesarAuth() {
 }
 
 async function sincronizarHaciaNube() {
+    localStorage.setItem('assist_pending_sync', 'true');
     if (!supabaseClient || !usuarioActual) return;
     if (!navigator.onLine) {
-        localStorage.setItem('assist_pending_sync', 'true');
         actualizarUIEstadoNube();
         return;
     }
-    if (sincronizandoNube) return;
+    if (sincronizandoNube) {
+        syncPendienteEnCola = true;
+        return;
+    }
     sincronizandoNube = true;
 
     try {
@@ -448,12 +485,21 @@ async function sincronizarHaciaNube() {
             updated_at: ahora
         };
 
+        const payloadColoresYPrefs = {
+            ...categoriasColores,
+            __app_font: localStorage.getItem('app_font_family') || 'outfit',
+            __usdt_modo: (typeof usdtP2PData !== 'undefined' && usdtP2PData && usdtP2PData.modoPrecio)
+                ? usdtP2PData.modoPrecio
+                : (localStorage.getItem('assist_usdt_modo_precio') || 'buy')
+        };
+        const strColoresYPrefs = JSON.stringify(payloadColoresYPrefs);
+
         let { error: errPerfil } = await supabaseClient.from('perfiles').upsert({
             ...basePerfil,
             user_name: userNombre || null,
             avatar_url: userAvatar || null,
             pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null,
-            categorias_colores: Object.keys(categoriasColores).length > 0 ? JSON.stringify(categoriasColores) : null,
+            categorias_colores: strColoresYPrefs,
             agenda_pagos: JSON.stringify(agendaPagos)
         });
 
@@ -463,7 +509,7 @@ async function sincronizarHaciaNube() {
                 user_name: userNombre || null,
                 avatar_url: userAvatar || null,
                 pin_questions: pinQuestions.length === 3 ? JSON.stringify(pinQuestions) : null,
-                categorias_colores: Object.keys(categoriasColores).length > 0 ? JSON.stringify(categoriasColores) : null
+                categorias_colores: strColoresYPrefs
             });
             if (retryColores.error) {
                 let retryPin = await supabaseClient.from('perfiles').upsert({
@@ -534,7 +580,7 @@ async function sincronizarHaciaNube() {
                     tipo: t.tipo || 'gasto',
                     categoria: t.categoria || 'Varios',
                     nota: t.nota || '',
-                    moneda_input_original: t.monedaInputOriginal || 'USD',
+                    moneda_input_original: serializarMonedaYMetadatosTransaccion(t),
                     fecha_formateada: t.fechaFormateada || '',
                     fecha: fechaValida.toISOString(),
                     fecha_iso_local: t.fechaIsoLocal || getLocalYYYYMMDD(fechaValida),
@@ -545,7 +591,9 @@ async function sincronizarHaciaNube() {
             if (errTrans) throw errTrans;
         }
 
-        localStorage.removeItem('assist_pending_sync');
+        if (!syncPendienteEnCola) {
+            localStorage.removeItem('assist_pending_sync');
+        }
         actualizarUIEstadoNube();
     } catch (err) {
         console.error("Error al sincronizar con Supabase:", err);
@@ -554,6 +602,12 @@ async function sincronizarHaciaNube() {
         throw err;
     } finally {
         sincronizandoNube = false;
+        if (syncPendienteEnCola && usuarioActual && navigator.onLine) {
+            syncPendienteEnCola = false;
+            setTimeout(() => {
+                sincronizarHaciaNube().catch(e => console.error(e));
+            }, 120);
+        }
     }
 }
 
@@ -600,7 +654,19 @@ async function descargarDesdeNube() {
                 try {
                     const parsedCol = typeof resPerfil.data.categorias_colores === 'string' ? JSON.parse(resPerfil.data.categorias_colores) : resPerfil.data.categorias_colores;
                     if (parsedCol && typeof parsedCol === 'object') {
-                        categoriasColores = { ...categoriasColores, ...parsedCol };
+                        if (parsedCol.__app_font && typeof cambiarFuenteApp === 'function') {
+                            cambiarFuenteApp(parsedCol.__app_font, true, true);
+                        }
+                        if (parsedCol.__usdt_modo) {
+                            localStorage.setItem('assist_usdt_modo_precio', parsedCol.__usdt_modo);
+                            if (typeof usdtP2PData !== 'undefined' && usdtP2PData) {
+                                usdtP2PData.modoPrecio = parsedCol.__usdt_modo;
+                            }
+                        }
+                        const copiaLimpia = { ...parsedCol };
+                        delete copiaLimpia.__app_font;
+                        delete copiaLimpia.__usdt_modo;
+                        categoriasColores = { ...categoriasColores, ...copiaLimpia };
                         localStorage.setItem('assist_categorias_colores', JSON.stringify(categoriasColores));
                     }
                 } catch (e) { console.error(e); }
@@ -643,18 +709,26 @@ async function descargarDesdeNube() {
             }));
         }
         if (resTrans.data && resTrans.data.length > 0) {
-            transacciones = resTrans.data.map(t => ({
-                id: isNaN(Number(t.id)) ? t.id : Number(t.id),
-                cuentaId: isNaN(Number(t.cuenta_id)) ? t.cuenta_id : Number(t.cuenta_id),
-                montoUSD: Number(t.monto_usd) || 0,
-                tipo: t.tipo,
-                categoria: t.categoria,
-                nota: t.nota || '',
-                monedaInputOriginal: t.moneda_input_original || 'USD',
-                fechaFormateada: t.fecha_formateada || '',
-                fecha: t.fecha,
-                fechaIsoLocal: t.fecha_iso_local
-            }));
+            transacciones = resTrans.data.map(t => {
+                const metaExtra = deserializarMonedaYMetadatosTransaccion(t.moneda_input_original);
+                const objT = {
+                    id: isNaN(Number(t.id)) ? t.id : Number(t.id),
+                    cuentaId: isNaN(Number(t.cuenta_id)) ? t.cuenta_id : Number(t.cuenta_id),
+                    montoUSD: Number(t.monto_usd) || 0,
+                    tipo: t.tipo,
+                    categoria: t.categoria,
+                    nota: t.nota || '',
+                    monedaInputOriginal: metaExtra.monedaInputOriginal,
+                    fechaFormateada: t.fecha_formateada || '',
+                    fecha: t.fecha,
+                    fechaIsoLocal: t.fecha_iso_local
+                };
+                if (metaExtra.montoVES !== undefined) objT.montoVES = metaExtra.montoVES;
+                if (metaExtra.agendaId !== undefined) objT.agendaId = metaExtra.agendaId;
+                if (metaExtra.agendaFechaPrevia !== undefined) objT.agendaFechaPrevia = metaExtra.agendaFechaPrevia;
+                if (metaExtra.agendaFrecuencia !== undefined) objT.agendaFrecuencia = metaExtra.agendaFrecuencia;
+                return objT;
+            });
             transacciones.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
         }
 
@@ -731,3 +805,8 @@ window.addEventListener('online', () => {
     }
 });
 window.addEventListener('offline', () => actualizarUIEstadoNube());
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && usuarioActual && navigator.onLine && localStorage.getItem('assist_pending_sync') === 'true') {
+        sincronizarHaciaNube().catch(e => console.error(e));
+    }
+});

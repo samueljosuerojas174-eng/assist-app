@@ -16,23 +16,191 @@ function esFechaFutura(isoString) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() > new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
 }
 
-function obtenerFechaMaximaPermitidaCalculadora() {
+let calcCalAnio = new Date().getFullYear();
+let calcCalMes = new Date().getMonth();
+
+function obtenerFechaPosteriorPermitidaCalc() {
     const hoyIso = getLocalYYYYMMDD();
     if (hayFechaPosteriorBCV && tasasFechaPosterior.BCV && tasasFechaPosterior.BCV.fecha && tasasFechaPosterior.BCV.fecha > hoyIso) {
         return tasasFechaPosterior.BCV.fecha;
     }
-    return hoyIso;
+    return null;
+}
+
+function obtenerFechaMaximaPermitidaCalculadora() {
+    const hoyIso = getLocalYYYYMMDD();
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
+    return futuraIso || hoyIso;
+}
+
+function esFechaPermitidaEnCalendarioCalc(fechaISO) {
+    if (!fechaISO) return false;
+    const hoyIso = getLocalYYYYMMDD();
+    if (fechaISO <= hoyIso) return true;
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
+    return Boolean(futuraIso && fechaISO === futuraIso);
 }
 
 function actualizarLimiteCalendarioCalculadora() {
     const inputCal = document.getElementById('input-calc-fecha-hist');
-    if (!inputCal) return;
     const maxFecha = obtenerFechaMaximaPermitidaCalculadora();
-    inputCal.max = maxFecha;
-    if (fechaHistoricaCalcSeleccionada && fechaHistoricaCalcSeleccionada > maxFecha) {
+    if (inputCal) inputCal.max = maxFecha;
+    if (fechaHistoricaCalcSeleccionada && !esFechaPermitidaEnCalendarioCalc(fechaHistoricaCalcSeleccionada)) {
         fechaHistoricaCalcSeleccionada = null;
-        inputCal.value = '';
+        if (inputCal) inputCal.value = '';
     }
+    const modalCal = document.getElementById('modal-calendario-calc');
+    if (modalCal && !modalCal.classList.contains('oculto')) {
+        renderizarCalendarioCalc();
+    }
+}
+
+function abrirCalendarioCalculadora() {
+    const hoyIso = getLocalYYYYMMDD();
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
+    let fechaFoco = hoyIso;
+    if (fechaHistoricaCalcSeleccionada && esFechaPermitidaEnCalendarioCalc(fechaHistoricaCalcSeleccionada)) {
+        fechaFoco = fechaHistoricaCalcSeleccionada;
+    } else if (usandoFechaPosterior && futuraIso) {
+        fechaFoco = futuraIso;
+    }
+    const partes = fechaFoco.split('-');
+    calcCalAnio = parseInt(partes[0], 10) || new Date().getFullYear();
+    calcCalMes = (parseInt(partes[1], 10) || (new Date().getMonth() + 1)) - 1;
+    renderizarCalendarioCalc();
+    abrirModal('modal-calendario-calc');
+}
+
+function cambiarMesCalendarioCalc(direccion) {
+    const maxFecha = obtenerFechaMaximaPermitidaCalculadora();
+    const partesMax = maxFecha.split('-');
+    const maxAnio = parseInt(partesMax[0], 10);
+    const maxMes = parseInt(partesMax[1], 10) - 1;
+
+    let nuevoMes = calcCalMes + direccion;
+    let nuevoAnio = calcCalAnio;
+    if (nuevoMes < 0) { nuevoMes = 11; nuevoAnio -= 1; }
+    else if (nuevoMes > 11) { nuevoMes = 0; nuevoAnio += 1; }
+
+    // Bloquear avance a meses posteriores al mes máximo permitido
+    if (direccion > 0 && (nuevoAnio > maxAnio || (nuevoAnio === maxAnio && nuevoMes > maxMes))) {
+        return;
+    }
+    // Límite razonable hacia atrás (2020)
+    if (nuevoAnio < 2020) return;
+
+    calcCalMes = nuevoMes;
+    calcCalAnio = nuevoAnio;
+    renderizarCalendarioCalc();
+    const grid = document.getElementById('calc-cal-grid');
+    if (grid) {
+        grid.classList.remove('subview-anim-right', 'subview-anim-left');
+        void grid.offsetWidth;
+        grid.classList.add(direccion < 0 ? 'subview-anim-left' : 'subview-anim-right');
+    }
+}
+
+function renderizarCalendarioCalc() {
+    const tituloMes = document.getElementById('calc-cal-mes-titulo');
+    const subtitulo = document.getElementById('calc-cal-subtitulo');
+    const grid = document.getElementById('calc-cal-grid');
+    const btnNextMes = document.getElementById('btn-calc-cal-next-mes');
+    const leyendaFutura = document.getElementById('calc-cal-leyenda-futura');
+    const leyendaTexto = document.getElementById('calc-cal-leyenda-texto');
+    const btnIrManana = document.getElementById('btn-calc-cal-ir-manana');
+    if (!grid || !tituloMes) return;
+
+    const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    tituloMes.innerText = `${mesesNombres[calcCalMes]} ${calcCalAnio}`;
+
+    const hoyIso = getLocalYYYYMMDD();
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
+    const maxFecha = futuraIso || hoyIso;
+    const partesMax = maxFecha.split('-');
+    const maxAnio = parseInt(partesMax[0], 10);
+    const maxMes = parseInt(partesMax[1], 10) - 1;
+
+    if (btnNextMes) {
+        const enMesMaximo = (calcCalAnio > maxAnio) || (calcCalAnio === maxAnio && calcCalMes >= maxMes);
+        btnNextMes.disabled = enMesMaximo;
+        btnNextMes.style.opacity = enMesMaximo ? '0.22' : '1';
+        btnNextMes.style.pointerEvents = enMesMaximo ? 'none' : 'auto';
+    }
+
+    if (subtitulo) {
+        subtitulo.innerText = futuraIso
+            ? `Hasta hoy o Fecha Valor (${formatFechaCorta(futuraIso)})`
+            : `Solo puedes elegir hasta el día de hoy (${formatFechaCorta(hoyIso)})`;
+    }
+
+    if (leyendaFutura && leyendaTexto) {
+        if (futuraIso) {
+            leyendaFutura.classList.remove('oculto');
+            leyendaFutura.style.display = 'flex';
+            const valFut = tasasFechaPosterior.BCV ? Number(tasasFechaPosterior.BCV.valor).toFixed(2) : '';
+            leyendaTexto.innerText = `Tasa siguiente disponible: ${formatFechaCorta(futuraIso)}${valFut ? ' (Bs ' + valFut + ')' : ''}`;
+        } else {
+            leyendaFutura.classList.add('oculto');
+            leyendaFutura.style.display = 'none';
+        }
+    }
+
+    if (btnIrManana) {
+        if (futuraIso) {
+            btnIrManana.classList.remove('oculto');
+            btnIrManana.style.display = 'flex';
+            btnIrManana.innerText = `📅→ ${formatFechaCorta(futuraIso)}`;
+        } else {
+            btnIrManana.classList.add('oculto');
+            btnIrManana.style.display = 'none';
+        }
+    }
+
+    let fechaActivaActual = hoyIso;
+    if (fechaHistoricaCalcSeleccionada && esFechaPermitidaEnCalendarioCalc(fechaHistoricaCalcSeleccionada)) {
+        fechaActivaActual = fechaHistoricaCalcSeleccionada;
+    } else if (usandoFechaPosterior && futuraIso) {
+        fechaActivaActual = futuraIso;
+    }
+
+    const primerDiaSemana = new Date(calcCalAnio, calcCalMes, 1).getDay();
+    const totalDiasMes = new Date(calcCalAnio, calcCalMes + 1, 0).getDate();
+    const prefijoMes = `${calcCalAnio}-${String(calcCalMes + 1).padStart(2, '0')}-`;
+
+    let html = '';
+    for (let i = 0; i < primerDiaSemana; i++) {
+        html += `<div class="agenda-cal-day vacio"></div>`;
+    }
+
+    for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const isoDia = `${prefijoMes}${String(dia).padStart(2, '0')}`;
+        const esHoy = isoDia === hoyIso;
+        const esFuturaPermitida = Boolean(futuraIso && isoDia === futuraIso);
+        const permitido = (isoDia <= hoyIso) || esFuturaPermitida;
+        const esSeleccionado = isoDia === fechaActivaActual;
+
+        if (!permitido) {
+            html += `<div class="agenda-cal-day cal-day-disabled" aria-disabled="true" title="Día no disponible"><span>${dia}</span></div>`;
+        } else {
+            const dotFutura = esFuturaPermitida ? `<div class="cal-day-dots"><span class="cal-dot-item" style="background:#FFD60A;"></span></div>` : '';
+            const claseExtra = esFuturaPermitida ? 'futura-disponible' : '';
+            html += `<div class="agenda-cal-day ${esHoy ? 'hoy' : ''} ${esSeleccionado ? 'seleccionado' : ''} ${claseExtra}" onclick="seleccionarDiaCalendarioCalc('${isoDia}')"><span>${dia}</span>${dotFutura}</div>`;
+        }
+    }
+    grid.innerHTML = html;
+}
+
+function seleccionarDiaCalendarioCalc(fechaISO) {
+    if (!esFechaPermitidaEnCalendarioCalc(fechaISO)) return;
+    cerrarModal('modal-calendario-calc');
+    seleccionarFechaHistoricaCalc(fechaISO);
+    animarPulsoCalculadora();
+}
+
+function irAFechaPosteriorDesdeCalCalc() {
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
+    if (!futuraIso) return;
+    seleccionarDiaCalendarioCalc(futuraIso);
 }
 
 function actualizarBrechaCambiaria() {
@@ -247,17 +415,15 @@ function seleccionarFechaHistoricaCalc(fechaISO) {
     }
 
     const hoyIso = getLocalYYYYMMDD();
-    const maxFechaPermitida = obtenerFechaMaximaPermitidaCalculadora();
+    const futuraIso = obtenerFechaPosteriorPermitidaCalc();
 
-    // Impedir estrictamente que seleccionen una fecha futura no publicada por el BCV
-    if (fechaISO > maxFechaPermitida) {
-        if (hayFechaPosteriorBCV && tasasFechaPosterior.BCV && tasasFechaPosterior.BCV.fecha === maxFechaPermitida) {
-            alert(`⚠️ Solo puedes adelantar hasta el ${formatFechaCorta(maxFechaPermitida)}, que es la Fecha Valor publicada por el BCV.`);
-            if (inCal) inCal.value = maxFechaPermitida;
+    // Impedir estrictamente cualquier fecha posterior a hoy, salvo únicamente la fecha valor publicada del día siguiente
+    if (!esFechaPermitidaEnCalendarioCalc(fechaISO)) {
+        if (futuraIso) {
+            if (inCal) inCal.value = futuraIso;
             fechaHistoricaCalcSeleccionada = null;
             usandoFechaPosterior = true;
         } else {
-            alert("⚠️ El BCV aún no ha publicado tasa para una fecha posterior. Solo puedes consultar hasta el día de hoy.");
             if (inCal) inCal.value = hoyIso;
             fechaHistoricaCalcSeleccionada = null;
             usandoFechaPosterior = false;
@@ -269,16 +435,19 @@ function seleccionarFechaHistoricaCalc(fechaISO) {
     if (fechaISO === hoyIso) {
         fechaHistoricaCalcSeleccionada = null;
         usandoFechaPosterior = false;
+        if (inCal) inCal.value = hoyIso;
         aplicarTasasEnInterfaz();
         return;
     }
-    if (hayFechaPosteriorBCV && tasasFechaPosterior.BCV && fechaISO === tasasFechaPosterior.BCV.fecha) {
+    if (futuraIso && fechaISO === futuraIso) {
         fechaHistoricaCalcSeleccionada = null;
         usandoFechaPosterior = true;
+        if (inCal) inCal.value = futuraIso;
         aplicarTasasEnInterfaz();
         return;
     }
     fechaHistoricaCalcSeleccionada = fechaISO;
+    if (inCal) inCal.value = fechaISO;
     if (calcModoTasa === 'Custom') calcModoTasa = 'BCV';
     setTasaModo(calcModoTasa);
 }
@@ -720,3 +889,270 @@ setTimeout(() => {
     actualizarLimiteCalendarioCalculadora();
     cargarTasasCacheLocalInmediato();
 }, 0);
+
+// ================= CALCULADORA BÁSICA RÁPIDA (ESTILO IPHONE) =================
+let calcIphoneEstado = {
+    valorActual: '0',
+    valorPrevio: null,
+    operador: null,
+    esperandoSegundoOperando: false,
+    expresionTexto: ''
+};
+
+function formatearNumeroCalcIphone(strNum) {
+    if (strNum === 'Error' || strNum === '∞') return strNum;
+    const negativo = strNum.startsWith('-');
+    const limpio = negativo ? strNum.slice(1) : strNum;
+    const partes = limpio.split('.');
+    const enteroNum = parseInt(partes[0] || '0', 10);
+    const enteroFormateado = isNaN(enteroNum) ? '0' : enteroNum.toLocaleString('es-VE');
+    let resultado = (negativo ? '-' : '') + enteroFormateado;
+    if (partes.length > 1) {
+        resultado += ',' + partes[1];
+    }
+    return resultado;
+}
+
+function simboloOperadorCalcIphone(op) {
+    if (op === '/') return '÷';
+    if (op === '*') return '×';
+    if (op === '-') return '−';
+    if (op === '+') return '+';
+    return '';
+}
+
+function actualizarPantallaCalcIphone() {
+    const elVal = document.getElementById('calc-iphone-val');
+    const elExpr = document.getElementById('calc-iphone-expr');
+    const btnAc = document.getElementById('calc-btn-ac');
+
+    if (elVal) {
+        const textoMostrar = formatearNumeroCalcIphone(calcIphoneEstado.valorActual);
+        elVal.innerText = textoMostrar;
+        const len = textoMostrar.length;
+        if (len > 12) elVal.style.fontSize = '28px';
+        else if (len > 9) elVal.style.fontSize = '36px';
+        else if (len > 7) elVal.style.fontSize = '44px';
+        else elVal.style.fontSize = '54px';
+    }
+
+    if (elExpr) {
+        elExpr.innerText = calcIphoneEstado.expresionTexto || '\u00A0';
+    }
+
+    if (btnAc) {
+        const mostrarC = calcIphoneEstado.valorActual !== '0' || calcIphoneEstado.valorPrevio !== null || calcIphoneEstado.operador !== null;
+        btnAc.innerText = mostrarC ? 'C' : 'AC';
+    }
+
+    document.querySelectorAll('.calc-iphone-btn.calc-btn-op').forEach(btn => {
+        const opBtn = btn.getAttribute('data-op');
+        if (opBtn && opBtn === calcIphoneEstado.operador && calcIphoneEstado.esperandoSegundoOperando) {
+            btn.classList.add('calc-op-activo');
+        } else {
+            btn.classList.remove('calc-op-activo');
+        }
+    });
+}
+
+function abrirCalculadoraRapida() {
+    const modal = document.getElementById('modal-calc-iphone');
+    if (!modal) return;
+    modal.classList.remove('oculto');
+    actualizarPantallaCalcIphone();
+    if (typeof actualizarCandadoScrollModales === 'function') actualizarCandadoScrollModales();
+}
+
+function calcIphoneDigito(digito) {
+    if (calcIphoneEstado.valorActual === 'Error') {
+        calcIphoneEstado.valorActual = '0';
+    }
+    if (calcIphoneEstado.esperandoSegundoOperando) {
+        calcIphoneEstado.valorActual = String(digito);
+        calcIphoneEstado.esperandoSegundoOperando = false;
+    } else {
+        const sinSigno = calcIphoneEstado.valorActual.replace('-', '').replace('.', '');
+        if (sinSigno.length >= 12) return;
+        calcIphoneEstado.valorActual = calcIphoneEstado.valorActual === '0'
+            ? String(digito)
+            : calcIphoneEstado.valorActual + String(digito);
+    }
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphoneDecimal() {
+    if (calcIphoneEstado.valorActual === 'Error') {
+        calcIphoneEstado.valorActual = '0';
+    }
+    if (calcIphoneEstado.esperandoSegundoOperando) {
+        calcIphoneEstado.valorActual = '0.';
+        calcIphoneEstado.esperandoSegundoOperando = false;
+        actualizarPantallaCalcIphone();
+        return;
+    }
+    if (!calcIphoneEstado.valorActual.includes('.')) {
+        calcIphoneEstado.valorActual += '.';
+    }
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphoneClear() {
+    if (calcIphoneEstado.valorActual !== '0' && !calcIphoneEstado.esperandoSegundoOperando) {
+        calcIphoneEstado.valorActual = '0';
+    } else {
+        calcIphoneEstado.valorActual = '0';
+        calcIphoneEstado.valorPrevio = null;
+        calcIphoneEstado.operador = null;
+        calcIphoneEstado.esperandoSegundoOperando = false;
+        calcIphoneEstado.expresionTexto = '';
+    }
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphoneBorrarDigito() {
+    if (calcIphoneEstado.esperandoSegundoOperando || calcIphoneEstado.valorActual === 'Error') return;
+    if (calcIphoneEstado.valorActual.length > 1) {
+        calcIphoneEstado.valorActual = calcIphoneEstado.valorActual.slice(0, -1);
+        if (calcIphoneEstado.valorActual === '-' || calcIphoneEstado.valorActual === '-0') {
+            calcIphoneEstado.valorActual = '0';
+        }
+    } else {
+        calcIphoneEstado.valorActual = '0';
+    }
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphoneSigno() {
+    if (calcIphoneEstado.valorActual === '0' || calcIphoneEstado.valorActual === 'Error') return;
+    if (calcIphoneEstado.valorActual.startsWith('-')) {
+        calcIphoneEstado.valorActual = calcIphoneEstado.valorActual.slice(1);
+    } else {
+        calcIphoneEstado.valorActual = '-' + calcIphoneEstado.valorActual;
+    }
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphonePorcentaje() {
+    const val = parseFloat(calcIphoneEstado.valorActual);
+    if (isNaN(val)) return;
+    let res = val / 100;
+    if (calcIphoneEstado.valorPrevio !== null && (calcIphoneEstado.operador === '+' || calcIphoneEstado.operador === '-')) {
+        res = calcIphoneEstado.valorPrevio * (val / 100);
+    }
+    calcIphoneEstado.valorActual = Number(res.toPrecision(10)).toString();
+    actualizarPantallaCalcIphone();
+}
+
+function ejecutarCalculoIphone(a, b, op) {
+    if (op === '+') return a + b;
+    if (op === '-') return a - b;
+    if (op === '*') return a * b;
+    if (op === '/') return b === 0 ? NaN : a / b;
+    return b;
+}
+
+function calcIphoneOperador(siguienteOp) {
+    const valorInput = parseFloat(calcIphoneEstado.valorActual);
+    if (isNaN(valorInput)) return;
+
+    if (calcIphoneEstado.operador && calcIphoneEstado.esperandoSegundoOperando) {
+        calcIphoneEstado.operador = siguienteOp;
+        calcIphoneEstado.expresionTexto = `${formatearNumeroCalcIphone(String(calcIphoneEstado.valorPrevio))} ${simboloOperadorCalcIphone(siguienteOp)}`;
+        actualizarPantallaCalcIphone();
+        return;
+    }
+
+    if (calcIphoneEstado.valorPrevio === null) {
+        calcIphoneEstado.valorPrevio = valorInput;
+    } else if (calcIphoneEstado.operador) {
+        const resultado = ejecutarCalculoIphone(calcIphoneEstado.valorPrevio, valorInput, calcIphoneEstado.operador);
+        if (!isFinite(resultado)) {
+            calcIphoneEstado.valorActual = 'Error';
+            calcIphoneEstado.valorPrevio = null;
+            calcIphoneEstado.operador = null;
+            calcIphoneEstado.esperandoSegundoOperando = false;
+            calcIphoneEstado.expresionTexto = '';
+            actualizarPantallaCalcIphone();
+            return;
+        }
+        const redondeado = Number(Math.round(Number(resultado + 'e10')) + 'e-10');
+        calcIphoneEstado.valorActual = String(redondeado);
+        calcIphoneEstado.valorPrevio = redondeado;
+    }
+
+    calcIphoneEstado.esperandoSegundoOperando = true;
+    calcIphoneEstado.operador = siguienteOp;
+    calcIphoneEstado.expresionTexto = `${formatearNumeroCalcIphone(String(calcIphoneEstado.valorPrevio))} ${simboloOperadorCalcIphone(siguienteOp)}`;
+    actualizarPantallaCalcIphone();
+}
+
+function calcIphoneIgual() {
+    const valorInput = parseFloat(calcIphoneEstado.valorActual);
+    if (calcIphoneEstado.operador === null || calcIphoneEstado.valorPrevio === null || isNaN(valorInput)) return;
+
+    const previoStr = formatearNumeroCalcIphone(String(calcIphoneEstado.valorPrevio));
+    const actualStr = formatearNumeroCalcIphone(String(valorInput));
+    const opSimbolo = simboloOperadorCalcIphone(calcIphoneEstado.operador);
+
+    const resultado = ejecutarCalculoIphone(calcIphoneEstado.valorPrevio, valorInput, calcIphoneEstado.operador);
+    if (!isFinite(resultado)) {
+        calcIphoneEstado.valorActual = 'Error';
+        calcIphoneEstado.expresionTexto = `${previoStr} ${opSimbolo} ${actualStr} =`;
+    } else {
+        const redondeado = Number(Math.round(Number(resultado + 'e10')) + 'e-10');
+        calcIphoneEstado.valorActual = String(redondeado);
+        calcIphoneEstado.expresionTexto = `${previoStr} ${opSimbolo} ${actualStr} =`;
+    }
+
+    calcIphoneEstado.valorPrevio = null;
+    calcIphoneEstado.operador = null;
+    calcIphoneEstado.esperandoSegundoOperando = true;
+    actualizarPantallaCalcIphone();
+}
+
+function copiarResultadoCalcIphone() {
+    const val = parseFloat(calcIphoneEstado.valorActual);
+    if (isNaN(val)) return;
+    const texto = Number.isInteger(val) ? String(val) : val.toFixed(2);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).catch(() => {});
+    }
+    const expr = document.getElementById('calc-iphone-expr');
+    if (expr) {
+        const prev = expr.innerText;
+        expr.innerText = '✓ Copiado al portapapeles';
+        setTimeout(() => { expr.innerText = prev; }, 1200);
+    }
+}
+
+function usarResultadoEnRegistro() {
+    const val = Math.abs(parseFloat(calcIphoneEstado.valorActual));
+    if (isNaN(val) || val <= 0) {
+        cerrarModal('modal-calc-iphone');
+        return;
+    }
+    const inputMonto = document.getElementById('monto');
+    if (inputMonto) {
+        inputMonto.value = Number.isInteger(val) ? String(val) : val.toFixed(2);
+        if (typeof calcularEquivalenteUsdtVes === 'function') calcularEquivalenteUsdtVes();
+        if (typeof calcularMontoTransferencia === 'function') calcularMontoTransferencia();
+    }
+    cerrarModal('modal-calc-iphone');
+    if (inputMonto) {
+        setTimeout(() => {
+            inputMonto.focus();
+        }, 180);
+    }
+}
+
+// Soporte de teclado físico y swipe sobre el display de la calculadora rápida
+document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('modal-calc-iphone');
+    if (!modal || modal.classList.contains('oculto')) return;
+    if (e.key >= '0' && e.key <= '9') { e.preventDefault(); calcIphoneDigito(e.key); }
+    else if (e.key === '.' || e.key === ',') { e.preventDefault(); calcIphoneDecimal(); }
+    else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') { e.preventDefault(); calcIphoneOperador(e.key); }
+    else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calcIphoneIgual(); }
+    else if (e.key === 'Backspace') { e.preventDefault(); calcIphoneBorrarDigito(); }
+    else if (e.key === 'Escape') { e.preventDefault(); cerrarModal('modal-calc-iphone'); }
+});

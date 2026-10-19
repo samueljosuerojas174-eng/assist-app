@@ -216,6 +216,63 @@ function actualizarOpcionesMoneda() {
 // ================= DASHBOARD Y SLIDER =================
 let sliderObserverInstancia = null;
 
+function obtenerTasaBCVVigenteFija() {
+    if (typeof tasasVigentesHoy !== 'undefined' && tasasVigentesHoy.BCV && Number(tasasVigentesHoy.BCV.valor) > 1) {
+        return Number(tasasVigentesHoy.BCV.valor);
+    }
+    if (typeof tasasData !== 'undefined' && tasasData.BCV && Number(tasasData.BCV.valor) > 1) {
+        return Number(tasasData.BCV.valor);
+    }
+    const cacheLocal = parseFloat(localStorage.getItem('tasaBCV'));
+    if (!isNaN(cacheLocal) && cacheLocal > 1) return cacheLocal;
+    return Number(tasaBCV) || 1;
+}
+
+function obtenerMontoVESTransaccion(t) {
+    if (!t) return 0;
+    if (t.montoVES !== undefined && t.montoVES !== null && !isNaN(Number(t.montoVES)) && Number(t.montoVES) > 0) {
+        return Number(t.montoVES);
+    }
+    const mUsd = Number(t.montoUSD) || 0;
+    if (mUsd <= 0) return 0;
+    const tasaFija = obtenerTasaBCVVigenteFija();
+    const calculadoBs = Number((mUsd * tasaFija).toFixed(2));
+    if (tasaFija > 1) {
+        t.montoVES = calculadoBs;
+    }
+    return calculadoBs;
+}
+
+function calcularSaldoCuenta(cuenta) {
+    if (!cuenta) return { balanceUSD: 0, balanceVES: 0, balanceEUR: 0 };
+    if (cuenta.moneda === 'VES') {
+        let sumaVES = 0;
+        transacciones.forEach(t => {
+            if (t.cuentaId == cuenta.id) {
+                const mVes = obtenerMontoVESTransaccion(t);
+                sumaVES += t.tipo === 'ingreso' ? mVes : -mVes;
+            }
+        });
+        const bsReal = Math.max(0, sumaVES);
+        const eqUSD = (tasaBCV > 0) ? (bsReal / tasaBCV) : 0;
+        const eqEUR = (tasaEUR > 0) ? (bsReal / tasaEUR) : 0;
+        return { balanceUSD: eqUSD, balanceVES: bsReal, balanceEUR: eqEUR };
+    }
+
+    let balanceUSD = 0;
+    transacciones.forEach(t => {
+        if (t.cuentaId == cuenta.id) {
+            const m = Number(t.montoUSD) || 0;
+            balanceUSD += t.tipo === 'ingreso' ? m : -m;
+        }
+    });
+    return {
+        balanceUSD,
+        balanceVES: balanceUSD * (cuenta.moneda === 'USDT' ? (tasaParalelo || 1) : (tasaBCV || 1)),
+        balanceEUR: (tasaEUR > 0) ? ((balanceUSD * (tasaBCV || 1)) / tasaEUR) : 0
+    };
+}
+
 function renderizarSliderCuentas() {
     const slider = document.getElementById('slider-cuentas');
     const dots = document.getElementById('slider-dots');
@@ -241,14 +298,13 @@ function renderizarSliderCuentas() {
     let htmlSlider = '';
     let htmlDots = '';
     cuentas.forEach((cuenta, index) => {
-        let balanceUSD = 0;
-        transacciones.forEach(t => { if (t.cuentaId == cuenta.id) balanceUSD += t.tipo === 'ingreso' ? t.montoUSD : -t.montoUSD; });
+        const saldos = calcularSaldoCuenta(cuenta);
+        const balanceUSD = saldos.balanceUSD;
         let strBalanceGrande = "", strBalancePequeño = "";
 
         if (cuenta.moneda === 'VES') { 
-            strBalanceGrande = `Bs ${Math.max(0, balanceUSD * tasaBCV).toFixed(2)}`; 
-            const eqEUR = (balanceUSD * tasaBCV) / tasaEUR;
-            strBalancePequeño = `$${balanceUSD.toFixed(2)} &nbsp;|&nbsp; €${eqEUR.toFixed(2)}`; 
+            strBalanceGrande = `Bs ${saldos.balanceVES.toFixed(2)}`; 
+            strBalancePequeño = `$${saldos.balanceUSD.toFixed(2)} &nbsp;|&nbsp; €${saldos.balanceEUR.toFixed(2)}`; 
         }
         else if (cuenta.moneda === 'USDT') { strBalanceGrande = `USDT ${balanceUSD.toFixed(2)}`; strBalancePequeño = `≈ Bs ${(balanceUSD * tasaParalelo).toFixed(2)}`; } 
         else if (cuenta.moneda === 'EUR') { strBalanceGrande = `€${(balanceUSD).toFixed(2)}`; strBalancePequeño = `≈ Bs ${(balanceUSD * tasaEUR).toFixed(2)}`; } 
@@ -339,19 +395,21 @@ function agregarTransaccion() {
 
         const txtComisionP2P = comisionUsdt > 0 ? ` | Comisión P2P: -${comisionUsdt.toFixed(2)} USDT` : '';
         let montoUSD_Origen = cOrigen.moneda === 'VES' ? (monto / tasaBCV) : monto;
+        const montoVES_Origen = cOrigen.moneda === 'VES' ? Number(monto.toFixed(2)) : Number((montoUSD_Origen * (tasaBCV || 1)).toFixed(2));
         const notaOr = nota ? `Hacia ${cDestino.nombre} - ${nota}` : `Transferencia hacia ${cDestino.nombre}`;
         transacciones.push({
             id: dateObj.getTime() + Math.random(), 
-            cuentaId: idO, montoUSD: montoUSD_Origen, tipo: 'gasto', categoria: 'Transferencia / P2P',
+            cuentaId: idO, montoUSD: montoUSD_Origen, montoVES: montoVES_Origen, tipo: 'gasto', categoria: 'Transferencia / P2P',
             nota: cOrigen.moneda !== cDestino.moneda ? `${notaOr} @ Tasa: ${tasaTransf}${txtComisionP2P}` : notaOr,
             monedaInputOriginal: cOrigen.moneda, fechaFormateada: fechaFormateada, fecha: dateObj, fechaIsoLocal: isoLocal
         });
 
         let montoUSD_Destino = cDestino.moneda === 'VES' ? (montoRecibir / tasaBCV) : montoRecibir;
+        const montoVES_Destino = cDestino.moneda === 'VES' ? Number(montoRecibir.toFixed(2)) : Number((montoUSD_Destino * (tasaBCV || 1)).toFixed(2));
         const notaDes = nota ? `Desde ${cOrigen.nombre} - ${nota}` : `Transferencia desde ${cOrigen.nombre}`;
         transacciones.push({
             id: dateObj.getTime() + Math.random() + 1,
-            cuentaId: idD, montoUSD: montoUSD_Destino, tipo: 'ingreso', categoria: 'Transferencia / P2P',
+            cuentaId: idD, montoUSD: montoUSD_Destino, montoVES: montoVES_Destino, tipo: 'ingreso', categoria: 'Transferencia / P2P',
             nota: cOrigen.moneda !== cDestino.moneda ? `${notaDes} @ Tasa: ${tasaTransf}${txtComisionP2P}` : notaDes,
             monedaInputOriginal: cDestino.moneda, fechaFormateada: fechaFormateada, fecha: dateObj, fechaIsoLocal: isoLocal
         });
@@ -380,20 +438,32 @@ function agregarTransaccion() {
 
     const cuentaActiva = cuentas.find(c => c.id == cuentaActivaId);
     let montoUSD = montoTotalOperacion;
+    let montoVES = 0;
     let detalleTasaUsdt = '';
 
     if (cuentaActiva && cuentaActiva.moneda === 'USDT') {
-        if (monedaInput === 'USDT') montoUSD = montoTotalOperacion;
-        else if (monedaInput === 'VES') {
+        if (monedaInput === 'USDT') {
+            montoUSD = montoTotalOperacion;
+            montoVES = Number((montoTotalOperacion * (tasaParalelo || tasaBCV || 1)).toFixed(2));
+        } else if (monedaInput === 'VES') {
             const inputTasaUsdt = document.getElementById('input-tasa-usdt-ves');
             const tasaUsdtAplicada = parseFloat(inputTasaUsdt && inputTasaUsdt.value) || tasaParalelo || tasaBCV || 1;
             if (tasaUsdtAplicada <= 0) return alert("Ingresa una tasa USDT válida.");
             montoUSD = montoTotalOperacion / tasaUsdtAplicada;
+            montoVES = Number(montoTotalOperacion.toFixed(2));
             detalleTasaUsdt = `@ Tasa USDT: Bs ${tasaUsdtAplicada.toFixed(2)}`;
         }
     } else {
-        if (monedaInput === 'VES') montoUSD = montoTotalOperacion / tasaBCV;
-        else if (monedaInput === 'EUR') montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
+        if (monedaInput === 'VES') {
+            montoUSD = montoTotalOperacion / tasaBCV;
+            montoVES = Number(montoTotalOperacion.toFixed(2));
+        } else if (monedaInput === 'EUR') {
+            montoVES = Number((montoTotalOperacion * tasaEUR).toFixed(2));
+            montoUSD = (montoTotalOperacion * tasaEUR) / tasaBCV;
+        } else {
+            montoUSD = montoTotalOperacion;
+            montoVES = Number((montoTotalOperacion * tasaBCV).toFixed(2));
+        }
     }
 
     let notaFinal = nota;
@@ -409,6 +479,7 @@ function agregarTransaccion() {
         id: dateObj.getTime() + Math.random(), 
         cuentaId: cuentaActivaId,
         montoUSD: montoUSD,
+        montoVES: montoVES,
         tipo: tipo,
         categoria: categoria,
         nota: notaFinal,

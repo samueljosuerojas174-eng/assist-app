@@ -88,17 +88,15 @@ function askbotConsultaPatrimonio() {
     let desgloseHTML = '';
 
     cuentas.forEach(c => {
-        let balUSD = 0;
-        transacciones.forEach(t => {
-            if (t.cuentaId == c.id) {
-                balUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
-            }
-        });
+        const saldos = typeof calcularSaldoCuenta === 'function'
+            ? calcularSaldoCuenta(c)
+            : { balanceUSD: 0, balanceVES: 0, balanceEUR: 0 };
+        const balUSD = saldos.balanceUSD;
         patrimonioTotalUSD += balUSD;
 
         let textoSaldoCuenta = '';
         if (c.moneda === 'VES') {
-            const bs = Math.max(0, balUSD * (tasaBCV || 1));
+            const bs = saldos.balanceVES;
             textoSaldoCuenta = `${askbotFormatearDinero('Bs ' + bs.toFixed(2))} <small>(${askbotFormatearDinero('$' + balUSD.toFixed(2))})</small>`;
         } else if (c.moneda === 'USDT') {
             textoSaldoCuenta = `${askbotFormatearDinero('USDT ' + balUSD.toFixed(2))} <small>(≈ ${askbotFormatearDinero('Bs ' + (balUSD * (tasaParalelo || 1)).toFixed(2))})</small>`;
@@ -252,9 +250,13 @@ function askbotConsultaMetasEstado() {
 function askbotConsultaSaludFinanciera() {
     let patrimonioUSD = 0;
     cuentas.forEach(c => {
-        transacciones.forEach(t => {
-            if (t.cuentaId == c.id) patrimonioUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
-        });
+        if (typeof calcularSaldoCuenta === 'function') {
+            patrimonioUSD += calcularSaldoCuenta(c).balanceUSD;
+        } else {
+            transacciones.forEach(t => {
+                if (t.cuentaId == c.id) patrimonioUSD += t.tipo === 'ingreso' ? (Number(t.montoUSD) || 0) : -(Number(t.montoUSD) || 0);
+            });
+        }
     });
 
     const pendientes = (agendaPagos || []).filter(a => a.estado !== 'pagado');
